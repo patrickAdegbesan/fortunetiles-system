@@ -1,0 +1,58 @@
+/* Top Header Styles */
+.top-header {
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 20px;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-left: 60px; /* Space for hamburger menu */
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .top-header {
+    padding: 0 15px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+    margin-left: 50px;
+  }
+  
+  .header-actions {
+    gap: 10px;
+  }
+}
+
+/* When sidebar is open, adjust content */
+.sidebar-open ~ .main-content .top-header {
+  margin-left: 300px;
+}
+
+@media (max-width: 768px) {
+  .sidebar-open ~ .main-content .top-header {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "short_name": "Fortune Tiles",
+  "name": "Fortune Tiles Inventory Management",
+  "description": "Professional inventory management system for Fortune Tiles",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable any"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en",
+  "scope": "/"
+}
