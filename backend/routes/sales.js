@@ -1,0 +1,319 @@
+const express = require('express');
+const { Sale, SaleItem, Product, ProductType, Location, User, Inventory, InventoryLog } = require('../models');
+const { sequelize } = require('../config/database');
+
+const router = express.Router();
+
+// GET /api/sales - Get all sales
+router.get('/', async (req, res) => {
+  try {
+    const { locationId, limit = 50 } = req.query;
+    
+    const whereClause = locationId ? { locationId } : {};
+    
+    const sales = await Sale.findAll({
+      where: whereClause,
+      include: [
+        { model: Location, as: 'location' },
+        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
+        { 
+          model: SaleItem, 
+          as: 'items',
+          include: [{ model: Product, as: 'product' }]
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit)
+    });
+
+    res.json({
+      message: 'Sales retrieved successfully',
+      sales
+    });
+
+  } catch (error) {
+    console.error('Get sales error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /api/sales/:id - Get single sale
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const sale = await Sale.findByPk(id, {
+      include: [
+        { model: Location, as: 'location' },
+        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
+        { 
+          model: SaleItem, 
+          as: 'items',
+          include: [{ model: Product, as: 'product' }]
+        }
+      ]
+    });
+    
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    res.json({
+      message: 'Sale retrieved successfully',
+      sale
+    });
+
+  } catch (error) {
+    console.error('Get sale error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// POST /api/sales - Create new sale with items
+router.post('/', async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    // Debug logging
+    console.log('Headers:', req.headers);
+    console.log('Raw body:', req.body);
+    console.log('Received sale request:', JSON.stringify(req.body, null, 2));
+    
+    const { customerName, customerPhone, locationId, userId, items } = req.body;
+    
+    // Log parsed values
+    console.log('Parsed values:', {
+      customerName,
+      customerPhone,
+      locationId,
+      userId,
+      items
+    });
+
+    // Validate required fields
+    const errors = [];
+    if (!customerName) errors.push({ field: 'customerName', message: 'Customer name is required' });
+    if (!locationId) errors.push({ field: 'locationId', message: 'Location ID is required' });
+    if (!userId) errors.push({ field: 'userId', message: 'User ID is required' });
+    if (!items || !Array.isArray(items)) {
+      errors.push({ field: 'items', message: 'Items must be an array' });
+    } else if (items.length === 0) {
+      errors.push({ field: 'items', message: 'At least one item is required' });
+    }
+
+    if (errors.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors 
+      });
+    }
+
+    // Validate items and calculate total amount
+    let totalAmount = 0;
+    const itemErrors = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      console.log(`Validating item ${i}:`, JSON.stringify(item, null, 2));
+      
+      // Validate required fields
+      if (!item.productId) {
+        itemErrors.push({ field: `items[${i}].productId`, message: 'Product ID is required' });
+      }
+      if (!item.quantity) {
+        itemErrors.push({ field: `items[${i}].quantity`, message: 'Quantity is required' });
+      }
+      if (!item.unitPrice) {
+        itemErrors.push({ field: `items[${i}].unitPrice`, message: 'Unit price is required' });
+      }
+
+      if (item.productId && item.quantity && item.unitPrice) {
+        totalAmount += parseFloat(item.quantity) * parseFloat(item.unitPrice);
+      }
+    }
+
+    if (itemErrors.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: itemErrors
+      });
+    }    if (itemErrors.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: 'Item validation failed',
+        errors: itemErrors
+      });
+    }
+
+    // Create sale
+    const sale = await Sale.create({
+      customerName,
+      customerPhone,
+      totalAmount,
+      locationId,
+      userId,
+      paymentMethod: req.body.paymentMethod || 'cash'
+    }, { transaction });
+
+    // Create sale items and update inventory
+    const saleItems = [];
+    for (const item of items) {
+      console.log('Processing item:', item);
+      
+      // Get product and its type to verify the unit
+      const product = await Product.findByPk(item.productId, {
+        include: [{ model: ProductType, as: 'productType' }],
+        transaction
+      });
+      
+      console.log('Found product:', product?.toJSON());
+      console.log('Product type:', product?.productType?.toJSON());
+
+      if (!product) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: [{ field: 'productId', message: `Product with ID ${item.productId} not found` }]
+        });
+      }
+
+      const lineTotal = parseFloat(item.quantity) * parseFloat(item.unitPrice);
+      
+      // Check inventory first
+      const inventory = await Inventory.findOne({
+        where: { productId: item.productId, locationId },
+        transaction
+      });
+
+      const requestedQuantity = parseFloat(item.quantity);
+      const availableQuantity = inventory ? inventory.quantitySqm : 0;
+
+      if (!inventory) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: [{ 
+            field: `items[${i}].productId`, 
+            message: `No inventory found for product ${product.name} at selected location`
+          }]
+        });
+      }
+
+      // Convert quantities to numbers for accurate comparison
+      const requestedQty = parseFloat(item.quantity);
+      const availableQty = parseFloat(inventory.quantitySqm);
+
+      if (availableQty < requestedQty) {
+        await transaction.rollback();
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: [{ 
+            field: `items[${i}].quantity`, 
+            message: `Insufficient inventory for product ${product.name}. Available: ${availableQty}, Requested: ${requestedQty}`
+          }]
+        });
+      }
+
+      try {
+        // Calculate line total
+        const unitPrice = parseFloat(item.unitPrice);
+        const lineTotal = requestedQty * unitPrice;
+
+        // Create sale item
+        const saleItem = await SaleItem.create({
+          saleId: sale.id,
+          productId: item.productId,
+          quantity: requestedQty,
+          unit: product.productType.unitOfMeasure,
+          unitPrice: unitPrice,
+          lineTotal
+        }, { transaction });
+
+        console.log('Created sale item:', JSON.stringify(saleItem.toJSON(), null, 2));
+        saleItems.push(saleItem);
+
+        // Update inventory
+        const previousQuantity = parseFloat(inventory.quantitySqm);
+        const newQuantity = previousQuantity - requestedQty;
+        
+        console.log('Updating inventory:', {
+          productId: item.productId,
+          previousQuantity,
+          requestedQty,
+          newQuantity
+        });
+        
+        await inventory.update({ quantitySqm: newQuantity }, { transaction });
+
+        // Log inventory change
+        await InventoryLog.create({
+          productId: item.productId,
+          locationId,
+          changeType: 'sale',
+          changeAmount: -requestedQty,
+          previousQuantity,
+          newQuantity,
+          notes: `Sale to ${customerName}`,
+          userId
+        }, { transaction });
+        
+        console.log('Created inventory log for product:', item.productId);
+
+      } catch (error) {
+        console.error('Sale item creation error:', error);
+        await transaction.rollback();
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: error.errors?.map(err => ({
+            field: err.path,
+            message: err.message
+          })) || [{ message: error.message }]
+        });
+      }
+    }
+
+    await transaction.commit();
+
+    // Return sale with items
+    const completeSale = await Sale.findByPk(sale.id, {
+      include: [
+        { model: Location, as: 'location' },
+        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
+        { 
+          model: SaleItem, 
+          as: 'items',
+          include: [{ model: Product, as: 'product' }]
+        }
+      ]
+    });
+
+    res.status(201).json({
+      message: 'Sale created successfully',
+      sale: completeSale
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Create sale error:', error);
+    
+    // Send more detailed error messages for validation errors
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }))
+      });
+    }
+    
+    res.status(500).json({ 
+      message: error.message || 'Internal server error',
+      error: process.env.NODE_ENV !== 'production' ? error : undefined
+    });
+  }
+});
+
+module.exports = router;
