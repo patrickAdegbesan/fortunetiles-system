@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
-const { auth, requireRole } = require('../middleware/auth');
+const { authenticateToken: auth, requireRole } = require('../middleware/auth');
 const { 
   User, 
   Location, 
