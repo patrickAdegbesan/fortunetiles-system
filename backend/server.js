@@ -64,8 +64,9 @@ const initializeDatabase = async () => {
     // Test database connection
     await testConnection();
     
-    // Sync database in development only; in production rely on migrations
-    if (process.env.NODE_ENV !== 'production') {
+    // Sync database in development, or if explicitly requested in production via INIT_DB=true
+    const shouldSync = process.env.NODE_ENV !== 'production' || process.env.INIT_DB === 'true';
+    if (shouldSync) {
       await sequelize.sync({ alter: true });
       console.log('✅ Database synchronized successfully with schema updates.');
     } else {
