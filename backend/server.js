@@ -64,9 +64,13 @@ const initializeDatabase = async () => {
     // Test database connection
     await testConnection();
     
-    // Sync database (create tables with schema updates)
-    await sequelize.sync({ alter: true });
-    console.log('✅ Database synchronized successfully with schema updates.');
+    // Sync database in development only; in production rely on migrations
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Database synchronized successfully with schema updates.');
+    } else {
+      console.log('ℹ️ Skipping sequelize.sync in production; relying on migrations.');
+    }
     
     // Create default location if none exists
     const locationCount = await Location.count();
@@ -78,27 +82,18 @@ const initializeDatabase = async () => {
       console.log('✅ Default location created.');
     }
     
-    // Sync database and create default admin user
-    sequelize.sync({ alter: true })
-    .then(async () => {
-      console.log('Database synced successfully with schema updates');
-      
-      // Create default admin user if it doesn't exist
-      const adminExists = await User.findOne({ where: { email: 'admin@fortunetiles.com' } });
-      if (!adminExists) {
-        await User.create({
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'admin@fortunetiles.com',
-          password: 'admin123',
-          role: 'owner'
-        });
-        console.log('Default admin user created');
-      }
-    })
-    .catch(err => {
-      console.error('Unable to sync database:', err);
-    });
+    // Create default admin user if it doesn't exist
+    const adminExists = await User.findOne({ where: { email: 'admin@fortunetiles.com' } });
+    if (!adminExists) {
+      await User.create({
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@fortunetiles.com',
+        password: 'admin123',
+        role: 'owner'
+      });
+      console.log('✅ Default admin user created.');
+    }
     
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
