@@ -1,0 +1,15 @@
+{
+  "name": "fortunetiles-system",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fortune Tiles monorepo (backend + frontend)",
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
+  "scripts": {
+    "heroku-prebuild": "npm --prefix backend ci",
+    "heroku-postbuild": "npm --prefix frontend ci && npm --prefix frontend run build && rm -rf backend/public && mkdir -p backend/public && cp -a frontend/build/. backend/public/",
+    "start": "npm --prefix backend start"
+  }
+}
