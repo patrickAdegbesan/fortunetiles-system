@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  // Use relative path in production (served by the same domain)
+  // and allow override via REACT_APP_API_BASE_URL for flexibility
+  baseURL: process.env.REACT_APP_API_BASE_URL || '/api',
 });
 
 // Add request interceptor to include token in headers
