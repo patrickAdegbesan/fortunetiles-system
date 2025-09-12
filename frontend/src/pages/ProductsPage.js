@@ -521,7 +521,6 @@ const ProductsPage = () => {
         {showEditor && (
           <ProductEditor
             product={editingProduct}
-            categories={categories}
             onSave={handleSaveProduct}
             onCancel={() => {
               setShowEditor(false);

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchProductTypes, fetchLocations } from '../services/api';
+import { fetchProductTypes, fetchLocations, fetchCategories } from '../services/api';
 import '../styles/ProductEditor.css';
 
-const ProductEditor = ({ product, categories, onSave, onCancel }) => {
+const ProductEditor = ({ product, onSave, onCancel }) => {
   const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -19,22 +19,45 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
     initialQuantity: ''
   });
   const [productTypes, setProductTypes] = useState([]);
+  const [categories, setCategories] = useState(['General']);
   const [selectedType, setSelectedType] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Ensure attributes is a parsed object
+  const normalizeType = (type) => {
+    if (!type) return null;
+    const normalized = { ...type };
+    if (typeof normalized.attributes === 'string') {
+      try {
+        normalized.attributes = JSON.parse(normalized.attributes);
+      } catch (_) {
+        // Fallback to empty structure if parse fails
+        normalized.attributes = { requiredFields: [], optionalFields: [] };
+      }
+    }
+    // Ensure shape
+    normalized.attributes = normalized.attributes || {};
+    normalized.attributes.requiredFields = normalized.attributes.requiredFields || [];
+    normalized.attributes.optionalFields = normalized.attributes.optionalFields || [];
+    return normalized;
+  };
+
   useEffect(() => {
-    // Fetch product types and locations
+    // Fetch product types, locations, and categories
     const loadData = async () => {
       try {
-        const [typesData, locationsData] = await Promise.all([
+        const [typesData, locationsData, categoriesData] = await Promise.all([
           fetchProductTypes(),
-          fetchLocations()
+          fetchLocations(),
+          fetchCategories()
         ]);
         
-        setProductTypes(typesData.types || []);
+        const types = (typesData.types || []).map(normalizeType);
+        setProductTypes(types);
         setLocations(locationsData.locations || []);
+        setCategories(['General', ...(categoriesData.categories || []).map(cat => cat.name)]);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load required data');
@@ -43,6 +66,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
     
     loadData();
   }, []);
+
 
   useEffect(() => {
     if (product) {
@@ -76,7 +100,8 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
         }
       }));
     } else if (name === 'productTypeId') {
-      const type = productTypes.find(t => t.id === parseInt(value));
+      const found = productTypes.find(t => t.id === parseInt(value));
+      const type = normalizeType(found);
       setSelectedType(type || null);
       setFormData(prev => ({
         ...prev,
@@ -328,13 +353,15 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (videoRef.current?.srcObject) {
-        const tracks = videoRef.current.srcObject.getTracks();
+      const vid = videoRef.current;
+      if (vid?.srcObject) {
+        try { vid.pause(); } catch (_) {}
+        const tracks = vid.srcObject.getTracks();
         tracks.forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-        setIsCapturing(false);
-        setCameraStatus('');
+        vid.srcObject = null;
       }
+      setIsCapturing(false);
+      setCameraStatus('');
     };
   }, []);
 
@@ -379,7 +406,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
           {error && <div className="form-error-message">{error}</div>}
           <div className="form-grid">
             {/* Basic Information */}
-            <div className="form-section">
+            <div className="form-section basic-info">
               <h3>Basic Information</h3>
               
               <div className="form-group">
@@ -390,7 +417,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                   value={formData.name}
                   onChange={handleInputChange}
                   className={errors.name ? 'error' : ''}
-                  placeholder="e.g., Marble White Classic"
+                  placeholder="Enter a descriptive product name (e.g., Premium White Marble Tiles)"
                 />
                 {errors.name && <span className="error-text">{errors.name}</span>}
               </div>
@@ -419,18 +446,23 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                     value={formData.category}
                     onChange={handleInputChange}
                   >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
+                    {categories.map((category, index) => (
+                      <option key={`${category}-${index}`} value={category}>{category}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {selectedType && selectedType.attributes && selectedType.attributes.requiredFields && (
-                <div className="form-section product-attributes">
-                  <h4>{selectedType.name} Attributes</h4>
-                  {selectedType.attributes.requiredFields.map(field => (
-                    <div className="form-group" key={field}>
+            </div>
+
+            {/* Product Type Attributes - Separate Card */}
+            {selectedType && selectedType.attributes && 
+             (selectedType.attributes.requiredFields?.length || selectedType.attributes.optionalFields?.length) ? (
+              <div className="form-section full-width product-attributes-card">
+                <h3>{selectedType.name} Attributes</h3>
+                <div className="product-attributes-grid">
+                  {selectedType.attributes.requiredFields?.map(field => (
+                    <div className="form-group" key={`req_${field}`}>
                       <label>{field} *</label>
                       <input
                         type="text"
@@ -445,9 +477,8 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                       )}
                     </div>
                   ))}
-                  
-                  {selectedType.attributes.optionalFields && selectedType.attributes.optionalFields.map(field => (
-                    <div className="form-group" key={field}>
+                  {selectedType.attributes.optionalFields?.map(field => (
+                    <div className="form-group" key={`opt_${field}`}>
                       <label>{field}</label>
                       <input
                         type="text"
@@ -459,8 +490,8 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : null}
 
             {/* Pricing & Supplier */}
             <div className="form-section">
@@ -474,7 +505,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                   value={formData.price}
                   onChange={handleInputChange}
                   className={errors.price ? 'error' : ''}
-                  placeholder={`e.g., 2500 per ${selectedType ? selectedType.unitOfMeasure : 'unit'}`}
+                  placeholder={`Enter price in Naira (e.g., 2500 per ${selectedType ? selectedType.unitOfMeasure : 'unit'})`}
                   min="0"
                   step="0.01"
                 />
@@ -488,7 +519,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                   name="supplierCode"
                   value={formData.supplierCode}
                   onChange={handleInputChange}
-                  placeholder="e.g., MWC-001"
+                  placeholder="Enter supplier product code (e.g., MWC-001, SUP-2024-001)"
                 />
               </div>
 
@@ -521,7 +552,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                       value={formData.initialQuantity}
                       onChange={handleInputChange}
                       className={errors.initialQuantity ? 'error' : ''}
-                      placeholder={`e.g., 100 ${selectedType ? selectedType.unitOfMeasure : 'sqm'}`}
+                      placeholder={`Enter initial stock quantity (e.g., 100 ${selectedType ? selectedType.unitOfMeasure : 'units'})`}
                       min="0"
                       step="0.01"
                     />
@@ -531,10 +562,11 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
               )}
             </div>
 
+
             {/* Image & Description */}
             <div className="form-section full-width">
               <h3>Image & Description</h3>
-              
+
               <div className="form-group">
                 <label>Product Image</label>
                 <div className="image-upload-area">
@@ -605,7 +637,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                   value={formData.imageUrl}
                   onChange={handleInputChange}
                   className={errors.imageUrl ? 'error' : ''}
-                  placeholder="https://example.com/image.jpg"
+                  placeholder="Paste image URL here (e.g., https://example.com/product-image.jpg)"
                 />
                 {errors.imageUrl && <span className="error-text">{errors.imageUrl}</span>}
                 
@@ -622,8 +654,8 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Product description, features, or notes..."
-                  rows="3"
+                  placeholder="Describe the product features, specifications, installation notes, or any additional details that would help customers..."
+                  rows="4"
                 />
               </div>
 

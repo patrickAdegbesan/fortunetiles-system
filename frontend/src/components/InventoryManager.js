@@ -36,7 +36,7 @@ const InventoryManager = () => {
         fetchLocations()
       ]);
       
-      setProducts(productsData.products || []);
+      setProducts((productsData.products || []).filter(p => p != null));
       setLocations(locationsData.locations || []);
       
       // Set default location if available
@@ -108,12 +108,14 @@ const InventoryManager = () => {
     }
   };
 
-  const filteredProducts = products.filter(product =>
-    product && product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    Object.values(product.customAttributes || {}).some(value => 
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    const nameMatch = (product.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const attrMatch = Object.values(product.customAttributes || {}).some(value =>
+      (value ?? '').toString().toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return nameMatch || attrMatch;
+  });
 
   const getProductCurrentStock = (productId) => {
     const inventoryItem = inventory.find(item => item.productId === parseInt(productId));

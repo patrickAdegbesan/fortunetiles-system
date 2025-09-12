@@ -340,13 +340,16 @@ export const createSale = async (saleData) => {
     });
     
     if (error.response?.data) {
-      throw error.response.data;
+      const serverMsg = typeof error.response.data === 'string'
+        ? error.response.data
+        : (error.response.data.message || 'Failed to create sale');
+      throw new Error(serverMsg);
     }
     // If it's a network error, it won't have response data
     if (error.message === 'Network Error') {
-      throw { message: 'Cannot connect to server. Please check your internet connection.' };
+      throw new Error('Cannot connect to server. Please check your internet connection.');
     }
-    throw { message: error.message || 'Failed to create sale' };
+    throw new Error(error.message || 'Failed to create sale');
   }
 };
 
@@ -369,6 +372,43 @@ export const fetchSaleById = async (saleId) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch sale details' };
+  }
+};
+
+// Categories API
+export const fetchCategories = async () => {
+  try {
+    const response = await API.get('/categories');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch categories' };
+  }
+};
+
+export const createCategory = async (categoryData) => {
+  try {
+    const response = await API.post('/categories', categoryData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create category' };
+  }
+};
+
+export const updateCategory = async (id, categoryData) => {
+  try {
+    const response = await API.put(`/categories/${id}`, categoryData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update category' };
+  }
+};
+
+export const deleteCategory = async (id) => {
+  try {
+    const response = await API.delete(`/categories/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete category' };
   }
 };
 
