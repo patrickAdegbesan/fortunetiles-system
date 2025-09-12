@@ -1,7 +1,7 @@
 const express = require('express');
-const { Product } = require('../models');
+const { Product, sequelize } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
-const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
       attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'name']],
       where: {
         category: {
-          [sequelize.Op.ne]: null
+          [Op.ne]: null
         }
       },
       order: [[sequelize.col('category'), 'ASC']],
