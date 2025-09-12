@@ -426,7 +426,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                 </div>
               </div>
 
-              {selectedType && (
+              {selectedType && selectedType.attributes && selectedType.attributes.requiredFields && (
                 <div className="form-section product-attributes">
                   <h4>{selectedType.name} Attributes</h4>
                   {selectedType.attributes.requiredFields.map(field => (
@@ -446,7 +446,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                     </div>
                   ))}
                   
-                  {selectedType.attributes.optionalFields.map(field => (
+                  {selectedType.attributes.optionalFields && selectedType.attributes.optionalFields.map(field => (
                     <div className="form-group" key={field}>
                       <label>{field}</label>
                       <input
