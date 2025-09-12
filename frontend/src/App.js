@@ -9,6 +9,7 @@ import ProductsPage from './pages/ProductsPage';
 import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
 import LocationsPage from './pages/LocationsPage';
+import AdminSettings from './pages/AdminSettings';
 import './App.css';
 
 function App() {
@@ -63,6 +64,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <LocationsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminSettings />
                 </ProtectedRoute>
               } 
             />

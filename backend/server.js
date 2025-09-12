@@ -9,6 +9,8 @@ const { User, Location } = require('./models');
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
+const productTypesRoutes = require('./routes/productTypes');
+const categoriesRoutes = require('./routes/categories');
 const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const dashboardRoutes = require('./routes/dashboard');
@@ -44,6 +46,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/product-types', productTypesRoutes);
+app.use('/api/categories', categoriesRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/dashboard', dashboardRoutes);

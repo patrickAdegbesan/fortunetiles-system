@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaSignOutAlt } from 'react-icons/fa';
+import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import '../styles/SidebarNav.css';
 
 const SidebarNav = () => {
@@ -32,7 +32,8 @@ const SidebarNav = () => {
     { path: '/products', icon: FaBox, label: 'Products', roles: ['owner', 'manager', 'staff'] },
     { path: '/users', icon: FaUsers, label: 'Users', roles: ['owner'] },
     { path: '/reports', icon: FaChartLine, label: 'Reports', roles: ['owner', 'manager'] },
-    { path: '/locations', icon: FaMapMarkerAlt, label: 'Locations', roles: ['owner', 'manager'] }
+    { path: '/locations', icon: FaMapMarkerAlt, label: 'Locations', roles: ['owner', 'manager'] },
+    { path: '/admin', icon: FaCog, label: 'Admin Settings', roles: ['owner', 'admin'] }
   ];
 
   const filteredNavItems = navigationItems.filter(item => 
