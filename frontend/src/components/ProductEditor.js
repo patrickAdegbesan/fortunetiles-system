@@ -7,14 +7,14 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     productTypeId: '',
-    customAttributes: {},
-    category: 'General',
     price: '',
+    customAttributes: {},
     supplierCode: '',
-    description: '',
+    category: 'General',
     imageUrl: '',
+    description: '',
     isActive: true,
-    // Initial inventory data
+    // Initial inventory fields
     initialLocation: '',
     initialQuantity: ''
   });
@@ -95,10 +95,11 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
     
     if (name.startsWith('attribute_')) {
       const attributeName = name.replace('attribute_', '');
+      console.log('Attribute change:', attributeName, value); // Debug log
       setFormData(prev => ({
         ...prev,
         customAttributes: {
-          ...prev.customAttributes,
+          ...(prev.customAttributes || {}),
           [attributeName]: value
         }
       }));
@@ -470,10 +471,10 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                       <input
                         type="text"
                         name={`attribute_${field}`}
-                        value={formData.customAttributes[field] || ''}
+                        value={formData.customAttributes?.[field] || ''}
                         onChange={handleInputChange}
                         className={errors[`attribute_${field}`] ? 'error' : ''}
-                        placeholder={`Enter ${field}`}
+                        placeholder={`Enter ${field.replace(/_/g, ' ')}`}
                       />
                       {errors[`attribute_${field}`] && (
                         <span className="error-text">{errors[`attribute_${field}`]}</span>
@@ -486,9 +487,9 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                       <input
                         type="text"
                         name={`attribute_${field}`}
-                        value={formData.customAttributes[field] || ''}
+                        value={formData.customAttributes?.[field] || ''}
                         onChange={handleInputChange}
-                        placeholder={`Enter ${field} (optional)`}
+                        placeholder={`Enter ${field.replace(/_/g, ' ')} (optional)`}
                       />
                     </div>
                   ))}
