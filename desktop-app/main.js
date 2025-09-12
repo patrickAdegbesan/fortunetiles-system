@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,7 +23,7 @@ function createWindow() {
   });
 
   // Load the app - change this URL to your deployed Heroku app
-  const appUrl = process.env.FORTUNE_TILES_URL || 'https://your-app-name.herokuapp.com';
+  const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
   mainWindow.loadURL(appUrl);
 
   // Show window when ready to prevent visual flash
@@ -128,9 +129,18 @@ function createMenu() {
           }
         },
         {
+          label: 'Check for Updates',
+          click: () => {
+            autoUpdater.checkForUpdatesAndNotify();
+          }
+        },
+        {
+          type: 'separator'
+        },
+        {
           label: 'Open Web Version',
           click: () => {
-            const appUrl = process.env.FORTUNE_TILES_URL || 'https://your-app-name.herokuapp.com';
+            const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
             shell.openExternal(appUrl);
           }
         }
@@ -201,8 +211,62 @@ async function downloadBackup() {
   }
 }
 
+// Configure auto-updater
+autoUpdater.checkForUpdatesAndNotify();
+
+// Auto-updater events
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available.');
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Available',
+    message: 'A new version is available. It will be downloaded in the background.',
+    detail: `Version ${info.version} is now available. The update will be installed when you restart the application.`
+  });
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('Update not available.');
+});
+
+autoUpdater.on('error', (err) => {
+  console.log('Error in auto-updater. ' + err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  console.log(log_message);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded');
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Ready',
+    message: 'Update downloaded. The application will restart to apply the update.',
+    buttons: ['Restart Now', 'Later']
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
+
 // App event handlers
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  
+  // Check for updates after app is ready
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 3000);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
