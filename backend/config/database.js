@@ -1,5 +1,10 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Load env from backend/.env explicitly first, then fallback to project root .env
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config();
 
 let sequelize;
 

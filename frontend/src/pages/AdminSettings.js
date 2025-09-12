@@ -12,13 +12,23 @@ const AdminSettings = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Product Type form state
+  // Product Type form state (Create)
   const [newProductType, setNewProductType] = useState({
     name: '',
-    unitOfMeasure: '',
-    attributes: '{"requiredFields":[],"optionalFields":[]}'
+    unitOfMeasure: ''
   });
+  const [newAttr, setNewAttr] = useState({ required: [], optional: [], reqInput: '', optInput: '' });
   const [editingProductType, setEditingProductType] = useState(null);
+  // Lightweight input drafts for adding new attribute chips per product type
+  const [attrInputs, setAttrInputs] = useState({}); // { [id]: { req: '', opt: '' } }
+
+  const ensureAttributes = (attributes) => {
+    const attrs = attributes || {};
+    return {
+      requiredFields: Array.isArray(attrs.requiredFields) ? attrs.requiredFields : [],
+      optionalFields: Array.isArray(attrs.optionalFields) ? attrs.optionalFields : []
+    };
+  };
 
   // Category form state
   const [newCategory, setNewCategory] = useState('');
@@ -94,15 +104,10 @@ const AdminSettings = () => {
 
     try {
       const token = localStorage.getItem('token');
-      
-      // Parse attributes JSON
-      let attributes = {};
-      try {
-        attributes = JSON.parse(newProductType.attributes);
-      } catch (error) {
-        alert('Invalid JSON format in attributes field');
-        return;
-      }
+      const attributes = {
+        requiredFields: newAttr.required,
+        optionalFields: newAttr.optional
+      };
       
       const response = await fetch('/api/product-types', {
         method: 'POST',
@@ -119,7 +124,8 @@ const AdminSettings = () => {
       if (response.ok) {
         const data = await response.json();
         setProductTypes([...productTypes, data.productType]);
-        setNewProductType({ name: '', unitOfMeasure: '', attributes: '{"requiredFields":[],"optionalFields":[]}' });
+        setNewProductType({ name: '', unitOfMeasure: '' });
+        setNewAttr({ required: [], optional: [], reqInput: '', optInput: '' });
         setSuccess('Product type created successfully');
         setTimeout(() => setSuccess(''), 3000);
       } else {
@@ -405,21 +411,85 @@ const AdminSettings = () => {
                             <option value="kg">Kilograms (kg)</option>
                             <option value="l">Liters (l)</option>
                           </select>
-                          <textarea
-                            defaultValue={JSON.stringify(productType.attributes || {requiredFields:[], optionalFields:[]}, null, 2)}
-                            onBlur={(e) => {
-                              try {
-                                const attributes = JSON.parse(e.target.value);
-                                handleUpdateProductType(productType.id, { attributes });
-                              } catch (error) {
-                                alert('Invalid JSON format');
-                                e.target.focus();
+
+                          {/* Friendly Attributes Editor */}
+                          {(() => {
+                            const attrs = ensureAttributes(productType.attributes);
+                            const inputs = attrInputs[productType.id] || { req: '', opt: '' };
+
+                            const removeField = (kind, field) => {
+                              const next = {
+                                requiredFields: attrs.requiredFields.filter(f => f !== field),
+                                optionalFields: attrs.optionalFields.filter(f => f !== field)
+                              };
+                              handleUpdateProductType(productType.id, { attributes: next });
+                            };
+
+                            const addField = (kind) => {
+                              const value = (kind === 'req' ? inputs.req : inputs.opt).trim();
+                              if (!value) return;
+                              if (kind === 'req') {
+                                if (attrs.requiredFields.includes(value)) return;
+                              } else {
+                                if (attrs.optionalFields.includes(value)) return;
                               }
-                            }}
-                            placeholder='{"requiredFields":["field1"],"optionalFields":["field2"]}'
-                            rows="4"
-                            style={{width: '100%', marginTop: '10px'}}
-                          />
+                              const next = {
+                                requiredFields: kind === 'req' ? [...attrs.requiredFields, value] : attrs.requiredFields,
+                                optionalFields: kind === 'opt' ? [...attrs.optionalFields, value] : attrs.optionalFields,
+                              };
+                              handleUpdateProductType(productType.id, { attributes: next });
+                              setAttrInputs(prev => ({
+                                ...prev,
+                                [productType.id]: { ...inputs, [kind]: '' }
+                              }));
+                            };
+
+                            return (
+                              <div style={{ width: '100%', marginTop: 10 }}>
+                                <div style={{ marginBottom: 6, fontWeight: 600 }}>Required fields</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                                  {attrs.requiredFields.map(field => (
+                                    <span key={`req-${field}`} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 16, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                      {field}
+                                      <button type="button" onClick={() => removeField('req', field)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#4f46e5' }}>×</button>
+                                    </span>
+                                  ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Add required field"
+                                    value={inputs.req}
+                                    onChange={(e) => setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(prev[productType.id] || { req: '', opt: '' }), req: e.target.value } }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addField('req'); } }}
+                                    style={{ flex: 1 }}
+                                  />
+                                  <button type="button" className="btn-secondary" onClick={() => addField('req')}>Add</button>
+                                </div>
+
+                                <div style={{ marginBottom: 6, fontWeight: 600 }}>Optional fields</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                                  {attrs.optionalFields.map(field => (
+                                    <span key={`opt-${field}`} style={{ background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 16, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                      {field}
+                                      <button type="button" onClick={() => removeField('opt', field)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#0891b2' }}>×</button>
+                                    </span>
+                                  ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Add optional field"
+                                    value={inputs.opt}
+                                    onChange={(e) => setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(prev[productType.id] || { req: '', opt: '' }), opt: e.target.value } }))}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addField('opt'); } }}
+                                    style={{ flex: 1 }}
+                                  />
+                                  <button type="button" className="btn-secondary" onClick={() => addField('opt')}>Add</button>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <div className="item-info">
