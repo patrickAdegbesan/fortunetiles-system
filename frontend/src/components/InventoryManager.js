@@ -26,7 +26,7 @@ const InventoryManager = () => {
     if (selectedLocation) {
       loadInventory();
     }
-  }, [selectedLocation]);
+  }, [selectedLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadInitialData = async () => {
     try {
@@ -233,12 +233,12 @@ const InventoryManager = () => {
           <h3>Current Inventory Levels</h3>
           {selectedLocation ? (
             <div className="inventory-list">
-              {inventory.map(item => (
+              {inventory.filter(item => item && item.product).map(item => (
                 <div key={item.id} className="inventory-item">
                   <div className="item-info">
-                    <h4>{item.product.name}</h4>
+                    <h4>{item.product?.name || '(Unknown Product)'}</h4>
                     <div className="attributes">
-                      {Object.entries(item.product.customAttributes || {}).map(([key, value]) => (
+                      {Object.entries((item.product && item.product.customAttributes) ? item.product.customAttributes : {}).map(([key, value]) => (
                         <span key={key} className="attribute">
                           {key}: {value}
                         </span>
@@ -247,7 +247,7 @@ const InventoryManager = () => {
                   </div>
                   <div className="item-quantity">
                     <span className="quantity">{item.quantitySqm}</span>
-                    <span className="unit">{item.product.unitOfMeasure || 'units'}</span>
+                    <span className="unit">{item.product?.unitOfMeasure || 'units'}</span>
                   </div>
                 </div>
               ))}

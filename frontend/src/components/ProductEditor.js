@@ -223,19 +223,53 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
 
       setCameraStatus('Requesting camera permission...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
       });
 
-      setCameraStatus('Camera connected, starting video...');
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-          setIsCapturing(true);
-          setCameraStatus('Camera is ready!');
-        };
+      setCameraStatus('Camera connected, preparing preview...');
+
+      // 1) Render the camera UI first so the <video> element exists
+      setIsCapturing(true);
+      // Wait one animation frame to ensure the video element mounts
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+      let videoEl = videoRef.current;
+      if (!videoEl) {
+        // In rare cases, allow an extra microtask
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        videoEl = videoRef.current;
       }
+
+      if (!videoEl) {
+        setCameraStatus('Could not prepare camera preview. Please try again.');
+        return;
+      }
+
+      // Ensure autoplay works across browsers
+      videoEl.muted = true;
+      try { videoEl.setAttribute('muted', ''); } catch (_) {}
+      videoEl.playsInline = true;
+      try { videoEl.setAttribute('playsinline', ''); } catch (_) {}
+
+      // Attach stream and start playback
+      videoEl.srcObject = stream;
+      
+      // Handle video events like the working test
+      videoEl.onloadedmetadata = () => {
+        const playPromise = videoEl.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise
+            .then(() => setCameraStatus('Camera is ready!'))
+            .catch(() => setCameraStatus('Camera ready (click video if paused)'));
+        } else {
+          setCameraStatus('Camera is ready!');
+        }
+      };
     } catch (err) {
       console.error('Camera error:', err);
       setCameraStatus(`Camera error: ${err.message}`);
@@ -245,6 +279,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
 
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
+      try { videoRef.current.pause(); } catch (_) {}
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
@@ -259,16 +294,22 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
       const canvas = canvasRef.current;
       
       try {
-        // Set canvas size to match video dimensions
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
+        // Scale image to a reasonable max dimension to keep payload small
+        const srcW = video.videoWidth || 1280;
+        const srcH = video.videoHeight || 720;
+        const MAX = 1024;
+        const scale = Math.min(MAX / srcW, MAX / srcH, 1);
+        canvas.width = Math.round(srcW * scale);
+        canvas.height = Math.round(srcH * scale);
 
-        // Draw video frame to canvas
+        // Draw video frame to canvas with smoothing
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Convert to base64
-        const imageUrl = canvas.toDataURL('image/jpeg', 0.8);
+        // Convert to base64 (slightly higher quality for clarity)
+        const imageUrl = canvas.toDataURL('image/jpeg', 0.85);
 
         setFormData(prev => ({
           ...prev,
@@ -299,15 +340,30 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+    try {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData(prev => ({
-          ...prev,
-          imageUrl: event.target.result
-        }));
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = canvasRef.current || document.createElement('canvas');
+          const MAX = 1024;
+          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
+        };
+        img.src = ev.target.result;
       };
       reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Image processing error:', err);
+      alert('Could not process image. Please try a smaller image.');
     }
   };
 
@@ -486,6 +542,7 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                     <input
                       type="file"
                       accept="image/*"
+                      capture="environment"
                       onChange={handleImageUpload}
                       className="file-input"
                       id="image-upload"
@@ -515,11 +572,15 @@ const ProductEditor = ({ product, categories, onSave, onCancel }) => {
                           autoPlay 
                           playsInline
                           muted
+                          onClick={() => {
+                            try { videoRef.current && videoRef.current.play(); } catch (_) {}
+                          }}
                           style={{
                             display: 'block',
                             width: '100%',
                             maxWidth: '640px',
-                            backgroundColor: '#000'
+                            backgroundColor: '#000',
+                            cursor: 'pointer'
                           }}
                         />
                       </div>

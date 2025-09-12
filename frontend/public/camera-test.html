@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.info { background: #e3f2fd; color: #1976d2; }
+        .status.success { background: #e8f5e8; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .start-btn { background: #4caf50; color: white; }
+        .capture-btn { background: #2196f3; color: white; }
+        .stop-btn { background: #f44336; color: white; }
+        button:hover { opacity: 0.8; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .video-container {
+            text-align: center;
+            margin: 20px 0;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            display: block;
+            cursor: pointer;
+        }
+        .preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview img {
+            max-width: 300px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+        }
+        .info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📷 Camera Test</h1>
+        
+        <div class="info">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Click "Start Camera" to request camera permission</li>
+                <li>Allow camera access when prompted</li>
+                <li>You should see a live video preview</li>
+                <li>If video is paused, click on it to start</li>
+                <li>Click "Capture Photo" to take a picture</li>
+            </ol>
+        </div>
+
+        <div id="status" class="status info">Ready to test camera</div>
+        
+        <div class="controls">
+            <button id="startBtn" class="start-btn">📷 Start Camera</button>
+            <button id="captureBtn" class="capture-btn" disabled>📸 Capture Photo</button>
+            <button id="stopBtn" class="stop-btn" disabled>❌ Stop Camera</button>
+        </div>
+        
+        <div class="video-container" id="videoContainer" style="display: none;">
+            <video id="video" autoplay playsinline muted></video>
+        </div>
+        
+        <div class="preview" id="preview" style="display: none;">
+            <h3>Captured Photo:</h3>
+            <img id="capturedImage" alt="Captured photo">
+        </div>
+        
+        <canvas id="canvas" style="display: none;"></canvas>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+        const videoContainer = document.getElementById('videoContainer');
+        const preview = document.getElementById('preview');
+        const capturedImage = document.getElementById('capturedImage');
+        
+        let stream = null;
+        
+        function updateStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            console.log(`[Camera Test] ${message}`);
+        }
+        
+        async function startCamera() {
+            try {
+                updateStatus('Checking camera support...', 'info');
+                
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    throw new Error('Camera not supported in this browser');
+                }
+                
+                updateStatus('Requesting camera permission...', 'info');
+                
+                // Try to get back camera on mobile, any camera on desktop
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                updateStatus('Camera connected, starting preview...', 'info');
+                
+                // Show video container
+                videoContainer.style.display = 'block';
+                
+                // Set up video element
+                video.muted = true;
+                video.playsInline = true;
+                video.srcObject = stream;
+                
+                // Handle video events
+                video.onloadedmetadata = () => {
+                    const playPromise = video.play();
+                    if (playPromise) {
+                        playPromise
+                            .then(() => updateStatus('Camera is ready! 🎉', 'success'))
+                            .catch(() => updateStatus('Camera ready (click video if paused)', 'success'));
+                    } else {
+                        updateStatus('Camera is ready! 🎉', 'success');
+                    }
+                };
+                
+                // Click to play fallback
+                video.onclick = () => {
+                    video.play().catch(console.error);
+                };
+                
+                // Update button states
+                startBtn.disabled = true;
+                captureBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                updateStatus(`Camera error: ${error.message}`, 'error');
+                stopCamera();
+            }
+        }
+        
+        function capturePhoto() {
+            if (!stream || !video.videoWidth) {
+                updateStatus('No video stream available', 'error');
+                return;
+            }
+            
+            try {
+                // Set canvas size with scaling to keep images reasonable
+                const srcW = video.videoWidth;
+                const srcH = video.videoHeight;
+                const MAX = 1024;
+                const scale = Math.min(MAX / srcW, MAX / srcH, 1);
+                
+                canvas.width = Math.round(srcW * scale);
+                canvas.height = Math.round(srcH * scale);
+                
+                // Draw video frame to canvas
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to base64
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                
+                // Show preview
+                capturedImage.src = dataUrl;
+                preview.style.display = 'block';
+                
+                updateStatus(`Photo captured! Size: ${canvas.width}x${canvas.height}`, 'success');
+                
+                // Log data URL size for debugging
+                const sizeKB = Math.round(dataUrl.length / 1024);
+                console.log(`Image data size: ${sizeKB}KB`);
+                
+            } catch (error) {
+                console.error('Capture error:', error);
+                updateStatus(`Capture error: ${error.message}`, 'error');
+            }
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            video.srcObject = null;
+            videoContainer.style.display = 'none';
+            preview.style.display = 'none';
+            
+            // Reset button states
+            startBtn.disabled = false;
+            captureBtn.disabled = true;
+            stopBtn.disabled = true;
+            
+            updateStatus('Camera stopped', 'info');
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startCamera);
+        captureBtn.addEventListener('click', capturePhoto);
+        stopBtn.addEventListener('click', stopCamera);
+        
+        // Log browser info
+        console.log('User Agent:', navigator.userAgent);
+        console.log('MediaDevices supported:', !!navigator.mediaDevices);
+        console.log('getUserMedia supported:', !!navigator.mediaDevices?.getUserMedia);
+    </script>
+</body>
+</html>

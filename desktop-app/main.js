@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -260,6 +260,21 @@ autoUpdater.on('update-downloaded', (info) => {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Allow camera/microphone permissions in the desktop app
+  try {
+    const ses = session?.defaultSession;
+    if (ses && ses.setPermissionRequestHandler) {
+      ses.setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'media') {
+          return callback(true);
+        }
+        return callback(false);
+      });
+    }
+  } catch (e) {
+    console.warn('Permission handler setup failed:', e?.message);
+  }
+
   createWindow();
   
   // Check for updates after app is ready

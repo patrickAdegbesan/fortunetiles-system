@@ -174,18 +174,18 @@ router.get('/low-stock', async (req, res) => {
 
     const formattedItems = lowStockItems.map(item => ({
       id: item.id,
-      productName: item.product.name,
-      customAttributes: item.product.customAttributes || {},
-      productTypeId: item.product.productTypeId,
+      productName: item.product?.name || '(unknown)',
+      customAttributes: (item.product && item.product.customAttributes) ? item.product.customAttributes : {},
+      productTypeId: item.product?.productTypeId || null,
       quantitySqm: item.quantitySqm,
-      location: item.location.name,
+      location: item.location?.name || '(unknown)',
       productId: item.productId,
       locationId: item.locationId,
-      Product: {
+      Product: item.product ? {
         name: item.product.name,
         customAttributes: item.product.customAttributes || {},
         productTypeId: item.product.productTypeId
-      }
+      } : undefined
     }));
 
     res.json({

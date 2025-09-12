@@ -18,15 +18,24 @@ const userRoutes = require('./routes/users');
 const app = express();
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Increase limits to accommodate base64 images from camera/file uploads
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(cors());
 
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Request body:', req.body);
+    try {
+      const bodyForLog = { ...req.body };
+      if (typeof bodyForLog.imageUrl === 'string' && bodyForLog.imageUrl.startsWith('data:image')) {
+        bodyForLog.imageUrl = '[base64 image omitted]';
+      }
+      console.log('Request body:', bodyForLog);
+    } catch (e) {
+      console.log('Request body present (omitted for size)');
+    }
   }
   next();
 });
