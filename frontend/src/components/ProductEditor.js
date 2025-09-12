@@ -55,6 +55,8 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
         ]);
         
         const types = (typesData.types || []).map(normalizeType);
+        console.log('Loaded product types:', types); // Debug log
+        console.log('First type attributes:', types[0]?.attributes); // Debug log
         setProductTypes(types);
         setLocations(locationsData.locations || []);
         // Build unique category list with 'General' ensured once
@@ -460,10 +462,14 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
             </div>
 
             {/* Product Type Attributes - Separate Card */}
-            {selectedType && selectedType.attributes && 
-             (selectedType.attributes.requiredFields?.length || selectedType.attributes.optionalFields?.length) ? (
+            {selectedType ? (
               <div className="form-section full-width product-attributes-card">
                 <h3>{selectedType.name} Attributes</h3>
+                <div style={{fontSize: '12px', color: '#666', marginBottom: '10px'}}>
+                  Debug: {JSON.stringify(selectedType.attributes)}
+                </div>
+                {selectedType.attributes && 
+                 (selectedType.attributes.requiredFields?.length || selectedType.attributes.optionalFields?.length) ? (
                 <div className="product-attributes-grid">
                   {selectedType.attributes.requiredFields?.map(field => (
                     <div className="form-group" key={`req_${field}`}>
@@ -494,6 +500,11 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                     </div>
                   ))}
                 </div>
+                ) : (
+                  <p style={{color: '#666', fontStyle: 'italic'}}>
+                    No attributes defined for this product type.
+                  </p>
+                )}
               </div>
             ) : null}
 
