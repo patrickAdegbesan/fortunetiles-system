@@ -109,7 +109,7 @@ const InventoryManager = () => {
   };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product && product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     Object.values(product.customAttributes || {}).some(value => 
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
