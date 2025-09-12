@@ -499,20 +499,75 @@
 }
 
 @media (max-width: 768px) {
+  .sale-page {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  .sale-container {
+    padding: 10px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
   .sale-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    padding: 10px;
+  }
+  
+  .sale-header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .header-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  
+  .search-bar {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .search-bar input {
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .location-selector {
     justify-content: center;
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .location-selector select {
+    width: 100%;
+    min-width: auto;
+    box-sizing: border-box;
+  }
+  
+  .product-section,
+  .cart-section {
+    padding: 15px;
+    margin: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .products-grid {
+    max-height: 400px;
+    padding-right: 0;
   }
   
   .cart-item {
     grid-template-columns: 1fr;
     gap: 10px;
     text-align: center;
+    padding: 10px;
   }
   
   .quantity-controls {
@@ -520,20 +575,45 @@
   }
 
   .product-card {
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
     padding: 8px;
-    gap: 4px;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .product-image {
-    width: 100%;
-    height: 120px;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
   }
 
   .product-content {
-    width: 100%;
-    align-items: center;
-    text-align: center;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .product-info h4 {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .product-attributes {
+    font-size: 0.7rem;
+  }
+  
+  .add-to-cart-btn {
+    font-size: 0.7rem;
+    padding: 4px;
+  }
+  
+  .cart-items {
+    max-height: 250px;
+  }
+  
+  .form-group input {
+    box-sizing: border-box;
   }
 }
