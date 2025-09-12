@@ -57,7 +57,10 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
         const types = (typesData.types || []).map(normalizeType);
         setProductTypes(types);
         setLocations(locationsData.locations || []);
-        setCategories(['General', ...(categoriesData.categories || []).map(cat => cat.name)]);
+        // Build unique category list with 'General' ensured once
+        const rawCategories = (categoriesData.categories || []).map(cat => (typeof cat === 'string' ? cat : cat?.name)).filter(Boolean);
+        const uniqueCategories = Array.from(new Set(['General', ...rawCategories]));
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('Failed to load required data');
