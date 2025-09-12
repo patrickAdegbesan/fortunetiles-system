@@ -94,13 +94,26 @@ const AdminSettings = () => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Parse attributes JSON
+      let attributes = {};
+      try {
+        attributes = JSON.parse(newProductType.attributes);
+      } catch (error) {
+        alert('Invalid JSON format in attributes field');
+        return;
+      }
+      
       const response = await fetch('/api/product-types', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newProductType)
+        body: JSON.stringify({
+          ...newProductType,
+          attributes
+        })
       });
 
       if (response.ok) {
