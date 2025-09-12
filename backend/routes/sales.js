@@ -1,6 +1,7 @@
 const express = require('express');
 const { Sale, SaleItem, Product, ProductType, Location, User, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/sales - Create new sale with items
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   const transaction = await sequelize.transaction();
   
   try {
@@ -79,7 +80,13 @@ router.post('/', async (req, res) => {
     console.log('Raw body:', req.body);
     console.log('Received sale request:', JSON.stringify(req.body, null, 2));
     
-    const { customerName, customerPhone, locationId, userId, items } = req.body;
+    const { customerName, customerPhone } = req.body;
+    // Accept string or number for locationId, coerce to number if possible
+    const locationIdRaw = req.body.locationId;
+    const locationId = Number.isFinite(locationIdRaw) ? locationIdRaw : parseInt(locationIdRaw, 10);
+    // Prefer authenticated user, fallback to body for backward compatibility
+    const userId = req.user?.id || req.body.userId;
+    const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
     
     // Log parsed values
     console.log('Parsed values:', {
@@ -87,7 +94,7 @@ router.post('/', async (req, res) => {
       customerPhone,
       locationId,
       userId,
-      items
+      items: itemsInput
     });
 
     // Validate required fields
@@ -95,9 +102,9 @@ router.post('/', async (req, res) => {
     if (!customerName) errors.push({ field: 'customerName', message: 'Customer name is required' });
     if (!locationId) errors.push({ field: 'locationId', message: 'Location ID is required' });
     if (!userId) errors.push({ field: 'userId', message: 'User ID is required' });
-    if (!items || !Array.isArray(items)) {
+    if (!itemsInput || !Array.isArray(itemsInput)) {
       errors.push({ field: 'items', message: 'Items must be an array' });
-    } else if (items.length === 0) {
+    } else if (itemsInput.length === 0) {
       errors.push({ field: 'items', message: 'At least one item is required' });
     }
 
@@ -113,8 +120,14 @@ router.post('/', async (req, res) => {
     let totalAmount = 0;
     const itemErrors = [];
     
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+    // Normalize items to ensure unitPrice is present (fallback to price)
+    const normalizedItems = itemsInput.map(it => ({
+      ...it,
+      unitPrice: it.unitPrice !== undefined && it.unitPrice !== null ? it.unitPrice : it.price
+    }));
+
+    for (let i = 0; i < normalizedItems.length; i++) {
+      const item = normalizedItems[i];
       console.log(`Validating item ${i}:`, JSON.stringify(item, null, 2));
       
       // Validate required fields
@@ -159,7 +172,7 @@ router.post('/', async (req, res) => {
 
     // Create sale items and update inventory
     const saleItems = [];
-    for (const item of items) {
+    for (const item of normalizedItems) {
       console.log('Processing item:', item);
       
       // Get product and its type to verify the unit

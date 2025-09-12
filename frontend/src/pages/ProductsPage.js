@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchProductCategories } from '../services/api';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchProductCategories, fetchInventory, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import TopHeader from '../components/TopHeader';
 import ProductEditor from '../components/ProductEditor';
@@ -17,6 +17,11 @@ const ProductsPage = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid or table
+  // Inventory context
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [inventory, setInventory] = useState([]);
+  const [inStockOnly, setInStockOnly] = useState(false);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -39,6 +44,40 @@ const ProductsPage = () => {
     loadProducts();
   }, [loadProducts]);
 
+  // Load locations on mount
+  useEffect(() => {
+    const loadLocs = async () => {
+      try {
+        const data = await fetchLocations();
+        setLocations(data.locations || []);
+      } catch (e) {
+        console.error('Load locations error:', e);
+      }
+    };
+    loadLocs();
+  }, []);
+
+  // Load inventory whenever selectedLocation changes
+  useEffect(() => {
+    const loadInv = async () => {
+      if (!selectedLocation) { setInventory([]); return; }
+      try {
+        const data = await fetchInventory({ locationId: selectedLocation });
+        setInventory(data.inventory || []);
+      } catch (e) {
+        console.error('Load inventory error:', e);
+      }
+    };
+    loadInv();
+  }, [selectedLocation]);
+
+  const getAvailableQuantity = (productId) => {
+    const inv = inventory.find(i => i.productId === productId);
+    if (!inv) return 0;
+    const qty = inv.quantity ?? inv.quantitySqm ?? inv.quantity_sqm;
+    return Number(qty) || 0;
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          Object.values(product.customAttributes || {}).some(value => 
@@ -47,8 +86,9 @@ const ProductsPage = () => {
                          product.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
+    const matchesStock = !inStockOnly || !selectedLocation || getAvailableQuantity(product.id) > 0;
+
+    return matchesSearch && matchesCategory && matchesStock;
   });
 
   const handleCreateProduct = () => {
@@ -230,6 +270,39 @@ const ProductsPage = () => {
             ₦{parseFloat(product.price).toLocaleString()}
             {product.unitOfMeasure && <span style={{ fontSize: '14px', fontWeight: '400' }}>/{product.unitOfMeasure}</span>}
           </p>
+          {selectedLocation && (
+            (() => {
+              const qty = getAvailableQuantity(product.id);
+              if (qty > 0) {
+                return (
+                  <p style={{ 
+                    fontSize: '12px', 
+                    color: '#155724', 
+                    backgroundColor: '#d4edda', 
+                    display: 'inline-block', 
+                    padding: '2px 8px', 
+                    borderRadius: '12px',
+                    marginTop: '4px'
+                  }}>
+                    Stock: {qty} {product.unitOfMeasure || 'pc'}
+                  </p>
+                );
+              }
+              return (
+                <p style={{ 
+                  fontSize: '12px', 
+                  color: '#721c24', 
+                  backgroundColor: '#f8d7da', 
+                  display: 'inline-block', 
+                  padding: '2px 8px', 
+                  borderRadius: '12px',
+                  marginTop: '4px'
+                }}>
+                  No stock at this location
+                </p>
+              );
+            })()
+          )}
           
           {product.supplierCode && (
             <p style={{ 
@@ -314,6 +387,27 @@ const ProductsPage = () => {
       <td>{product.category || 'General'}</td>
       <td>₦{parseFloat(product.price).toLocaleString()}{product.unitOfMeasure ? `/${product.unitOfMeasure}` : ''}</td>
       <td>
+        {selectedLocation ? (
+          (() => {
+            const qty = getAvailableQuantity(product.id);
+            if (qty > 0) {
+              return (
+                <span className="stock-pill" style={{ background: '#e9f7ef', color: '#155724', padding: '2px 8px', borderRadius: '12px' }}>
+                  {qty} {product.unitOfMeasure || 'pc'}
+                </span>
+              );
+            }
+            return (
+              <span className="stock-pill" style={{ background: '#f8d7da', color: '#721c24', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                No stock at this location
+              </span>
+            );
+          })()
+        ) : (
+          <span style={{ color: '#6c757d', fontSize: '12px' }}>Select a location</span>
+        )}
+      </td>
+      <td>
         <div className="table-actions">
           <button 
             className="edit-btn-small"
@@ -369,6 +463,33 @@ const ProductsPage = () => {
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+
+          <select
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '6px',
+              fontSize: '14px',
+              minWidth: '170px'
+            }}
+          >
+            <option value="">Select Location</option>
+            {locations.map(loc => (
+              <option key={loc.id} value={loc.id}>{loc.name}</option>
+            ))}
+          </select>
+
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#495057' }}>
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => setInStockOnly(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            In stock only
+          </label>
 
           <button 
             style={{
@@ -494,6 +615,7 @@ const ProductsPage = () => {
                         <th>Attributes</th>
                         <th>Category</th>
                         <th>Price</th>
+                        <th>Stock</th>
                         <th>Actions</th>
                       </tr>
                     </thead>

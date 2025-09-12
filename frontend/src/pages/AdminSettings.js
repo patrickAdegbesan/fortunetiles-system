@@ -17,7 +17,7 @@ const AdminSettings = () => {
     name: '',
     unitOfMeasure: ''
   });
-  const [newAttr, setNewAttr] = useState({ required: [], optional: [], reqInput: '', optInput: '' });
+  const [newAttr, setNewAttr] = useState({ required: [], optional: [], reqInput: '', optInput: '', reqBulk: '', optBulk: '' });
   const [editingProductType, setEditingProductType] = useState(null);
   // Lightweight input drafts for adding new attribute chips per product type
   const [attrInputs, setAttrInputs] = useState({}); // { [id]: { req: '', opt: '' } }
@@ -358,17 +358,93 @@ const AdminSettings = () => {
                     <option value="l">Liters (l)</option>
                   </select>
                 </div>
-                <div className="form-row">
-                  <textarea
-                    placeholder='Attributes JSON: {"requiredFields":["field1","field2"],"optionalFields":["field3"]}'
-                    value={newProductType.attributes}
-                    onChange={(e) => setNewProductType({
-                      ...newProductType,
-                      attributes: e.target.value
-                    })}
-                    rows="3"
-                    style={{width: '100%', marginBottom: '10px'}}
-                  />
+                {/* Create: Friendly Attributes Editor */}
+                <div style={{ width: '100%', marginTop: 10 }}>
+                  <div style={{ marginBottom: 6, fontWeight: 600 }}>Required fields</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                    {newAttr.required.map(field => (
+                      <span key={`new-req-${field}`} style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 16, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        {field}
+                        <button type="button" onClick={() => setNewAttr(prev => ({ ...prev, required: prev.required.filter(f => f !== field) }))} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#4f46e5' }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                    <input
+                      type="text"
+                      placeholder="Add required field"
+                      value={newAttr.reqInput}
+                      onChange={(e) => setNewAttr(prev => ({ ...prev, reqInput: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const v = newAttr.reqInput.trim(); if (v && !newAttr.required.includes(v)) setNewAttr(prev => ({ ...prev, required: [...prev.required, v], reqInput: '' })); } }}
+                      style={{ flex: 1 }}
+                    />
+                    <button type="button" className="btn-secondary" onClick={() => { const v = newAttr.reqInput.trim(); if (v && !newAttr.required.includes(v)) setNewAttr(prev => ({ ...prev, required: [...prev.required, v], reqInput: '' })); }}>Add</button>
+                  </div>
+                  {/* Bulk add required */}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                    <textarea
+                      placeholder="Bulk add required fields (comma or newline separated)"
+                      value={newAttr.reqBulk}
+                      onChange={(e) => setNewAttr(prev => ({ ...prev, reqBulk: e.target.value }))}
+                      rows="2"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        const parts = newAttr.reqBulk.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                        if (!parts.length) return;
+                        const existing = new Set(newAttr.required);
+                        const merged = [...newAttr.required, ...parts.filter(p => !existing.has(p))];
+                        setNewAttr(prev => ({ ...prev, required: merged, reqBulk: '' }));
+                      }}
+                    >Add all</button>
+                  </div>
+
+                  <div style={{ marginBottom: 6, fontWeight: 600 }}>Optional fields</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                    {newAttr.optional.map(field => (
+                      <span key={`new-opt-${field}`} style={{ background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 16, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        {field}
+                        <button type="button" onClick={() => setNewAttr(prev => ({ ...prev, optional: prev.optional.filter(f => f !== field) }))} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#0891b2' }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="Add optional field"
+                      value={newAttr.optInput}
+                      onChange={(e) => setNewAttr(prev => ({ ...prev, optInput: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); const v = newAttr.optInput.trim(); if (v && !newAttr.optional.includes(v)) setNewAttr(prev => ({ ...prev, optional: [...prev.optional, v], optInput: '' })); } }}
+                      style={{ flex: 1 }}
+                    />
+                    <button type="button" className="btn-secondary" onClick={() => { const v = newAttr.optInput.trim(); if (v && !newAttr.optional.includes(v)) setNewAttr(prev => ({ ...prev, optional: [...prev.optional, v], optInput: '' })); }}>Add</button>
+                  </div>
+                  {/* Bulk add optional */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <textarea
+                      placeholder="Bulk add optional fields (comma or newline separated)"
+                      value={newAttr.optBulk}
+                      onChange={(e) => setNewAttr(prev => ({ ...prev, optBulk: e.target.value }))}
+                      rows="2"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        const parts = newAttr.optBulk.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                        if (!parts.length) return;
+                        const existing = new Set(newAttr.optional);
+                        const merged = [...newAttr.optional, ...parts.filter(p => !existing.has(p))];
+                        setNewAttr(prev => ({ ...prev, optional: merged, optBulk: '' }));
+                      }}
+                    >Add all</button>
+                  </div>
+                </div>
+                <div className="form-row" style={{ marginTop: 10 }}>
                   <button type="submit" className="btn-primary">Add</button>
                 </div>
               </form>
@@ -390,8 +466,6 @@ const AdminSettings = () => {
                             onBlur={(e) => {
                               if (e.target.value !== productType.name) {
                                 handleUpdateProductType(productType.id, { name: e.target.value });
-                              } else {
-                                setEditingProductType(null);
                               }
                             }}
                             onKeyPress={(e) => {
@@ -415,7 +489,7 @@ const AdminSettings = () => {
                           {/* Friendly Attributes Editor */}
                           {(() => {
                             const attrs = ensureAttributes(productType.attributes);
-                            const inputs = attrInputs[productType.id] || { req: '', opt: '' };
+                            const inputs = attrInputs[productType.id] || { req: '', opt: '', reqBulk: '', optBulk: '' };
 
                             const removeField = (kind, field) => {
                               const next = {
@@ -466,6 +540,27 @@ const AdminSettings = () => {
                                   />
                                   <button type="button" className="btn-secondary" onClick={() => addField('req')}>Add</button>
                                 </div>
+                                {/* Bulk add required (edit) */}
+                                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                                  <textarea
+                                    placeholder="Bulk add required fields (comma or newline separated)"
+                                    value={inputs.reqBulk}
+                                    onChange={(e) => setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(prev[productType.id] || { req: '', opt: '', reqBulk: '', optBulk: '' }), reqBulk: e.target.value } }))}
+                                    rows="2"
+                                    style={{ flex: 1 }}
+                                  />
+                                  <button type="button" className="btn-secondary" onClick={() => {
+                                    const parts = (inputs.reqBulk || '').split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                                    if (!parts.length) return;
+                                    const existing = new Set(attrs.requiredFields);
+                                    const next = {
+                                      requiredFields: [...attrs.requiredFields, ...parts.filter(p => !existing.has(p))],
+                                      optionalFields: attrs.optionalFields
+                                    };
+                                    handleUpdateProductType(productType.id, { attributes: next });
+                                    setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(inputs), reqBulk: '' } }));
+                                  }}>Add all</button>
+                                </div>
 
                                 <div style={{ marginBottom: 6, fontWeight: 600 }}>Optional fields</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -486,6 +581,31 @@ const AdminSettings = () => {
                                     style={{ flex: 1 }}
                                   />
                                   <button type="button" className="btn-secondary" onClick={() => addField('opt')}>Add</button>
+                                </div>
+                                {/* Bulk add optional (edit) */}
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                  <textarea
+                                    placeholder="Bulk add optional fields (comma or newline separated)"
+                                    value={inputs.optBulk}
+                                    onChange={(e) => setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(prev[productType.id] || { req: '', opt: '', reqBulk: '', optBulk: '' }), optBulk: e.target.value } }))}
+                                    rows="2"
+                                    style={{ flex: 1 }}
+                                  />
+                                  <button type="button" className="btn-secondary" onClick={() => {
+                                    const parts = (inputs.optBulk || '').split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                                    if (!parts.length) return;
+                                    const existing = new Set(attrs.optionalFields);
+                                    const next = {
+                                      requiredFields: attrs.requiredFields,
+                                      optionalFields: [...attrs.optionalFields, ...parts.filter(p => !existing.has(p))]
+                                    };
+                                    handleUpdateProductType(productType.id, { attributes: next });
+                                    setAttrInputs(prev => ({ ...prev, [productType.id]: { ...(inputs), optBulk: '' } }));
+                                  }}>Add all</button>
+                                </div>
+                                {/* Done button to collapse edit */}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                                  <button type="button" className="btn-secondary" onClick={() => setEditingProductType(null)}>Done</button>
                                 </div>
                               </div>
                             );

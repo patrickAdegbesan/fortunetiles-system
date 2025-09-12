@@ -66,7 +66,10 @@ const SalePage = () => {
 
   const getAvailableQuantity = (productId) => {
     const inventoryItem = inventory.find(item => item.productId === productId);
-    return inventoryItem ? inventoryItem.quantity : 0;
+    if (!inventoryItem) return 0;
+    // Support multiple possible keys from backend
+    const qty = inventoryItem.quantity ?? inventoryItem.quantitySqm ?? inventoryItem.quantity_sqm;
+    return Number(qty) || 0;
   };
 
   const filteredProducts = products.filter(product => {
