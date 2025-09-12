@@ -1,0 +1,36 @@
+name: Build and Publish Windows Desktop App
+
+on:
+  push:
+    tags:
+      - 'desktop-v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: desktop-app
+        run: npm ci
+
+      - name: Build and Publish (electron-builder)
+        working-directory: desktop-app
+        run: npx electron-builder --win --publish always
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist
+          path: |
+            desktop-app/dist/**

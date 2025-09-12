@@ -6,11 +6,15 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build-win": "electron-builder --win",
+    "build-win": "electron-builder --win --publish=never",
+    "build-and-publish": "electron-builder --win --publish=always",
     "dist": "npm run build"
   },
   "author": "Fortune Tiles",
   "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
@@ -28,13 +32,13 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "verifyUpdateCodeSignature": false
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    }
+    "forceCodeSigning": false,
+    "publish": [
+      {
+        "provider": "github"
+      }
+    ]
   }
 }
