@@ -15,7 +15,8 @@ const AdminSettings = () => {
   // Product Type form state
   const [newProductType, setNewProductType] = useState({
     name: '',
-    unitOfMeasure: ''
+    unitOfMeasure: '',
+    attributes: '{"requiredFields":[],"optionalFields":[]}'
   });
   const [editingProductType, setEditingProductType] = useState(null);
 
@@ -105,7 +106,7 @@ const AdminSettings = () => {
       if (response.ok) {
         const data = await response.json();
         setProductTypes([...productTypes, data.productType]);
-        setNewProductType({ name: '', unitOfMeasure: '' });
+        setNewProductType({ name: '', unitOfMeasure: '', attributes: '{"requiredFields":[],"optionalFields":[]}' });
         setSuccess('Product type created successfully');
         setTimeout(() => setSuccess(''), 3000);
       } else {
@@ -337,6 +338,18 @@ const AdminSettings = () => {
                     <option value="kg">Kilograms (kg)</option>
                     <option value="l">Liters (l)</option>
                   </select>
+                </div>
+                <div className="form-row">
+                  <textarea
+                    placeholder='Attributes JSON: {"requiredFields":["field1","field2"],"optionalFields":["field3"]}'
+                    value={newProductType.attributes}
+                    onChange={(e) => setNewProductType({
+                      ...newProductType,
+                      attributes: e.target.value
+                    })}
+                    rows="3"
+                    style={{width: '100%', marginBottom: '10px'}}
+                  />
                   <button type="submit" className="btn-primary">Add</button>
                 </div>
               </form>
@@ -379,6 +392,21 @@ const AdminSettings = () => {
                             <option value="kg">Kilograms (kg)</option>
                             <option value="l">Liters (l)</option>
                           </select>
+                          <textarea
+                            defaultValue={JSON.stringify(productType.attributes || {requiredFields:[], optionalFields:[]}, null, 2)}
+                            onBlur={(e) => {
+                              try {
+                                const attributes = JSON.parse(e.target.value);
+                                handleUpdateProductType(productType.id, { attributes });
+                              } catch (error) {
+                                alert('Invalid JSON format');
+                                e.target.focus();
+                              }
+                            }}
+                            placeholder='{"requiredFields":["field1"],"optionalFields":["field2"]}'
+                            rows="4"
+                            style={{width: '100%', marginTop: '10px'}}
+                          />
                         </div>
                       ) : (
                         <div className="item-info">
