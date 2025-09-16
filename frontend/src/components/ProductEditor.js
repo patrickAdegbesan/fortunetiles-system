@@ -60,10 +60,13 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
         // Build unique category list with 'General' ensured once
         const rawCategories = (categoriesData.categories || []).map(cat => (typeof cat === 'string' ? cat : cat?.name)).filter(Boolean);
         const uniqueCategories = Array.from(new Set(['General', ...rawCategories]));
-        setCategories(uniqueCategories);
+        console.log('Loaded categories:', uniqueCategories);
+        setCategories(uniqueCategories.length > 1 ? uniqueCategories : []);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setError('Failed to load required data');
+        // Use default categories if API fails
+        setCategories([ 'Travertine']);
+        setError('Failed to load categories from admin settings, using defaults');
       }
     };
     

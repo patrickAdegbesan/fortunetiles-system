@@ -82,4 +82,36 @@ User.prototype.checkPassword = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
+User.associate = function(models) {
+  // Many-to-one relationship with Location
+  User.belongsTo(models.Location, {
+    foreignKey: 'locationId',
+    as: 'location'
+  });
+
+  // One-to-many relationship with Sale (user as cashier)
+  User.hasMany(models.Sale, {
+    foreignKey: 'userId',
+    as: 'sales'
+  });
+
+  // One-to-many relationship with Return (user as processor)
+  User.hasMany(models.Return, {
+    foreignKey: 'processedBy',
+    as: 'processedReturns'
+  });
+
+  // One-to-many relationship with UserActivity
+  User.hasMany(models.UserActivity, {
+    foreignKey: 'userId',
+    as: 'activities'
+  });
+
+  // One-to-many relationship with InventoryLog
+  User.hasMany(models.InventoryLog, {
+    foreignKey: 'userId',
+    as: 'inventoryLogs'
+  });
+};
+
 module.exports = User;

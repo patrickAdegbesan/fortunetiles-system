@@ -58,4 +58,12 @@ const UserActivity = sequelize.define('UserActivity', {
   ]
 });
 
+UserActivity.associate = function(models) {
+  // Many-to-one relationship with User
+  UserActivity.belongsTo(models.User, {
+    foreignKey: 'userId',
+    as: 'user'
+  });
+};
+
 module.exports = UserActivity;

@@ -1,6 +1,7 @@
 const express = require('express');
 const { Product, ProductType, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 
 const router = express.Router();
 
@@ -41,16 +42,31 @@ const validateProductAttributes = async (req, res, next) => {
 router.get('/categories', async (req, res) => {
   try {
     const categories = await Product.findAll({
-      attributes: ['category'],
-      group: ['category'],
-      where: { isActive: true }
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'name']],
+      where: { 
+        isActive: true,
+        category: {
+          [Op.ne]: null,
+          [Op.ne]: ''
+        }
+      },
+      order: [[sequelize.col('category'), 'ASC']],
+      raw: true
     });
 
-    const categoryList = categories.map(item => item.category).filter(Boolean);
-    
-    // Add default categories if none exist
-    const defaultCategories = ['Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine', 'General'];
-    const allCategories = [...new Set([...categoryList, ...defaultCategories])];
+    // Filter out empty strings and format response
+    const formattedCategories = categories
+      .filter(cat => cat.name && cat.name.trim() !== '')
+      .map(cat => cat.name);
+
+    // If no categories exist in products, provide default categories
+    const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
+    const allCategories = formattedCategories.length > 0 
+      ? [...new Set([...formattedCategories, 'General'])] 
+      : defaultCategories;
+
+    console.log('Products/categories - Categories found in DB:', formattedCategories.length);
+    console.log('Products/categories - Returning categories:', allCategories);
 
     res.json({
       message: 'Categories retrieved successfully',
@@ -83,7 +99,16 @@ router.get('/types', async (req, res) => {
 // GET /api/products - Get all products
 router.get('/', async (req, res) => {
   try {
+    const { category } = req.query;
+    
+    // Build where clause for category filtering
+    const whereClause = {};
+    if (category && category !== 'all') {
+      whereClause.category = category;
+    }
+    
     const products = await Product.findAll({
+      where: whereClause,
       include: [{
         model: ProductType,
         as: 'productType',

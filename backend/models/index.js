@@ -1,67 +1,42 @@
+const path = require('path');
+const fs = require('fs');
 const { sequelize } = require('../config/database');
 
-// Import all models
-const User = require('./User');
-const Location = require('./Location');
-const Product = require('./Product');
-const ProductType = require('./ProductType');
-const Inventory = require('./Inventory');
-const InventoryLog = require('./InventoryLog');
-const Sale = require('./Sale');
-const SaleItem = require('./SaleItem');
-const UserActivity = require('./UserActivity');
+// Helper to require a model file and handle either of these exports:
+// - module.exports = (sequelize, DataTypes) => { return Model }
+// - module.exports = Model (where Model already used sequelize.define)
+function loadModel(filePath) {
+  const mod = require(filePath);
+  try {
+    // If module is a function that expects (sequelize, DataTypes), call it
+    if (typeof mod === 'function' && mod.length >= 2) {
+      // pass DataTypes from sequelize
+      return mod(sequelize, sequelize.constructor.DataTypes || require('sequelize').DataTypes);
+    }
+  } catch (err) {
+    // fall through
+  }
+  // Otherwise assume the module already exports the initialized model
+  return mod;
+}
 
-// Define associations
-// Location associations
-Location.hasMany(User, { foreignKey: 'locationId', as: 'users' });
-Location.hasMany(Inventory, { foreignKey: 'locationId', as: 'inventory' });
-Location.hasMany(Sale, { foreignKey: 'locationId', as: 'sales' });
+const modelsDir = __dirname;
+const modelFiles = fs.readdirSync(modelsDir).filter(f => f.endsWith('.js') && f !== path.basename(__filename));
+const models = {};
 
-// User associations
-User.belongsTo(Location, { foreignKey: 'locationId', as: 'location' });
-User.hasMany(InventoryLog, { foreignKey: 'userId', as: 'inventoryLogs' });
-User.hasMany(Sale, { foreignKey: 'userId', as: 'sales' });
-User.hasMany(UserActivity, { foreignKey: 'userId', as: 'activities' });
+for (const file of modelFiles) {
+  const fullPath = path.join(modelsDir, file);
+  const loaded = loadModel(fullPath);
+  // If the loaded module is a function/class (ES6 default export), try to get its name or modelName
+  const name = loaded && (loaded.name || loaded.modelName || (loaded.options && loaded.options.name && loaded.options.name.singular));
+  models[name || file.replace('.js', '')] = loaded;
+}
 
-// ProductType associations
-ProductType.hasMany(Product, { foreignKey: 'productTypeId', as: 'products' });
+// Call associate if present
+Object.values(models).forEach(m => {
+  if (m && typeof m.associate === 'function') {
+    m.associate(models);
+  }
+});
 
-// Product associations
-Product.belongsTo(ProductType, { foreignKey: 'productTypeId', as: 'productType' });
-Product.hasMany(Inventory, { foreignKey: 'productId', as: 'inventory' });
-Product.hasMany(InventoryLog, { foreignKey: 'productId', as: 'inventoryLogs' });
-Product.hasMany(SaleItem, { foreignKey: 'productId', as: 'saleItems' });
-
-// Inventory associations
-Inventory.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-Inventory.belongsTo(Location, { foreignKey: 'locationId', as: 'location' });
-
-// InventoryLog associations
-InventoryLog.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-InventoryLog.belongsTo(Location, { foreignKey: 'locationId', as: 'location' });
-InventoryLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-
-// Sale associations
-Sale.belongsTo(Location, { foreignKey: 'locationId', as: 'location' });
-Sale.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Sale.hasMany(SaleItem, { foreignKey: 'saleId', as: 'items' });
-
-// SaleItem associations
-SaleItem.belongsTo(Sale, { foreignKey: 'saleId', as: 'sale' });
-SaleItem.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-
-// UserActivity associations
-UserActivity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-
-module.exports = {
-  sequelize,
-  User,
-  Location,
-  Product,
-  ProductType,
-  Inventory,
-  InventoryLog,
-  Sale,
-  SaleItem,
-  UserActivity
-};
+module.exports = Object.assign({ sequelize }, models);

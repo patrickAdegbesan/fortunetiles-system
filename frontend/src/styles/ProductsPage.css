@@ -1,6 +1,6 @@
 .products-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #faf8f5; /* Cream background */
 }
 
 .products-container {
@@ -13,15 +13,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .products-header h1 {
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin: 0;
   font-size: 2rem;
 }
@@ -41,21 +42,22 @@
 }
 
 .export-btn {
-  background: #38a169;
-  color: white;
+  background: #ffffff; /* Pure white */
+  color: #2c2c2c; /* Soft black */
+  border: 2px solid #2c2c2c;
 }
 
 .export-btn:hover {
-  background: #2f855a;
+  background: #fcfbf8; /* Light cream */
 }
 
 .add-product-btn {
-  background: #667eea;
-  color: white;
+  background: #2c2c2c; /* Soft black */
+  color: #ffffff; /* Pure white */
 }
 
 .add-product-btn:hover {
-  background: #5a67d8;
+  background: #000000; /* Pure black */
 }
 
 .error-message {
@@ -80,11 +82,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .search-filters {
@@ -95,9 +98,11 @@
 
 .search-input, .category-filter {
   padding: 10px;
-  border: 2px solid #ddd;
+  border: 2px solid #e8e6e0; /* Light border */
   border-radius: 8px;
   font-size: 1rem;
+  background-color: #ffffff; /* Pure white */
+  color: #2c2c2c; /* Soft black */
 }
 
 .search-input {
@@ -106,7 +111,8 @@
 
 .search-input:focus, .category-filter:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2c2c2c; /* Soft black focus */
+  background-color: #fcfbf8; /* Light cream on focus */
 }
 
 .view-controls {
@@ -116,25 +122,27 @@
 
 .view-btn {
   padding: 8px 16px;
-  border: 2px solid #ddd;
-  background: white;
+  border: 2px solid #e8e6e0; /* Light border */
+  background: #ffffff; /* Pure white */
+  color: #2c2c2c; /* Soft black */
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .view-btn.active {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
+  background: #2c2c2c; /* Soft black */
+  color: #ffffff; /* Pure white */
+  border-color: #2c2c2c;
 }
 
 .view-btn:hover:not(.active) {
-  border-color: #667eea;
+  border-color: #2c2c2c; /* Soft black */
+  background: #fcfbf8; /* Light cream */
 }
 
 .products-stats {
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 15px 20px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -142,15 +150,18 @@
   gap: 30px;
   font-weight: 600;
   color: #555;
+  border: 1px solid #e8e6e0; /* Light border */
+  box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  background: white;
+  background: #ffffff; /* Pure white */
   border-radius: 12px;
   color: #666;
   font-size: 1.1rem;
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 /* Grid View */
@@ -161,10 +172,11 @@
 }
 
 .product-card {
-  background: white;
+  background: #ffffff; /* Pure white */
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
   transition: transform 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -182,10 +194,11 @@
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 15px;
-  background: #f7fafc;
+  background: #fcfbf8; /* Light cream */
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .product-image img {
@@ -208,7 +221,7 @@
 
 .product-info h4 {
   margin: 0 0 8px 0;
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   font-size: 1.2rem;
 }
 
@@ -302,12 +315,12 @@
 }
 
 .edit-btn {
-  background: #667eea;
-  color: white;
+  background: #2c2c2c; /* Soft black */
+  color: #ffffff; /* Pure white */
 }
 
 .edit-btn:hover {
-  background: #5a67d8;
+  background: #000000; /* Pure black */
 }
 
 .delete-btn {
@@ -321,10 +334,11 @@
 
 /* Table View */
 .products-table-container {
-  background: white;
+  background: #ffffff; /* Pure white */
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .products-table {
@@ -333,22 +347,22 @@
 }
 
 .products-table th {
-  background: #f7fafc;
+  background: #fcfbf8; /* Light cream */
   padding: 15px;
   text-align: left;
   font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #e2e8f0;
+  color: #2c2c2c; /* Soft black */
+  border-bottom: 2px solid #e8e6e0; /* Light border */
 }
 
 .products-table td {
   padding: 15px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e8e6e0; /* Light border */
 }
 
 .table-product-info strong {
   display: block;
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin-bottom: 4px;
 }
 

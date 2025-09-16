@@ -173,6 +173,12 @@
   color: #4a5568;
 }
 
+.attribute.missing-product {
+  background: #fed7d7;
+  color: #c53030;
+  font-weight: 500;
+}
+
 .item-quantity {
   display: flex;
   align-items: baseline;

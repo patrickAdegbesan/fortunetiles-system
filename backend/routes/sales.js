@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
       where: whereClause,
       include: [
         { model: Location, as: 'location' },
-        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
+        { model: User, as: 'cashier', attributes: ['firstName', 'lastName', 'email'] },
         { 
           model: SaleItem, 
           as: 'items',
@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
     const sale = await Sale.findByPk(id, {
       include: [
         { model: Location, as: 'location' },
-        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
+        { model: User, as: 'cashier', attributes: ['firstName', 'lastName', 'email'] },
         { 
           model: SaleItem, 
           as: 'items',
@@ -290,25 +290,43 @@ router.post('/', authenticateToken, async (req, res) => {
     await transaction.commit();
 
     // Return sale with items
-    const completeSale = await Sale.findByPk(sale.id, {
-      include: [
-        { model: Location, as: 'location' },
-        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] },
-        { 
-          model: SaleItem, 
-          as: 'items',
-          include: [{ model: Product, as: 'product' }]
-        }
-      ]
-    });
+    try {
+      const completeSale = await Sale.findByPk(sale.id, {
+        include: [
+          { model: Location, as: 'location' },
+          { model: User, as: 'cashier', attributes: ['firstName', 'lastName', 'email'] },
+          { 
+            model: SaleItem, 
+            as: 'items',
+            include: [{ model: Product, as: 'product' }]
+          }
+        ]
+      });
 
-    res.status(201).json({
-      message: 'Sale created successfully',
-      sale: completeSale
-    });
+      res.status(201).json({
+        message: 'Sale created successfully',
+        sale: completeSale
+      });
+    } catch (queryError) {
+      console.error('Error fetching complete sale after commit:', queryError);
+      // Sale was created successfully, just return basic info
+      res.status(201).json({
+        message: 'Sale created successfully',
+        sale: {
+          id: sale.id,
+          saleNumber: sale.saleNumber,
+          totalAmount: sale.totalAmount,
+          paymentMethod: sale.paymentMethod,
+          customerName: sale.customerName
+        }
+      });
+    }
 
   } catch (error) {
-    await transaction.rollback();
+    // Only rollback if transaction hasn't been committed
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
     console.error('Create sale error:', error);
     
     // Send more detailed error messages for validation errors

@@ -5,18 +5,18 @@ const { Op } = require('sequelize');
 
 const router = express.Router();
 
-// Apply authentication and admin role requirement to all routes
+// Apply authentication to all routes
 router.use(authenticateToken);
-router.use(requireRole(['admin', 'owner']));
 
-// GET /api/categories - Get all distinct categories from products
+// GET /api/categories - Get all distinct categories from products (available to all users)
 router.get('/', async (req, res) => {
   try {
     const categories = await Product.findAll({
       attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'name']],
       where: {
         category: {
-          [Op.ne]: null
+          [Op.ne]: null,
+          [Op.ne]: ''
         }
       },
       order: [[sequelize.col('category'), 'ASC']],
@@ -28,9 +28,18 @@ router.get('/', async (req, res) => {
       .filter(cat => cat.name && cat.name.trim() !== '')
       .map(cat => ({ name: cat.name }));
 
+    // If no categories exist in products, provide default categories
+    const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
+    const finalCategories = formattedCategories.length > 0 
+      ? formattedCategories 
+      : defaultCategories.map(name => ({ name }));
+
+    console.log('Categories found in DB:', formattedCategories.length);
+    console.log('Returning categories:', finalCategories.map(c => c.name));
+
     res.json({
       message: 'Categories retrieved successfully',
-      categories: formattedCategories
+      categories: finalCategories
     });
 
   } catch (error) {
@@ -38,6 +47,9 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+// Apply admin role requirement to modification routes only
+router.use(requireRole(['admin', 'owner']));
 
 // POST /api/categories - Add a new category (creates placeholder)
 router.post('/', async (req, res) => {

@@ -7,28 +7,46 @@ const router = express.Router();
 // GET /api/inventory - Get all inventory levels
 router.get('/', async (req, res) => {
   try {
-    const { locationId } = req.query;
+    const { locationId, category } = req.query;
     
-    const whereClause = locationId ? { locationId: parseInt(locationId) } : {};
+    // Build where clause for location filtering - handle "all" case
+    const whereClause = {};
+    if (locationId && locationId !== 'all') {
+      whereClause.locationId = parseInt(locationId);
+    }
+    
+    // Build product include with category filtering
+    const productWhereClause = category && category !== 'all' ? { category } : {};
     
     const inventory = await Inventory.findAll({
       where: whereClause,
       include: [
         { 
           model: Product, 
-          as: 'product'
+          as: 'product',
+          where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
+          required: Object.keys(productWhereClause).length > 0 // Required if filtering by category
         },
         { 
           model: Location, 
-          as: 'location' 
+          as: 'location',
+          required: false
         }
       ],
       order: [['updatedAt', 'DESC']]
     });
 
+    // Filter out any null entries and add some debugging info
+    const validInventory = inventory.filter(item => item && item.id);
+    
+    console.log(`Inventory query result: ${inventory.length} total, ${validInventory.length} valid items`);
+    if (validInventory.length !== inventory.length) {
+      console.log('Some inventory items were filtered out due to null values');
+    }
+
     res.json({
       message: 'Inventory retrieved successfully',
-      inventory
+      inventory: validInventory
     });
 
   } catch (error) {

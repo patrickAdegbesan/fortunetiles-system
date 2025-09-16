@@ -1,0 +1,184 @@
+.return-processor {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.return-processor h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.sale-info {
+  background: #f7fafc;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.sale-info p {
+  margin: 5px 0;
+  color: #4a5568;
+}
+
+.return-type-selector,
+.refund-method-selector {
+  margin-bottom: 20px;
+}
+
+.return-type-selector label,
+.refund-method-selector label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.return-type-selector select,
+.refund-method-selector select {
+  width: 200px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.return-reason {
+  margin-bottom: 20px;
+}
+
+.return-reason label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.return-reason textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  min-height: 80px;
+}
+
+.return-items {
+  margin-bottom: 20px;
+}
+
+.return-items h3 {
+  margin-bottom: 15px;
+  color: #4a5568;
+}
+
+.return-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.item-details {
+  margin-bottom: 15px;
+}
+
+.item-details h4 {
+  margin: 0;
+  color: #2d3748;
+}
+
+.return-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.quantity-control,
+.location-selector,
+.condition-selector,
+.reason-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quantity-control label,
+.location-selector label,
+.condition-selector label,
+.reason-input label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.quantity-control input,
+.location-selector select,
+.condition-selector select,
+.reason-input input {
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.notes-section {
+  margin-bottom: 20px;
+}
+
+.notes-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.notes-section textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancel-btn,
+.submit-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #4a5568;
+  border: none;
+}
+
+.submit-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+}
+
+.submit-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #4a5568;
+}
+
+.error {
+  color: #e53e3e;
+  text-align: center;
+  padding: 20px;
+}

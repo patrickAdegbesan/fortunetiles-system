@@ -26,4 +26,36 @@ const Location = sequelize.define('Location', {
   timestamps: true,
 });
 
+Location.associate = function(models) {
+  // One-to-many relationship with User
+  Location.hasMany(models.User, {
+    foreignKey: 'locationId',
+    as: 'users'
+  });
+
+  // One-to-many relationship with Inventory
+  Location.hasMany(models.Inventory, {
+    foreignKey: 'locationId',
+    as: 'inventory'
+  });
+
+  // One-to-many relationship with Sale
+  Location.hasMany(models.Sale, {
+    foreignKey: 'locationId',
+    as: 'sales'
+  });
+
+  // One-to-many relationship with ReturnItem
+  Location.hasMany(models.ReturnItem, {
+    foreignKey: 'locationId',
+    as: 'returnItems'
+  });
+
+  // One-to-many relationship with InventoryLog
+  Location.hasMany(models.InventoryLog, {
+    foreignKey: 'locationId',
+    as: 'inventoryLogs'
+  });
+};
+
 module.exports = Location;

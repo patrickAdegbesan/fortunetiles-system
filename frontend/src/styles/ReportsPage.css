@@ -1,6 +1,6 @@
 .reports-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #faf8f5; /* Cream background */
 }
 
 .reports-container {
@@ -13,15 +13,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .reports-header h1 {
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin: 0;
   font-size: 2rem;
 }

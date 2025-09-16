@@ -1,6 +1,6 @@
 .sale-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #faf8f5; /* Cream background */
 }
 
 .payment-method-options {
@@ -33,16 +33,17 @@
   flex-direction: row;
   align-items: center;
   gap: 0;
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 5px 10px;
   border-radius: 8px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: none;
+  border-bottom: 1px solid #e8e6e0; /* Light border */
+  box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .sale-header h1 {
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin: 0;
   font-size: 1.5rem;
 }

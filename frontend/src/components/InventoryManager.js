@@ -3,7 +3,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchLocations, logInventoryChange, fetchInventory } from '../services/api';
 import '../styles/InventoryManager.css';
 
-const InventoryManager = () => {
+const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selectedCategory: dashboardSelectedCategory }) => {
   const { user } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -23,10 +23,12 @@ const InventoryManager = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedLocation) {
+    // Use dashboard location filter if provided, otherwise use local selection
+    const locationToLoad = dashboardSelectedLocation || selectedLocation;
+    if (locationToLoad) {
       loadInventory();
     }
-  }, [selectedLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedLocation, dashboardSelectedLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadInitialData = async () => {
     try {
@@ -53,7 +55,9 @@ const InventoryManager = () => {
 
   const loadInventory = async () => {
     try {
-      const inventoryData = await fetchInventory({ locationId: selectedLocation });
+      // Use dashboard location filter if provided, otherwise use local selection
+      const locationToLoad = dashboardSelectedLocation || selectedLocation;
+      const inventoryData = await fetchInventory({ locationId: locationToLoad });
       setInventory(inventoryData.inventory || []);
     } catch (error) {
       setError('Failed to load inventory data');
@@ -233,29 +237,60 @@ const InventoryManager = () => {
         {/* Current Inventory Display */}
         <div className="current-inventory-section">
           <h3>Current Inventory Levels</h3>
-          {selectedLocation ? (
+          {(dashboardSelectedLocation || selectedLocation) ? (
             <div className="inventory-list">
-              {inventory.filter(item => item && item.product).map(item => (
-                <div key={item.id} className="inventory-item">
-                  <div className="item-info">
-                    <h4>{item.product?.name || '(Unknown Product)'}</h4>
-                    <div className="attributes">
-                      {Object.entries((item.product && item.product.customAttributes) ? item.product.customAttributes : {}).map(([key, value]) => (
-                        <span key={key} className="attribute">
-                          {key}: {value}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="item-quantity">
-                    <span className="quantity">{item.quantitySqm}</span>
-                    <span className="unit">{item.product?.unitOfMeasure || 'units'}</span>
-                  </div>
-                </div>
-              ))}
-              {inventory.length === 0 && (
-                <p className="no-items">No inventory items found for this location.</p>
-              )}
+              {(() => {
+                // Filter inventory by category if dashboard category filter is applied
+                const filteredInventory = dashboardSelectedCategory 
+                  ? inventory.filter(item => item.product?.category === dashboardSelectedCategory)
+                  : inventory;
+
+                return filteredInventory.length > 0 ? (
+                  filteredInventory.map(item => {
+                    if (!item) return null; // Skip null/undefined items
+                    
+                    // Handle cases where product might be missing
+                    const product = item.product || {};
+                    const productName = product.name || `Product ID: ${item.productId}`;
+                    const customAttributes = product.customAttributes || {};
+                    const unitOfMeasure = product.unitOfMeasure || 'units';
+                    
+                    return (
+                      <div key={item.id || `inv-${item.productId}-${item.locationId}`} className="inventory-item">
+                        <div className="item-info">
+                          <h4>{productName}</h4>
+                          <div className="attributes">
+                            {product.category && (
+                              <span className="attribute category">
+                                Category: {product.category}
+                              </span>
+                            )}
+                            {Object.entries(customAttributes).map(([key, value]) => (
+                              <span key={key} className="attribute">
+                                {key}: {value}
+                              </span>
+                            ))}
+                            {!item.product && (
+                              <span className="attribute missing-product">
+                                ⚠️ Product data missing
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="item-quantity">
+                          <span className="quantity">{item.quantitySqm || 0}</span>
+                          <span className="unit">{unitOfMeasure}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="no-items">
+                    No inventory items found for this location
+                    {dashboardSelectedCategory && ` in category "${dashboardSelectedCategory}"`}.
+                  </p>
+                );
+              })()}
             </div>
           ) : (
             <p className="select-location">Please select a location to view inventory levels.</p>

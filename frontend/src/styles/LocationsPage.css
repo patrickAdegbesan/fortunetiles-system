@@ -1,6 +1,6 @@
 .locations-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #faf8f5; /* Cream background */
 }
 
 .locations-container {
@@ -10,16 +10,17 @@
 }
 
 .locations-header {
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .locations-header h1 {
   margin: 0;
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   font-size: 2rem;
 }
 
@@ -43,15 +44,16 @@
 
 /* Location Form Section */
 .location-form-section {
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
   margin-bottom: 20px;
 }
 
 .location-form-section h2 {
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin-bottom: 20px;
   font-size: 1.5rem;
 }
@@ -70,19 +72,20 @@
 
 .form-group label {
   font-weight: 600;
-  color: #555;
+  color: #2c2c2c; /* Soft black */
 }
 
 .form-group input {
   padding: 10px;
-  border: 2px solid #ddd;
+  border: 2px solid #e8e6e0; /* Light border */
   border-radius: 6px;
   font-size: 1rem;
+  background: #ffffff;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2c2c2c; /* Soft black */
 }
 
 .form-buttons {
@@ -101,12 +104,12 @@
 }
 
 .form-buttons button[type="submit"] {
-  background: #667eea;
+  background: #2c2c2c; /* Soft black */
   color: white;
 }
 
 .form-buttons button[type="submit"]:hover {
-  background: #5a67d8;
+  background: #1a1a1a;
 }
 
 .form-buttons .cancel-btn {
@@ -120,14 +123,15 @@
 
 /* Locations List Section */
 .locations-list-section {
-  background: white;
+  background: #ffffff; /* Pure white */
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.1);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .locations-list-section h2 {
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   margin-bottom: 20px;
   font-size: 1.5rem;
 }
@@ -139,7 +143,7 @@
 }
 
 .location-card {
-  border: 2px solid #e2e8f0;
+  border: 2px solid #e8e6e0; /* Light border */
   border-radius: 8px;
   padding: 15px;
   display: flex;
@@ -147,18 +151,18 @@
   justify-content: space-between;
   min-height: 200px;
   transition: all 0.2s;
-  background: white;
+  background: #ffffff; /* Pure white */
 }
 
 .location-card:hover {
-  border-color: #667eea;
+  border-color: #2c2c2c; /* Soft black */
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.15);
 }
 
 .location-info h3 {
   margin: 0;
-  color: #333;
+  color: #2c2c2c; /* Soft black */
   font-size: 1.2rem;
 }
 
@@ -169,9 +173,9 @@
 }
 
 .view-inventory-btn {
-  background: #f0f4ff;
-  border: 1px solid #cbd5e0;
-  color: #4a5568;
+  background: #fcfbf8; /* Light cream */
+  border: 1px solid #e8e6e0;
+  color: #2c2c2c;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -184,21 +188,21 @@
 }
 
 .view-inventory-btn:hover {
-  background: #e5edff;
-  border-color: #a0aec0;
+  background: #f5f3f0;
+  border-color: #2c2c2c;
 }
 
 .inventory-details {
   margin-top: 15px;
   padding: 15px;
-  background: #f8fafc;
+  background: #fcfbf8; /* Light cream */
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .inventory-details h4 {
   margin: 0 0 10px 0;
-  color: #2d3748;
+  color: #2c2c2c; /* Soft black */
   font-size: 1rem;
 }
 
@@ -218,15 +222,15 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 12px;
-  background: white;
+  background: #ffffff; /* Pure white */
   border-radius: 6px;
-  border: 1px solid #edf2f7;
+  border: 1px solid #e8e6e0; /* Light border */
   transition: all 0.2s;
 }
 
 .inventory-item:hover {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-color: #2c2c2c;
+  box-shadow: 0 2px 4px rgba(44, 44, 44, 0.1);
 }
 
 .inventory-item.low-stock {
@@ -242,7 +246,7 @@
 
 .inventory-item .product-name {
   font-weight: 600;
-  color: #2d3748;
+  color: #2c2c2c; /* Soft black */
   font-size: 0.95rem;
   display: flex;
   align-items: center;
@@ -260,7 +264,7 @@
 
 .product-details {
   font-size: 0.8rem;
-  color: #718096;
+  color: #666;
 }
 
 .inventory-item-counts {
@@ -272,25 +276,25 @@
 }
 
 .inventory-item .quantity {
-  color: #4a5568;
+  color: #2c2c2c;
   font-size: 0.9rem;
-  background: #f7fafc;
+  background: #fcfbf8; /* Light cream */
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 500;
 }
 
 .inventory-item .price {
-  color: #2d3748;
+  color: #2c2c2c; /* Soft black */
   font-size: 0.9rem;
   font-weight: 500;
 }
 
 .inventory-item .item-value {
-  color: #2b6cb0;
+  color: #2c2c2c;
   font-size: 0.95rem;
   font-weight: 600;
-  background: #ebf8ff;
+  background: #f5f3f0;
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -298,7 +302,7 @@
 .inventory-summary {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid #e8e6e0; /* Light border */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 15px;
@@ -312,38 +316,38 @@
 
 .summary-label {
   font-size: 0.85rem;
-  color: #718096;
+  color: #666;
 }
 
 .summary-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #2c2c2c; /* Soft black */
 }
 
 .total-value .summary-value {
-  color: #2b6cb0;
+  color: #2c2c2c;
   font-size: 1.1rem;
 }
 
 .total-items {
   margin: 12px 0 0 0;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
-  color: #2d3748;
+  border-top: 1px solid #e8e6e0; /* Light border */
+  color: #2c2c2c; /* Soft black */
   font-weight: 600;
   font-size: 0.9rem;
 }
 
 .no-inventory {
-  color: #718096;
+  color: #666;
   font-size: 0.9rem;
   text-align: center;
   padding: 10px;
 }
 
 .loading-inventory {
-  color: #718096;
+  color: #666;
   font-size: 0.9rem;
   text-align: center;
   padding: 10px;
@@ -354,7 +358,7 @@
   gap: 10px;
   margin-top: auto;
   padding-top: 15px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #e8e6e0; /* Light border */
   justify-content: flex-end;
 }
 
@@ -371,16 +375,16 @@
   justify-content: center;
   gap: 6px;
   font-size: 0.95rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(44, 44, 44, 0.1);
 }
 
 .edit-btn {
-  background: #667eea;
+  background: #2c2c2c; /* Soft black */
   color: white;
 }
 
 .edit-btn:hover {
-  background: #5a67d8;
+  background: #1a1a1a;
   transform: translateY(-1px);
 }
 
@@ -395,7 +399,7 @@
 }
 
 .delete-btn:disabled {
-  background: #cbd5e0;
+  background: #e8e6e0;
   cursor: not-allowed;
   opacity: 0.7;
   transform: none;

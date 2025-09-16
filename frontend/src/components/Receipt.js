@@ -1,7 +1,10 @@
 import React from 'react';
 import '../styles/Receipt.css';
 
-const Receipt = ({ sale, onPrint, onClose }) => {
+const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
+  // Handle both 'sale' and 'order' data formats
+  const receiptData = sale || {};
+  
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('en-NG', {
       year: 'numeric',
@@ -72,12 +75,27 @@ const Receipt = ({ sale, onPrint, onClose }) => {
 
   if (!sale) return null;
 
+  // Handle different property names between sale and order data formats
+  const saleId = receiptData.id;
+  const customerName = receiptData.customerName;
+  const customerPhone = receiptData.customerPhone;
+  const totalAmount = receiptData.totalAmount || receiptData.total;
+  const createdAt = receiptData.createdAt || receiptData.saleDate;
+  const paymentMethod = receiptData.paymentMethod;
+  const items = receiptData.items || [];
+  const cashier = receiptData.user || receiptData.cashier;
+  const location = receiptData.location;
+  const returns = receiptData.returns || [];
+
   return (
     <div className="receipt-overlay">
       <div className="receipt-container">
         <div className="receipt-header">
           <button className="close-btn" onClick={onClose}>×</button>
           <button className="print-btn" onClick={handlePrint}>🖨️ Print</button>
+          {onReturn && (
+            <button className="return-btn" onClick={() => onReturn(sale)}>🔄 Return/Exchange</button>
+          )}
         </div>
 
         <div className="receipt" id="receipt-content">
@@ -116,31 +134,31 @@ const Receipt = ({ sale, onPrint, onClose }) => {
               <div className="info-column">
                 <div className="info-group">
                   <label>Receipt No:</label>
-                  <span className="value">FT-{sale.id.toString().padStart(6, '0')}</span>
+                  <span className="value">FT-{saleId.toString().padStart(6, '0')}</span>
                 </div>
                 <div className="info-group">
                   <label>Date:</label>
-                  <span className="value">{formatDate(sale.createdAt)}</span>
+                  <span className="value">{formatDate(createdAt)}</span>
                 </div>
                 <div className="info-group">
                   <label>Location:</label>
-                  <span className="value">{sale.location?.name || 'Main Warehouse'}</span>
+                  <span className="value">{location?.name || location || 'Main Store'}</span>
                 </div>
               </div>
               <div className="info-column">
                 <div className="info-group">
                   <label>Customer:</label>
-                  <span className="value">{sale.customerName}</span>
+                  <span className="value">{customerName}</span>
                 </div>
-                {sale.customerPhone && (
+                {customerPhone && (
                   <div className="info-group">
                     <label>Phone:</label>
-                    <span className="value">{sale.customerPhone}</span>
+                    <span className="value">{customerPhone}</span>
                   </div>
                 )}
                 <div className="info-group">
                   <label>Served by:</label>
-                  <span className="value">{sale.user?.firstName} {sale.user?.lastName}</span>
+                  <span className="value">{cashier?.firstName} {cashier?.lastName} {cashier?.name}</span>
                 </div>
               </div>
             </div>
@@ -157,10 +175,10 @@ const Receipt = ({ sale, onPrint, onClose }) => {
               </div>
               
               <div className="items-body">
-                {sale.items?.map((item, index) => (
+                {items?.map((item, index) => (
                   <div key={index} className="item-row">
                     <div className="col-item">
-                      <div className="item-name">{item.product?.name}</div>
+                      <div className="item-name">{item.product?.name || item.productName || 'Unknown Product'}</div>
                       <div className="item-specs">
                         {item.product?.customAttributes ? 
                           Object.entries(item.product.customAttributes)
@@ -171,13 +189,13 @@ const Receipt = ({ sale, onPrint, onClose }) => {
                       </div>
                     </div>
                     <div className="col-qty">
-                      {item.quantity} {item.unit}
+                      {item.quantity} {item.unit || 'sqm'}
                     </div>
                     <div className="col-price">
                       ₦{parseFloat(item.unitPrice).toLocaleString()}
                     </div>
                     <div className="col-total">
-                      ₦{parseFloat(item.lineTotal).toLocaleString()}
+                      ₦{parseFloat(item.lineTotal || item.totalPrice || (item.quantity * item.unitPrice)).toLocaleString()}
                     </div>
                   </div>
                 ))}
@@ -189,7 +207,7 @@ const Receipt = ({ sale, onPrint, onClose }) => {
           <div className="totals-section">
             <div className="total-row subtotal">
               <span>Subtotal:</span>
-              <span>₦{parseFloat(sale.totalAmount).toLocaleString()}</span>
+              <span>₦{parseFloat(totalAmount).toLocaleString()}</span>
             </div>
             <div className="total-row discount">
               <span>Discount:</span>
@@ -201,9 +219,50 @@ const Receipt = ({ sale, onPrint, onClose }) => {
             </div>
             <div className="total-row grand-total">
               <span>TOTAL AMOUNT:</span>
-              <span>₦{parseFloat(sale.totalAmount).toLocaleString()}</span>
+              <span>₦{parseFloat(totalAmount).toLocaleString()}</span>
             </div>
           </div>
+
+          {/* Return Information Section */}
+          {returns && returns.length > 0 && (
+            <div className="returns-section">
+              <div className="receipt-divider with-text">
+                <span>RETURN INFORMATION</span>
+              </div>
+              {returns.map((returnInfo, index) => (
+                <div key={index} className="return-info">
+                  <div className="return-header">
+                    <div className="return-id">Return #{returnInfo.id}</div>
+                    <div className={`return-status status-${returnInfo.status?.toLowerCase()}`}>
+                      {returnInfo.status}
+                    </div>
+                  </div>
+                  <div className="return-details">
+                    <div className="return-detail">
+                      <label>Return Date:</label>
+                      <span>{formatDate(returnInfo.createdAt)}</span>
+                    </div>
+                    <div className="return-detail">
+                      <label>Return Type:</label>
+                      <span>{returnInfo.returnType}</span>
+                    </div>
+                    {returnInfo.totalRefundAmount && (
+                      <div className="return-detail">
+                        <label>Refund Amount:</label>
+                        <span>₦{parseFloat(returnInfo.totalRefundAmount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {returnInfo.reason && (
+                      <div className="return-detail">
+                        <label>Reason:</label>
+                        <span>{returnInfo.reason}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Payment Information */}
           <div className="payment-info">
@@ -211,9 +270,10 @@ const Receipt = ({ sale, onPrint, onClose }) => {
               <h3>Payment Method</h3>
               <div className="payment-details">
                 <label className="payment-method-display">
-                  {sale.paymentMethod === 'cash' && 'Cash Payment'}
-                  {sale.paymentMethod === 'bank_transfer' && 'Bank Transfer'}
-                  {sale.paymentMethod === 'pos' && 'POS Payment'}
+                  {paymentMethod === 'cash' && 'Cash Payment'}
+                  {paymentMethod === 'bank_transfer' && 'Bank Transfer'}
+                  {paymentMethod === 'pos' && 'POS Payment'}
+                  {paymentMethod === 'card' && 'Card Payment'}
                 </label>
               </div>
             </div>
@@ -235,7 +295,11 @@ const Receipt = ({ sale, onPrint, onClose }) => {
               <li>All tiles come with manufacturer warranty against defects</li>
               <li>Returns accepted within 7 days with original receipt only</li>
               <li>Ensure to check items before leaving the store</li>
-              <li>No refund after payment, exchange only</li>
+              {returns && returns.length > 0 ? (
+                <li>This transaction has been partially or fully returned as shown above</li>
+              ) : (
+                <li>No refund after payment, exchange only</li>
+              )}
             </ol>
           </div>
 

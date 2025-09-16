@@ -53,18 +53,20 @@ export const registerUser = async (userData) => {
 };
 
 // Products API calls
-export const fetchProducts = async () => {
+export const fetchProducts = async (params = {}) => {
   try {
-    // Include product type when fetching products
+    // Include product type when fetching products and add any filter parameters
+    const queryParams = {
+      include: 'productType',
+      ...params
+    };
+    
     const response = await API.get('/products', {
-      params: {
-        include: 'productType'
-      }
+      params: queryParams
     });
     console.log('Fetched products with types:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching products:', error.response?.data || error);
     throw error.response?.data || { message: 'Failed to fetch products' };
   }
 };
@@ -295,9 +297,12 @@ export const deleteLocation = async (id) => {
 };
 
 // Dashboard API calls
-export const fetchDashboardData = async (locationId = null) => {
+export const fetchDashboardData = async (locationId = null, category = null) => {
   try {
-    const params = locationId ? { locationId } : {};
+    const params = {};
+    if (locationId) params.locationId = locationId;
+    if (category && category !== 'all') params.category = category;
+    
     const response = await API.get('/dashboard', { params });
     return response.data;
   } catch (error) {
@@ -409,6 +414,72 @@ export const deleteCategory = async (id) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to delete category' };
+  }
+};
+
+// Returns API
+export const createReturn = async (returnData) => {
+  try {
+    const response = await API.post('/returns', returnData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to process return' };
+  }
+};
+
+export const fetchReturns = async () => {
+  try {
+    const response = await API.get('/returns');
+    // Backend returns { returns: [...] }, so we need to extract the returns array
+    return response.data.returns || [];
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch returns' };
+  }
+};
+
+export const fetchReturnById = async (returnId) => {
+  try {
+    const response = await API.get(`/returns/${returnId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch return details' };
+  }
+};
+
+export const updateReturnStatus = async (returnId, status) => {
+  try {
+    const response = await API.patch(`/returns/${returnId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update return status' };
+  }
+};
+
+// Orders API calls
+export const fetchOrders = async (params = {}) => {
+  try {
+    const response = await API.get('/orders', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch orders' };
+  }
+};
+
+export const fetchOrderById = async (orderId) => {
+  try {
+    const response = await API.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch order details' };
+  }
+};
+
+export const searchOrders = async (searchTerm) => {
+  try {
+    const response = await API.get(`/orders/search/${searchTerm}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to search orders' };
   }
 };
 

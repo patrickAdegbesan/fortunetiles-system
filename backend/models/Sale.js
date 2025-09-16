@@ -46,7 +46,7 @@ const Sale = sequelize.define('Sale', {
     allowNull: false,
     defaultValue: 'cash',
     validate: {
-      isIn: [['cash', 'bank_transfer', 'pos']]
+      isIn: [['cash', 'bank_transfer', 'pos', 'card']]
     }
   },
 }, {
@@ -54,5 +54,31 @@ const Sale = sequelize.define('Sale', {
   timestamps: true,
   updatedAt: false,
 });
+
+Sale.associate = function(models) {
+  // Many-to-one relationship with User (cashier)
+  Sale.belongsTo(models.User, {
+    foreignKey: 'userId',
+    as: 'cashier'
+  });
+
+  // Many-to-one relationship with Location
+  Sale.belongsTo(models.Location, {
+    foreignKey: 'locationId',
+    as: 'location'
+  });
+
+  // One-to-many relationship with SaleItem
+  Sale.hasMany(models.SaleItem, {
+    foreignKey: 'saleId',
+    as: 'items'
+  });
+
+  // One-to-many relationship with Return
+  Sale.hasMany(models.Return, {
+    foreignKey: 'saleId',
+    as: 'returns'
+  });
+};
 
 module.exports = Sale;

@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaClipboardList } from 'react-icons/fa';
 import '../styles/SidebarNav.css';
 
 const SidebarNav = () => {
@@ -29,6 +29,8 @@ const SidebarNav = () => {
   const navigationItems = [
     { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard', roles: ['owner', 'manager', 'staff'] },
     { path: '/sales', icon: FaMoneyBillWave, label: 'Sales', roles: ['owner', 'manager', 'staff'] },
+    { path: '/orders', icon: FaClipboardList, label: 'Order History', roles: ['owner', 'manager', 'staff'] },
+    { path: '/returns-management', icon: FaClipboardList, label: 'Returns', roles: ['owner', 'manager', 'staff'] },
     { path: '/products', icon: FaBox, label: 'Products', roles: ['owner', 'manager', 'staff'] },
     { path: '/users', icon: FaUsers, label: 'Users', roles: ['owner'] },
     { path: '/reports', icon: FaChartLine, label: 'Reports', roles: ['owner', 'manager'] },

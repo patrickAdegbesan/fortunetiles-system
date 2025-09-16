@@ -8,6 +8,9 @@ const Navbar = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  console.log('Navbar rendering - user:', user);
+  console.log('Current location:', location.pathname);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -35,28 +38,20 @@ const Navbar = () => {
       
       <div className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <Link 
-          to="/dashboard" 
-          className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+          to="/orders" 
+          className={`nav-link ${location.pathname === '/orders' ? 'active' : ''}`}
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          <span className="nav-icon">📊</span>
-          <span className="nav-text">Dashboard</span>
+          <span className="nav-icon">�</span>
+          <span className="nav-text">Order History</span>
         </Link>
         <Link 
-          to="/sales" 
-          className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`}
+          to="/returns-management" 
+          className={`nav-link ${location.pathname === '/returns-management' ? 'active' : ''}`}
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          <span className="nav-icon">💰</span>
-          <span className="nav-text">Sales</span>
-        </Link>
-        <Link 
-          to="/products" 
-          className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`}
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <span className="nav-icon">📦</span>
-          <span className="nav-text">Products</span>
+          <span className="nav-icon">�</span>
+          <span className="nav-text">Returns</span>
         </Link>
         {user?.role === 'owner' && (
           <Link 

@@ -44,4 +44,18 @@ const Inventory = sequelize.define('Inventory', {
   ],
 });
 
+Inventory.associate = function(models) {
+  // Many-to-one relationship with Product
+  Inventory.belongsTo(models.Product, {
+    foreignKey: 'productId',
+    as: 'product'
+  });
+
+  // Many-to-one relationship with Location
+  Inventory.belongsTo(models.Location, {
+    foreignKey: 'locationId',
+    as: 'location'
+  });
+};
+
 module.exports = Inventory;

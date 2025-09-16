@@ -58,4 +58,24 @@ const InventoryLog = sequelize.define('InventoryLog', {
   updatedAt: false,
 });
 
+InventoryLog.associate = function(models) {
+  // Many-to-one relationship with Product
+  InventoryLog.belongsTo(models.Product, {
+    foreignKey: 'productId',
+    as: 'product'
+  });
+
+  // Many-to-one relationship with Location
+  InventoryLog.belongsTo(models.Location, {
+    foreignKey: 'locationId',
+    as: 'location'
+  });
+
+  // Many-to-one relationship with User
+  InventoryLog.belongsTo(models.User, {
+    foreignKey: 'userId',
+    as: 'user'
+  });
+};
+
 module.exports = InventoryLog;

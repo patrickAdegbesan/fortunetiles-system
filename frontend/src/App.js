@@ -10,6 +10,8 @@ import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
 import LocationsPage from './pages/LocationsPage';
 import AdminSettings from './pages/AdminSettings';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import ReturnsManagementPage from './pages/ReturnsManagementPage';
 import './App.css';
 
 function App() {
@@ -72,6 +74,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orders" 
+              element={
+                <ProtectedRoute>
+                  <OrderHistoryPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/returns-management" 
+              element={
+                <ProtectedRoute allowedRoles={['manager', 'owner']}>
+                  <ReturnsManagementPage />
                 </ProtectedRoute>
               } 
             />

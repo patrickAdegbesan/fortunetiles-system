@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchProductCategories, fetchInventory, fetchLocations } from '../services/api';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import TopHeader from '../components/TopHeader';
 import ProductEditor from '../components/ProductEditor';
@@ -28,10 +28,15 @@ const ProductsPage = () => {
       setLoading(true);
       const [productsData, categoriesData] = await Promise.all([
         fetchProducts(),
-        fetchProductCategories()
+        fetchCategories()
       ]);
       setProducts(productsData.products || []);
-      setCategories(categoriesData.categories || []);
+      // Handle both string array and object array formats
+      const categoryList = categoriesData.categories || [];
+      const processedCategories = categoryList.map(cat => 
+        typeof cat === 'string' ? cat : cat.name
+      );
+      setCategories(processedCategories);
     } catch (error) {
       setError('Failed to load products');
       console.error('Load products error:', error);

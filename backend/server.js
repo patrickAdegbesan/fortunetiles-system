@@ -16,6 +16,8 @@ const salesRoutes = require('./routes/sales');
 const dashboardRoutes = require('./routes/dashboard');
 const locationRoutes = require('./routes/locations');
 const userRoutes = require('./routes/users');
+const returnsRoutes = require('./routes/returns');
+const ordersRoutes = require('./routes/orders');
 
 const app = express();
 
@@ -52,6 +54,8 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/returns', returnsRoutes);
+app.use('/api/orders', ordersRoutes);
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
 

@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(44, 44, 44, 0.8); /* Dark overlay */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,14 +13,14 @@
 }
 
 .product-editor {
-  background: white;
+  background: #ffffff; /* Pure white */
   border-radius: 20px;
   width: 100%;
   max-width: 1200px;
   max-height: 95vh;
   overflow-y: auto;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 80px rgba(44, 44, 44, 0.25);
+  border: 1px solid #e8e6e0; /* Light border */
 }
 
 .editor-header {

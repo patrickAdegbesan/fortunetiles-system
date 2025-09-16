@@ -641,7 +641,8 @@ const SalePage = () => {
                         <option value="">Select Payment Method</option>
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
-                        <option value="transfer">Bank Transfer</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="pos">POS</option>
                       </select>
                     </div>
                     
@@ -676,6 +677,11 @@ const SalePage = () => {
           onClose={() => {
             setShowReceipt(false);
             setCompletedSale(null);
+          }}
+          onReturn={(sale) => {
+            setShowReceipt(false);
+            // Navigate to returns page with sale info
+            window.location.href = `/returns?saleId=${sale.id}`;
           }}
         />
       )}

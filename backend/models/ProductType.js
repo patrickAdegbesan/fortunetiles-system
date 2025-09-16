@@ -39,4 +39,12 @@ const ProductType = sequelize.define('ProductType', {
   underscored: true,
 });
 
+ProductType.associate = function(models) {
+  // One-to-many relationship with Product
+  ProductType.hasMany(models.Product, {
+    foreignKey: 'productTypeId',
+    as: 'products'
+  });
+};
+
 module.exports = ProductType;

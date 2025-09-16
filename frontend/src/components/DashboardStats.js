@@ -1,83 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { fetchDashboardStats, fetchLowStockItems } from '../services/api';
+import React from 'react';
 import '../styles/DashboardStats.css';
 
-const DashboardStats = () => {
-  const [stats, setStats] = useState(null);
-  const [lowStockItems, setLowStockItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) => {
+  if (!dashboardData) {
+    return <div className="loading">Loading dashboard...</div>;
+  }
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        const [statsData, lowStockData] = await Promise.all([
-          fetchDashboardStats(),
-          fetchLowStockItems()
-        ]);
-        setStats(statsData);
-        setLowStockItems(lowStockData.items || []);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        setError(error.message || 'Failed to load dashboard data');
-        // Set default values if API fails
-        setStats({
-          totalSales: 0,
-          totalRevenue: 0,
-          totalStockValue: 0,
-          recentActivity: []
-        });
-        setLowStockItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
-
-  if (loading) return <div className="loading">Loading dashboard...</div>;
-  if (error) return <div className="error">Error: {error}</div>;
+  const stats = dashboardData;
+  const lowStockItems = dashboardData.lowStockItems || [];
 
   return (
     <div className="dashboard-stats">
+      {/* Filter Indicator */}
+      {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
+        <div className="stats-filter-info">
+          <span className="filter-indicator">
+            📊 Filtered Results Active
+          </span>
+        </div>
+      )}
+
       <div className="stats-grid">
         <div className="stat-card sales">
-          <div className="stat-icon">💰</div>
-          <h3>TOTAL SALES</h3>
-          <p className="stat-number">₦{(stats?.totalSales || 0).toLocaleString()}</p>
-          <small>Total amount from all sales</small>
+          <div className="stat-header">
+            <div className="stat-icon sales-icon">💰</div>
+            <div className="stat-info">
+              <h3>TOTAL SALES</h3>
+              <p className="stat-description">Number of completed transactions</p>
+            </div>
+          </div>
+          <div className="stat-value">
+            <p className="stat-number">{(Number(stats?.totalSales) || 0).toLocaleString()}</p>
+            <span className="stat-unit">transactions</span>
+          </div>
         </div>
         
         <div className="stat-card revenue">
-          <div className="stat-icon">📈</div>
-          <h3>TOTAL REVENUE</h3>
-          <p className="stat-number">₦{(stats?.totalRevenue || 0).toLocaleString()}</p>
-          <small>Total revenue generated</small>
+          <div className="stat-header">
+            <div className="stat-icon revenue-icon">📈</div>
+            <div className="stat-info">
+              <h3>TOTAL REVENUE</h3>
+              <p className="stat-description">Total money earned from sales</p>
+            </div>
+          </div>
+          <div className="stat-value">
+            <p className="stat-number">₦{(Number(stats?.totalRevenue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</p>
+            <span className="stat-unit">revenue generated</span>
+          </div>
         </div>
         
         <div className="stat-card stock">
-          <div className="stat-icon">📦</div>
-          <h3>STOCK VALUE</h3>
-          <p className="stat-number">₦{(stats?.totalStockValue || 0).toLocaleString()}</p>
-          <small>Current inventory value</small>
+          <div className="stat-header">
+            <div className="stat-icon stock-icon">📦</div>
+            <div className="stat-info">
+              <h3>STOCK VALUE</h3>
+              <p className="stat-description">Total value of current inventory</p>
+            </div>
+          </div>
+          <div className="stat-value">
+            <p className="stat-number">₦{(Number(stats?.totalStockValue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</p>
+            <span className="stat-unit">inventory worth</span>
+          </div>
         </div>
         
         <div className="stat-card alerts">
-          <div className="stat-icon">⚠️</div>
-          <h3>LOW STOCK ITEMS</h3>
-          <p className="stat-number">{lowStockItems.length}</p>
-          <small>Items needing restock</small>
+          <div className="stat-header">
+            <div className="stat-icon alerts-icon">⚠️</div>
+            <div className="stat-info">
+              <h3>LOW STOCK ITEMS</h3>
+              <p className="stat-description">Products needing immediate restock</p>
+            </div>
+          </div>
+          <div className="stat-value">
+            <p className="stat-number">{Array.isArray(lowStockItems) ? lowStockItems.length : 0}</p>
+            <span className="stat-unit">items need attention</span>
+          </div>
         </div>
       </div>
 
       {/* Low Stock Alert Section */}
-      {lowStockItems.length > 0 && (
+      {Array.isArray(lowStockItems) && lowStockItems.length > 0 && (
         <div className="low-stock-section">
           <h4>🚨 Low Stock Alerts</h4>
           <div className="low-stock-grid">
-            {lowStockItems.slice(0, 6).map(item => (
+            {lowStockItems.slice(0, 6).filter(item => item && item.id).map(item => (
               <div key={item.id} className="low-stock-item">
                 <div className="item-details">
                   <strong>{item.productName || item.Product?.name}</strong>
@@ -85,7 +91,9 @@ const DashboardStats = () => {
                     {Object.entries(item.customAttributes || item.Product?.customAttributes || {})
                       .map(([key, value]) => `${value}`).join(' - ')}
                   </span>
-                  <span className="item-location">{item.location}</span>
+                  <span className="item-location">
+                    {typeof item.location === 'string' ? item.location : item.location?.name || 'Unknown Location'}
+                  </span>
                 </div>
                 <div className="quantity-alert">
                   <span className="quantity">{item.quantitySqm}</span>
@@ -99,21 +107,6 @@ const DashboardStats = () => {
               +{lowStockItems.length - 6} more items need attention
             </p>
           )}
-        </div>
-      )}
-
-      {/* Recent Activity Section */}
-      {stats?.recentActivity && stats.recentActivity.length > 0 && (
-        <div className="recent-activity">
-          <h3>Recent Activity</h3>
-          <ul>
-            {stats.recentActivity.slice(0, 10).map(activity => (
-              <li key={activity.id}>
-                {activity.changeType} - {activity.product?.name || activity.Product?.name} 
-                ({activity.changeAmount} {activity.product?.unitOfMeasure || activity.Product?.unitOfMeasure || 'units'})
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>

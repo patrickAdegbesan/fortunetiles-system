@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const ProductType = require('./ProductType');
 
 const Product = sequelize.define('Product', {
   id: {
@@ -66,5 +65,37 @@ const Product = sequelize.define('Product', {
   paranoid: true,
   underscored: true,
 });
+
+Product.associate = function(models) {
+  // Many-to-one relationship with ProductType
+  Product.belongsTo(models.ProductType, {
+    foreignKey: 'productTypeId',
+    as: 'productType'
+  });
+
+  // One-to-many relationship with Inventory
+  Product.hasMany(models.Inventory, {
+    foreignKey: 'productId',
+    as: 'inventory'
+  });
+
+  // One-to-many relationship with SaleItem
+  Product.hasMany(models.SaleItem, {
+    foreignKey: 'productId',
+    as: 'saleItems'
+  });
+
+  // One-to-many relationship with ReturnItem
+  Product.hasMany(models.ReturnItem, {
+    foreignKey: 'productId',
+    as: 'returnItems'
+  });
+
+  // One-to-many relationship with InventoryLog
+  Product.hasMany(models.InventoryLog, {
+    foreignKey: 'productId',
+    as: 'inventoryLogs'
+  });
+};
 
 module.exports = Product;

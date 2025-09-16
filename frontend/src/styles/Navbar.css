@@ -1,11 +1,11 @@
 .navbar {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+  background: linear-gradient(135deg, #000000 0%, #2c2c2c 100%); /* Black to soft black gradient */
   padding: 0.75rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border-bottom: 3px solid #3498db;
+  box-shadow: 0 4px 20px rgba(44, 44, 44, 0.15);
+  border-bottom: 3px solid #ffffff; /* White accent border */
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -25,23 +25,24 @@
 
 .logo-icon {
   font-size: 2rem;
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, #ffffff, #f5f2ed); /* White to cream gradient */
+  color: #000000; /* Black icon */
   border-radius: 12px;
   padding: 8px;
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .brand-text h2 {
   margin: 0;
   font-size: 1.6rem;
   font-weight: 700;
-  color: white;
+  color: #ffffff; /* Pure white */
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .brand-subtitle {
   font-size: 0.75rem;
-  color: #bdc3c7;
+  color: #f5f2ed; /* Light cream */
   font-weight: 400;
   display: block;
   margin-top: -2px;
@@ -57,7 +58,7 @@
 }
 
 .nav-link {
-  color: white;
+  color: #ffffff; /* Pure white */
   text-decoration: none;
   padding: 12px 20px;
   border-radius: 12px;
@@ -67,23 +68,24 @@
   align-items: center;
   gap: 8px;
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1); /* Light white overlay */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(5px);
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2); /* Brighter white on hover */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, #ffffff, #f5f2ed); /* White to cream gradient */
+  color: #000000; /* Black text for active */
   font-weight: 600;
-  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-  border-color: #2980b9;
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+  border-color: #f5f2ed;
 }
 
 .nav-link.active::before {
@@ -94,9 +96,9 @@
   transform: translateX(-50%);
   width: 6px;
   height: 6px;
-  background: #e74c3c;
+  background: #2c2c2c; /* Soft black indicator */
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(231, 76, 60, 0.6);
+  box-shadow: 0 0 10px rgba(44, 44, 44, 0.6);
 }
 
 .nav-icon {
@@ -132,14 +134,14 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, #2c2c2c, #000000); /* Soft black to black */
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: white;
+  color: #ffffff; /* White text */
   font-size: 1.1rem;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -152,7 +154,7 @@
 .user-name {
   font-size: 0.9rem;
   font-weight: 600;
-  color: white;
+  color: #ffffff; /* Pure white */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
@@ -164,8 +166,8 @@
 }
 
 .logout-btn {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
+  background: linear-gradient(135deg, #2c2c2c, #000000); /* Soft black to black gradient */
+  color: #ffffff; /* Pure white */
   border: none;
   padding: 10px 16px;
   border-radius: 10px;
@@ -176,14 +178,14 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 4px 12px rgba(44, 44, 44, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logout-btn:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226);
+  background: linear-gradient(135deg, #000000, #2c2c2c); /* Inverted gradient on hover */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 6px 20px rgba(44, 44, 44, 0.4);
 }
 
 .logout-icon {
@@ -279,12 +281,12 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    background: linear-gradient(135deg, #000000 0%, #2c2c2c 100%); /* Black gradient */
     flex-direction: column;
     padding: 20px;
     gap: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border-top: 3px solid #3498db;
+    box-shadow: 0 8px 32px rgba(44, 44, 44, 0.3);
+    border-top: 3px solid #ffffff; /* White border */
     transform: translateY(-100%);
     opacity: 0;
     visibility: hidden;

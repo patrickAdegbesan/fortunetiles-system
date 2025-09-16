@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchDashboardData, fetchInventory, fetchProducts } from '../services/api';
+import { fetchDashboardData, fetchInventory, fetchProducts, fetchLocations, fetchCategories } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import TopHeader from '../components/TopHeader';
 import DashboardStats from '../components/DashboardStats';
@@ -14,27 +14,81 @@ const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Filter states
+  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [locations, setLocations] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    loadDashboardData();
+    loadInitialData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Reload data when filters change
+    if (locations.length > 0 || categories.length > 0) {
+      loadDashboardData();
+    }
+  }, [selectedLocation, selectedCategory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      const [locationsData, categoriesData] = await Promise.all([
+        fetchLocations().catch(() => ({ locations: [] })),
+        fetchCategories().catch(() => ({ categories: [] }))
+      ]);
+      
+      // Ensure data is properly structured
+      const safeLocations = Array.isArray(locationsData.locations) ? locationsData.locations : [];
+      const safeCategories = Array.isArray(categoriesData.categories) ? categoriesData.categories : [];
+      
+      setLocations(safeLocations);
+      setCategories(safeCategories);
+      
+      // Load dashboard data after getting filter options
+      await loadDashboardData();
+    } catch (err) {
+      console.error('Error loading initial data:', err);
+      setError('Failed to load initial data');
+      // Set safe fallbacks
+      setLocations([]);
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true);
+      const params = {};
+      if (selectedLocation !== 'all') params.locationId = selectedLocation;
+      if (selectedCategory !== 'all') params.category = selectedCategory;
+
       const [dashData, inventoryData, productsData] = await Promise.all([
-        fetchDashboardData(user?.locationId),
-        fetchInventory(user?.locationId),
-        fetchProducts()
+        fetchDashboardData(params.locationId ? parseInt(params.locationId) : null, params.category),
+        fetchInventory(params).catch(() => ({ inventory: [] })), // Fallback for inventory
+        fetchProducts(params).catch(() => ({ products: [] })) // Fallback for products
       ]);
       
       setDashboardData(dashData);
       setInventory(inventoryData.inventory || []);
       setProducts(productsData.products || []);
+      setError(''); // Clear any previous errors
     } catch (err) {
+      console.error('Error loading dashboard data:', err);
       setError(err.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+      // Set fallback data
+      setDashboardData({
+        totalSales: 0,
+        totalRevenue: 0,
+        totalStockValue: 0,
+        recentActivity: [],
+        lowStockItems: []
+      });
+      setInventory([]);
+      setProducts([]);
     }
   };
 
@@ -78,77 +132,270 @@ const Dashboard = () => {
         
         <div className="dashboard-content" style={{ padding: '20px' }}>
 
-        {/* Enhanced Dashboard Stats */}
-        <DashboardStats />
+        {/* Dashboard Filters */}
+        <div className="dashboard-filters">
+          <div className="filter-group">
+            <label htmlFor="location-filter">📍 Location:</label>
+            <select
+              id="location-filter"
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">All Locations</option>
+              {Array.isArray(locations) && locations.map(location => (
+                <option key={location.id || location.name} value={location.id}>
+                  {typeof location === 'object' ? location.name || 'Unknown' : location}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Inventory Manager */}
-        <div className="dashboard-section full-width">
-          <h2>Inventory Management</h2>
-          <InventoryManager />
+          <div className="filter-group">
+            <label htmlFor="category-filter">📂 Category:</label>
+            <select
+              id="category-filter"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">All Categories</option>
+              {Array.isArray(categories) && categories.map(category => (
+                <option key={category.name || category.id} value={category.name}>
+                  {typeof category === 'object' ? category.name || 'Unknown' : category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-actions">
+            <button 
+              onClick={() => {
+                setSelectedLocation('all');
+                setSelectedCategory('all');
+              }}
+              className="reset-filters-btn"
+            >
+              🔄 Reset Filters
+            </button>
+          </div>
         </div>
 
-        <div className="dashboard-grid">
-          {/* Low Stock Alert */}
-          {dashboardData?.lowStockItems?.length > 0 && (
-            <div className="dashboard-section">
-              <h2>⚠️ Low Stock Alert</h2>
-              <div className="low-stock-list">
-                {dashboardData.lowStockItems.map((item) => (
-                  <div key={item.id} className="low-stock-item">
-                    <div className="item-info">
-                      <strong>{item.product?.name}</strong>
-                      <span>{item.product?.size} - {item.product?.color}</span>
-                    </div>
-                    <div className="stock-quantity">
-                      {item.quantitySqm} sqm
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Activity */}
-          <div className="dashboard-section">
-            <h2>Recent Activity</h2>
-            <div className="activity-list">
-              {dashboardData?.recentActivity?.length > 0 ? (
-                dashboardData.recentActivity.map((activity) => (
-                  <div key={activity.id} className="activity-item">
-                    <div className="activity-info">
-                      <strong>{activity.product?.name}</strong>
-                      <span className={`change-type ${activity.changeType}`}>
-                        {activity.changeType.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="activity-details">
-                      <span>{activity.changeAmount > 0 ? '+' : ''}{activity.changeAmount} sqm</span>
-                      <small>{new Date(activity.createdAt).toLocaleDateString()}</small>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p>No recent activity</p>
+        {/* Active Filter Indicator */}
+        {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
+          <div className="filter-info">
+            <div className="active-filters">
+              <span className="filter-label">📊 Showing data for:</span>
+              {selectedLocation !== 'all' && (
+                <span className="filter-tag">
+                  📍 {locations.find(l => l.id.toString() === selectedLocation)?.name || 'Unknown Location'}
+                </span>
+              )}
+              {selectedCategory !== 'all' && (
+                <span className="filter-tag">
+                  📂 {selectedCategory || 'Unknown Category'}
+                </span>
               )}
             </div>
           </div>
+        )}
 
-          {/* Quick Stats */}
+        {/* Enhanced Dashboard Stats */}
+        <DashboardStats 
+          dashboardData={dashboardData}
+          selectedLocation={selectedLocation}
+          selectedCategory={selectedCategory}
+        />
+
+        {/* Inventory Manager */}
+        <div className="dashboard-section full-width">
+          <InventoryManager 
+            selectedLocation={selectedLocation}
+            selectedCategory={selectedCategory}
+          />
+        </div>
+
+        <div className="dashboard-grid">
+          {/* Recent Activity */}
+          <div className="dashboard-section">
+            <h2>Recent Activity</h2>
+            <div className="activity-list" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+              {(() => {
+                // Filter recent activity by location and category
+                let filteredActivity = dashboardData?.recentActivity || [];
+                
+                // Filter by location if selected
+                if (selectedLocation) {
+                  filteredActivity = filteredActivity.filter(activity => 
+                    activity.locationId === parseInt(selectedLocation)
+                  );
+                }
+                
+                // Filter by category if selected
+                if (selectedCategory) {
+                  filteredActivity = filteredActivity.filter(activity => 
+                    activity.product?.category === selectedCategory
+                  );
+                }
+                
+                return filteredActivity.length > 0 ? (
+                  filteredActivity.map((activity) => (
+                    <div key={activity.id} className="activity-item">
+                      <div className="activity-info">
+                        <strong>{activity.product?.name || 'Unknown Product'}</strong>
+                        <span className={`change-type ${activity.changeType?.toLowerCase() || activity.type}`}>
+                          {activity.type === 'return' ? 'RETURN' : activity.changeType?.toUpperCase()}
+                          {activity.status && ` (${activity.status})`}
+                        </span>
+                      </div>
+                      <div className="activity-details">
+                        <span>
+                          {activity.type === 'return' 
+                            ? `${activity.changeAmount} items returned`
+                            : `${activity.changeAmount > 0 ? '+' : ''}${activity.changeAmount} sqm`
+                          }
+                        </span>
+                        <small>{new Date(activity.createdAt).toLocaleDateString()}</small>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>
+                    No recent activity
+                    {(selectedLocation || selectedCategory) && ' for selected filters'}
+                  </p>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Enhanced Quick Stats */}
           <div className="dashboard-section">
             <h2>Quick Stats</h2>
-            <div className="quick-stats">
-              <div className="stat-item">
-                <span>Total Products</span>
-                <strong>{products.length}</strong>
-              </div>
-              <div className="stat-item">
-                <span>Items in Stock</span>
-                <strong>{inventory.length}</strong>
-              </div>
-              <div className="stat-item">
-                <span>Your Location</span>
-                <strong>{user?.location?.name || 'Not assigned'}</strong>
-              </div>
+            <div className="quick-stats scrollable">
+              {(() => {
+                // Filter products by category if selected
+                const filteredProducts = selectedCategory 
+                  ? products.filter(product => product?.category === selectedCategory)
+                  : products;
+
+                // Filter inventory by location and category if selected
+                let filteredInventory = inventory;
+                if (selectedLocation) {
+                  filteredInventory = filteredInventory.filter(item => 
+                    item.locationId === parseInt(selectedLocation)
+                  );
+                }
+                if (selectedCategory) {
+                  filteredInventory = filteredInventory.filter(item => 
+                    item.product?.category === selectedCategory
+                  );
+                }
+
+                // Filter recent activity by location and category
+                let filteredActivity = dashboardData?.recentActivity || [];
+                if (selectedLocation) {
+                  filteredActivity = filteredActivity.filter(activity => 
+                    activity.locationId === parseInt(selectedLocation)
+                  );
+                }
+                if (selectedCategory) {
+                  filteredActivity = filteredActivity.filter(activity => 
+                    activity.product?.category === selectedCategory
+                  );
+                }
+
+                // Calculate filtered stock value
+                const filteredStockValue = filteredInventory.reduce((total, item) => {
+                  const product = item.product || {};
+                  const price = parseFloat(product.price) || 0;
+                  const quantity = parseFloat(item.quantitySqm) || 0;
+                  return total + (price * quantity);
+                }, 0);
+
+                return (
+                  <>
+                    <div className="stat-item featured">
+                      <div className="stat-content">
+                        <span>
+                          {selectedCategory ? `${selectedCategory} Products` : 'Total Products'}
+                        </span>
+                        <strong>{filteredProducts.length}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className="stat-item featured">
+                      <div className="stat-content">
+                        <span>
+                          Items in Stock
+                          {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
+                            ? ' (Filtered)' 
+                            : ''}
+                        </span>
+                        <strong>{filteredInventory.length}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className="stat-item featured">
+                      <div className="stat-content">
+                        <span>
+                          {selectedLocation && selectedLocation !== 'all' 
+                            ? 'Selected Location' 
+                            : 'Your Location'}
+                        </span>
+                        <strong>
+                          {selectedLocation && selectedLocation !== 'all'
+                            ? locations.find(loc => loc.id === parseInt(selectedLocation))?.name || 'Unknown'
+                            : (typeof user?.location === 'string' 
+                                ? user.location 
+                                : user?.location?.name || 'Not assigned')
+                          }
+                        </strong>
+                      </div>
+                    </div>
+                    
+                    <div className="stat-item">
+                      <div className="stat-content">
+                        <span>
+                          Recent Activities
+                          {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
+                            ? ' (Filtered)' 
+                            : ''}
+                        </span>
+                        <strong>{filteredActivity.length}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className="stat-item">
+                      <div className="stat-content">
+                        <span>
+                          Stock Value
+                          {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
+                            ? ' (Filtered)' 
+                            : ''}
+                        </span>
+                        <strong>₦{filteredStockValue.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                    
+                    <div className="stat-item">
+                      <div className="stat-content">
+                        <span>Total Revenue</span>
+                        <strong>₦{(Number(dashboardData?.totalRevenue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                    
+                    {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
+                      <div className="stat-item filter-indicator-stat">
+                        <div className="stat-content">
+                          <span>Filtered View</span>
+                          <strong>Active</strong>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

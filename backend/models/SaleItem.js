@@ -53,4 +53,24 @@ const SaleItem = sequelize.define('SaleItem', {
   timestamps: false,
 });
 
+SaleItem.associate = function(models) {
+  // Many-to-one relationship with Sale
+  SaleItem.belongsTo(models.Sale, {
+    foreignKey: 'saleId',
+    as: 'sale'
+  });
+
+  // Many-to-one relationship with Product
+  SaleItem.belongsTo(models.Product, {
+    foreignKey: 'productId',
+    as: 'product'
+  });
+
+  // One-to-many relationship with ReturnItem
+  SaleItem.hasMany(models.ReturnItem, {
+    foreignKey: 'saleItemId',
+    as: 'returnItems'
+  });
+};
+
 module.exports = SaleItem;
