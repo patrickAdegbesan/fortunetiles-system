@@ -7,6 +7,7 @@ import Receipt from '../components/Receipt';
 import { FaBox } from 'react-icons/fa';
 import '../styles/SalePage.css';
 import QuickViewModal from '../components/QuickViewModal';
+import MoneyValue from '../components/MoneyValue';
 
 const SalePage = () => {
   const { user } = useContext(AuthContext);
@@ -292,7 +293,7 @@ const SalePage = () => {
                                     </span>
                                   ))}
                                 </div>
-                                <p className="product-price">₦{product.price?.toLocaleString() || '0'}</p>
+                                <p className="product-price"><MoneyValue amount={product.price || 0} sensitive={false} /></p>
                                 <p className="product-stock">Stock: {availableQty} {product.unitOfMeasure || 'pc'}</p>
                               </div>
                             </div>
@@ -406,7 +407,7 @@ const SalePage = () => {
                                 </td>
                                 <td style={{ padding: '12px 15px', textAlign: 'center' }}>
                                   <div style={{ fontWeight: '600', color: '#007bff', fontSize: '15px' }}>
-                                    ₦{product.price?.toLocaleString() || '0'}
+                                    <MoneyValue amount={product.price || 0} sensitive={false} />
                                   </div>
                                   {product.unitOfMeasure && (
                                     <div style={{ fontSize: '12px', color: '#6c757d' }}>
@@ -516,7 +517,7 @@ const SalePage = () => {
                       }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: '500', fontSize: '14px' }}>{item.productName}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>₦{item.price.toLocaleString()}</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}><MoneyValue amount={item.price} sensitive={false} /></div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button
@@ -575,7 +576,7 @@ const SalePage = () => {
                       marginBottom: '15px'
                     }}>
                       <span>Total:</span>
-                      <span>₦{getTotalAmount().toLocaleString()}</span>
+                      <span><MoneyValue amount={getTotalAmount()} sensitive={false} /></span>
                     </div>
                     
                     <div style={{ marginBottom: '15px' }}>

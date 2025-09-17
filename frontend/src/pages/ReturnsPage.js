@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { fetchSaleById, createReturn } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import TopHeader from '../components/TopHeader';
+import MoneyValue from '../components/MoneyValue';
 
 const ReturnsPage = () => {
   const location = useLocation();
@@ -221,10 +222,10 @@ const ReturnsPage = () => {
                       {item.quantity}
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
-                      ₦{parseFloat(item.unitPrice).toLocaleString()}
+                      <MoneyValue amount={parseFloat(item.unitPrice)} sensitive={false} />
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
-                      ₦{parseFloat(item.lineTotal).toLocaleString()}
+                      <MoneyValue amount={parseFloat(item.lineTotal)} sensitive={false} />
                     </td>
                   </tr>
                 ))}

@@ -4,6 +4,7 @@ import api from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
 import Receipt from '../components/Receipt';
+import MoneyValue from '../components/MoneyValue';
 import '../styles/OrderHistoryPage.css';
 
 const OrderHistoryPage = () => {
@@ -193,7 +194,7 @@ const OrderHistoryPage = () => {
             { label: 'Completed', value: orders.filter(order => order.status === 'completed').length },
             { label: 'Pending', value: orders.filter(order => order.status === 'pending').length },
             { label: 'Cancelled', value: orders.filter(order => order.status === 'cancelled').length },
-            { label: 'Total Sales', value: formatCurrency(orders.reduce((total, order) => total + (order.total || 0), 0)) }
+            { label: 'Total Sales', value: <MoneyValue amount={orders.reduce((total, order) => total + (order.total || 0), 0)} sensitive={true} /> }
           ]}
         />
         
@@ -284,7 +285,7 @@ const OrderHistoryPage = () => {
                       </div>
                     </td>
                     <td className="order-total">
-                      <strong className="amount">{formatCurrency(order.total || 0)}</strong>
+                      <strong className="amount"><MoneyValue amount={order.total || 0} sensitive={false} /></strong>
                     </td>
                     <td className="payment-method">
                       <span className={`payment-badge payment-${(order.paymentMethod || 'cash').toLowerCase()}`}>
@@ -353,7 +354,7 @@ const OrderHistoryPage = () => {
                   <h4>Order Details</h4>
                   <p><strong>Customer:</strong> {processingReturn.customerName || 'Walk-in Customer'}</p>
                   <p><strong>Date:</strong> {formatDateTime(processingReturn.createdAt || processingReturn.saleDate)}</p>
-                  <p><strong>Original Total:</strong> {formatCurrency(processingReturn.total || 0)}</p>
+                  <p><strong>Original Total:</strong> <MoneyValue amount={processingReturn.total || 0} sensitive={false} /></p>
                 </div>
 
                 <div className="return-items-section">
@@ -365,8 +366,8 @@ const OrderHistoryPage = () => {
                           <strong>{item.productName}</strong>
                           <span className="item-details">
                             Original Qty: {item.quantity} | 
-                            Price: {formatCurrency(item.totalPrice / item.quantity)} each |
-                            Total: {formatCurrency(item.totalPrice)}
+                            Price: <MoneyValue amount={item.totalPrice / item.quantity} sensitive={false} /> each |
+                            Total: <MoneyValue amount={item.totalPrice} sensitive={false} />
                           </span>
                         </div>
                         <div className="return-controls">
@@ -403,7 +404,7 @@ const OrderHistoryPage = () => {
                 <div className="return-summary">
                   <h4>Return Summary</h4>
                   <p><strong>Items to Return:</strong> {returnItems.filter(item => item.returnQuantity > 0).length}</p>
-                  <p><strong>Total Refund Amount:</strong> <span className="refund-amount">{formatCurrency(refundAmount)}</span></p>
+                  <p><strong>Total Refund Amount:</strong> <span className="refund-amount"><MoneyValue amount={refundAmount} sensitive={false} /></span></p>
                 </div>
               </div>
               <div className="modal-footer">
@@ -419,7 +420,7 @@ const OrderHistoryPage = () => {
                   onClick={processReturn}
                   disabled={processingReturnSubmit || refundAmount === 0}
                 >
-                  {processingReturnSubmit ? 'Processing...' : `Process Return (${formatCurrency(refundAmount)})`}
+                  {processingReturnSubmit ? 'Processing...' : `Process Return (`}<MoneyValue amount={refundAmount} sensitive={false} />{processingReturnSubmit ? '' : ')'}
                 </button>
               </div>
             </div>

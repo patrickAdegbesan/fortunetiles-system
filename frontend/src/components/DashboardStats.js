@@ -1,5 +1,6 @@
 import React from 'react';
 import '../styles/DashboardStats.css';
+import MoneyValue from './MoneyValue';
 
 const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) => {
   if (!dashboardData) {
@@ -37,7 +38,7 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
             </div>
           </div>
           <div className="stat-value">
-            <p className="stat-number">₦{(Number(stats?.totalRevenue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</p>
+            <p className="stat-number"><MoneyValue amount={Number(stats?.totalRevenue) || 0} sensitive={true} /></p>
             <span className="stat-unit">revenue generated</span>
           </div>
         </div>
@@ -51,7 +52,7 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
             </div>
           </div>
           <div className="stat-value">
-            <p className="stat-number">₦{(Number(stats?.totalStockValue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</p>
+            <p className="stat-number"><MoneyValue amount={Number(stats?.totalStockValue) || 0} sensitive={true} /></p>
             <span className="stat-unit">inventory worth</span>
           </div>
         </div>
