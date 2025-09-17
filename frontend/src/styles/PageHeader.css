@@ -1,0 +1,171 @@
+/* Modern page header styling */
+.page-header {
+  background: #ffffff;
+  border-radius: 12px;
+  margin: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.header-main {
+  flex: 1;
+}
+
+.title-section {
+  margin-bottom: 16px;
+}
+
+.title-section h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 32px;
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 20px;
+}
+
+.header-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 32px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 20px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Button styling for header actions */
+.header-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.header-actions .primary-button {
+  background: #2563EB;
+  color: white;
+}
+
+.header-actions .primary-button:hover {
+  background: #1D4ED8;
+}
+
+.header-actions .secondary-button {
+  background: #F9FAFB;
+  color: #374151;
+  border-color: #E5E7EB;
+}
+
+.header-actions .secondary-button:hover {
+  background: #F3F4F6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .page-header {
+    margin: 12px;
+    padding: 16px 20px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .title-section h1 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .header-icon {
+    font-size: 20px;
+  }
+
+  .header-stats {
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-stats {
+    gap: 16px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
+}
