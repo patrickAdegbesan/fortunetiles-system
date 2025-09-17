@@ -11,16 +11,18 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker for PWA functionality
+// Ensure service worker is unregistered (disable PWA/offline caching)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration);
-      })
-      .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
-      });
+  window.addEventListener('load', async () => {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+        console.log('SW unregistered: ', reg);
+      }
+    } catch (err) {
+      console.log('SW unregistration failed: ', err);
+    }
   });
 }
 

@@ -276,6 +276,17 @@
   color: white;
 }
 
+.sidebar-topbar .menu-btn,
+.sidebar-topbar .menu-btn:focus,
+.sidebar-topbar .menu-btn:active {
+  background: transparent;
+  border: none;
+}
+
+.sidebar-topbar .menu-btn:hover {
+  background: rgba(255,255,255,0.03); /* subtle hover only */
+}
+
 /* Mobile overlay menu when hamburger is opened */
 .mobile-overlay {
   position: fixed;
