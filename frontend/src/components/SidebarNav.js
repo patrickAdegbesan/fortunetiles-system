@@ -78,13 +78,13 @@ const SidebarNav = ({ isOpen, onToggle }) => {
         <div className="sidebar-topbar">
           <div className="brand-left">
             <Link to="/">
-              <img className="logo-circle-mobile" src="/assets/logo-circle.png" alt="Fortune Tiles" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+              <img className="logo-circle-mobile" src="/assets/logo-circle.png" alt="Fortune Tiles" />
             </Link>
           </div>
           <input className="search-input" placeholder="Search..." aria-label="Search" />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div className="avatar-btn">{(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</div>
-            <button onClick={openMobileMenu} aria-label="Open menu" style={{ background: 'transparent', border: 'none', color: 'white', fontSize: 20 }}>
+            <button className="menu-btn" onClick={openMobileMenu} aria-label="Open menu">
               <FaBars />
             </button>
           </div>

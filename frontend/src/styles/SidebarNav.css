@@ -1,22 +1,25 @@
 /* Sidebar Navigation Styles */
 .sidebar-toggle {
   position: fixed;
-  top: 15px;
-  left: 15px;
+  top: 0;
+  left: 0;
   z-index: 1001;
-  background: #007bff;
+  background: #2c3e50;
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 64px;
 }
 
 .sidebar-toggle:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+  background: #1a2634;
 }
 
 .sidebar-backdrop {
@@ -33,20 +36,16 @@
 .sidebar {
   position: fixed;
   top: 0;
-  left: -300px;
-  width: 300px;
-  height: 100vh;
+  left: 0;
+  width: 60px;
+  height: 100%;
   background-color: #2c3e50;
-  z-index: 1000;
-  transition: left 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  box-shadow: none;
+  z-index: 999;
+  transition: width 0.3s ease;
 }
 
-.sidebar-open {
-  left: 0;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+.sidebar.sidebar-open {
+  width: 300px;
 }
 
 .sidebar-header {
@@ -193,10 +192,122 @@
   }
   
   .sidebar-toggle {
-    top: 10px;
-    left: 10px;
-    padding: 10px;
+    top: 50%;
+    padding: 10px 6px;
   }
+}
+
+/* Mobile topbar (replaces vertical sidebar on small screens) */
+.sidebar-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52px; /* slightly more compact */
+  background: #2c3e50;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+}
+
+.sidebar-topbar .brand-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-topbar img.logo-full-mobile {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+/* circle logo used on mobile */
+.sidebar-topbar img.logo-circle-mobile {
+  height: 40px;
+  width: 40px;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+}
+
+.sidebar-topbar .search-input {
+  flex: 1;
+  margin: 0 10px;
+  max-width: 520px;
+  height: 36px;
+  border-radius: 18px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #f5f7fa;
+  font-size: 14px;
+}
+
+.sidebar-topbar .search-input::placeholder {
+  color: rgba(245,247,250,0.7);
+}
+
+.sidebar-topbar .avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #4ecdc4;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Menu / hamburger button inside topbar */
+.sidebar-topbar .menu-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: white;
+}
+
+/* Mobile overlay menu when hamburger is opened */
+.mobile-overlay {
+  position: fixed;
+  top: 52px; /* below compact topbar */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1003;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mobile-drawer {
+  width: 280px;
+  max-width: 80%;
+  background: #2c3e50;
+  padding-top: 8px; /* small breathing room under topbar */
+  box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+  overflow-y: auto;
+}
+
+.mobile-drawer .sidebar-nav-link {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  /* hide vertical sidebar on mobile */
+  .sidebar { display: none; }
 }
 
 /* Animation for smooth transitions */
@@ -234,4 +345,32 @@
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: #0056b3;
+}
+
+/* Tooltip styling */
+.sidebar-tooltip {
+  position: fixed;
+  left: 70px;
+  transform: translateY(-50%);
+  background-color: #333;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 1001;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  pointer-events: none; /* Prevent tooltip from interfering with mouse events */
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
