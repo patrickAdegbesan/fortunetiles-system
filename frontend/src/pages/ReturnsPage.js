@@ -98,7 +98,7 @@ const ReturnsPage = () => {
   if (!sale) {
     return (
       <>
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="returns-page">
           <TopHeader title="🔄 Process Return">
             {loading ? 'Loading...' : 'Sale not found'}
@@ -110,7 +110,7 @@ const ReturnsPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="returns-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
         <TopHeader title="🔄 Process Return">
           <div style={{ fontSize: '14px', color: '#666' }}>

@@ -44,7 +44,12 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>Fortune Tiles</h1>
+          <img
+            src="/assets/logo-circle.png"
+            alt="Fortune Tiles"
+            className="login-logo"
+          />
+          {/* Optionally keep subtitle below logo */}
           <p>Inventory Management System</p>
         </div>
         

@@ -7,7 +7,7 @@ import {
   fetchInventory 
 } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import '../styles/LocationsPage.css';
 
 const LocationsPage = () => {
@@ -19,6 +19,7 @@ const LocationsPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
 
   useEffect(() => {
     loadLocations();
@@ -111,9 +112,21 @@ const LocationsPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="locations-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="📍 Manage Locations" />
+        <PageHeader
+          icon="📍"
+          title="Manage Locations"
+          subtitle="Add and manage store locations"
+          actions={
+            <button
+              className="primary-button"
+              onClick={() => setShowAddLocationModal(true)}
+            >
+              + Add Location
+            </button>
+          }
+        />
         
         <div className="locations-container" style={{ padding: '20px' }}>
 

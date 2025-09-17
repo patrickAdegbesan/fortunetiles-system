@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
 import { FaBox } from 'react-icons/fa';
 import '../styles/ProductsPage.css';
@@ -435,104 +435,72 @@ const ProductsPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="products-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="📦 Product Management">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              width: '250px'
-            }}
-          />
-          
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              minWidth: '150px'
-            }}
-          >
-            <option value="">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
+        <PageHeader
+          icon="📦"
+          title="Product Management"
+          subtitle="Manage your product catalog and inventory"
+          stats={[
+            { label: 'Total Products', value: products.length },
+            { label: 'Categories', value: categories.length }
+          ]}
+          actions={
+            <>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+              
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="category-select"
+              >
+                <option value="">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
 
-          <select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              minWidth: '170px'
-            }}
-          >
-            <option value="">Select Location</option>
-            {locations.map(loc => (
-              <option key={loc.id} value={loc.id}>{loc.name}</option>
-            ))}
-          </select>
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="location-select"
+              >
+                <option value="">Select Location</option>
+                {locations.map(loc => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
 
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#495057' }}>
-            <input
-              type="checkbox"
-              checked={inStockOnly}
-              onChange={(e) => setInStockOnly(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            In stock only
-          </label>
+              <label className="stock-filter">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(e) => setInStockOnly(e.target.checked)}
+                />
+                In stock only
+              </label>
 
-          <button 
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-            onClick={handleBulkExport}
-          >
-            📊 Export CSV
-          </button>
-          <button 
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-            onClick={handleCreateProduct}
-          >
-            ➕ Add Product
-          </button>
-        </TopHeader>
+              <button 
+                className="action-btn secondary-button"
+                onClick={handleBulkExport}
+              >
+                📊 Export CSV
+              </button>
+              <button 
+                className="action-btn primary-button"
+                onClick={handleCreateProduct}
+              >
+                ➕ Add Product
+              </button>
+            </>
+          }
+        />
         
         <div style={{ padding: '20px' }}>
           {error && <div className="error-message">{error}</div>}

@@ -8,7 +8,7 @@ import {
   fetchLocations 
 } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import ReportChart from '../components/ReportChart';
 import DateRangeSelector from '../components/DateRangeSelector';
 import { exportToPDF, exportToExcel } from '../utils/reportExport';
@@ -142,9 +142,13 @@ const ReportsPage = () => {
   if (!hasReportAccess) {
     return (
       <>
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="reports-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="📊 Business Reports" />
+          <PageHeader
+            icon="📊"
+            title="Business Reports"
+            subtitle="Access Denied"
+          />
           <div style={{ padding: '20px' }}>
             <div className="access-denied">
               <h2>Access Denied</h2>
@@ -158,26 +162,31 @@ const ReportsPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="reports-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="📊 Business Reports">
-          <div className="header-actions">
-            <button 
-              className="export-btn"
-              onClick={() => handleExportReport('pdf')}
-              disabled={loading}
-            >
-              📄 Export PDF
-            </button>
-            <button 
-              className="export-btn"
-              onClick={() => handleExportReport('excel')}
-              disabled={loading}
-            >
-              📊 Export Excel
-            </button>
-          </div>
-        </TopHeader>
+        <PageHeader
+          icon="📊"
+          title="Business Reports"
+          subtitle="View and analyze business performance"
+          actions={
+            <div className="header-actions">
+              <button 
+                className="export-btn primary-button"
+                onClick={() => handleExportReport('pdf')}
+                disabled={loading}
+              >
+                📄 Export PDF
+              </button>
+              <button 
+                className="export-btn secondary-button"
+                onClick={() => handleExportReport('excel')}
+                disabled={loading}
+              >
+                📊 Export Excel
+              </button>
+            </div>
+          }
+        />
         
         <div className="reports-container" style={{ padding: '20px' }}>
 

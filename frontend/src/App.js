@@ -1,7 +1,8 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SidebarNav from './components/SidebarNav';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SalePage from './pages/SalePage';
@@ -13,12 +14,38 @@ import AdminSettings from './pages/AdminSettings';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import ReturnsManagementPage from './pages/ReturnsManagementPage';
 import './App.css';
+import './styles/Layout.css';
+
+function MainLayout({ children }) {
+  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isLoginPage = location.pathname === '/login';
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  if (isLoginPage) {
+    return children;
+  }
+
+  return (
+    <div className={`app-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+      <SidebarNav isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+      <div className="app-layout">
+        <main className="main-content">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="App">
+        <MainLayout>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route 
@@ -95,7 +122,7 @@ function App() {
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-        </div>
+        </MainLayout>
       </Router>
     </AuthProvider>
   );

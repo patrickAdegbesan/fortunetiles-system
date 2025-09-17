@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
+import { MdSettings } from 'react-icons/md';
 import '../styles/AdminSettings.css';
 
 const AdminSettings = () => {
@@ -300,12 +301,15 @@ const AdminSettings = () => {
   if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
     return (
       <div className="admin-settings">
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="main-content">
-          <TopHeader title="Admin Settings" />
+          <PageHeader 
+            icon={<MdSettings />}
+            title="Admin Settings" 
+            subtitle="Access Denied"
+          />
           <div className="content-area">
             <div className="access-denied">
-              <h2>Access Denied</h2>
               <p>You don't have permission to access admin settings.</p>
             </div>
           </div>
@@ -316,9 +320,14 @@ const AdminSettings = () => {
 
   return (
     <div className="admin-settings">
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="main-content">
-        <TopHeader title="Admin Settings" />
+        <PageHeader 
+          icon={<MdSettings />}
+          title="Admin Settings"
+          subtitle="Manage product types and categories"
+          actions={[]}
+        />
         <div className="content-area">
           {error && <div className="error-message">{error}</div>}
           {success && <div className="success-message">{success}</div>}

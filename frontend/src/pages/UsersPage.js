@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchUsers, createUser, updateUser, deactivateUser, activateUser, fetchUserRoles, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
 import '../styles/UsersPage.css';
 
@@ -161,9 +161,13 @@ const UsersPage = () => {
   if (!isOwner) {
     return (
       <>
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="users-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="👥 User Management" />
+          <PageHeader
+            icon="👥"
+            title="User Management"
+            subtitle="Access Denied"
+          />
           <div style={{ padding: '20px' }}>
             <div className="access-denied">
               <h2>Access Denied</h2>
@@ -177,13 +181,23 @@ const UsersPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="users-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="👥 User Management">
-          <button className="add-user-btn" onClick={handleCreateUser}>
-            ➕ Add User
-          </button>
-        </TopHeader>
+        <PageHeader
+          icon="👥"
+          title="User Management"
+          subtitle="Manage user accounts and permissions"
+          stats={[
+            { label: 'Total Users', value: pagination.total || filteredUsers.length },
+            { label: 'Active', value: filteredUsers.filter(u => u.isActive).length },
+            { label: 'Inactive', value: filteredUsers.filter(u => !u.isActive).length }
+          ]}
+          actions={
+            <button className="primary-button" onClick={handleCreateUser}>
+              ➕ Add User
+            </button>
+          }
+        />
         
         <div className="users-container" style={{ padding: '20px' }}>
 

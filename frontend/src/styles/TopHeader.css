@@ -2,47 +2,142 @@
 .top-header {
   background: white;
   border-bottom: 1px solid #e0e0e0;
-  padding: 0 20px;
-  margin-left: 0;
-  transition: margin-left 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  position: relative;
+  width: calc(100% + 60px); /* Account for sidebar padding */
+  margin-left: -60px; /* Offset the app-layout padding */
+  box-sizing: border-box;
+}
+
+.sidebar-open .top-header {
+  width: calc(100% + 300px);
+  margin-left: -300px;
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 60px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 16px 32px;
+  gap: 24px;
+  box-sizing: border-box;
+  margin-left: 60px; /* Match the sidebar width */
+}
+
+.sidebar-open .header-content {
+  margin-left: 300px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.title-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 16px;
 }
 
 .page-title {
   margin: 0;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   color: #2c3e50;
-  margin-left: 60px; /* Space for hamburger menu */
+  line-height: 1.2;
+}
+
+.breadcrumb {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
+}
+
+/* Action buttons styling */
+.header-actions button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.header-actions .primary-action {
+  background: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.header-actions .secondary-action {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 /* Responsive adjustments */
+@media (max-width: 1024px) {
+  .header-content {
+    padding: 16px 20px;
+  }
+  
+  .page-title {
+    font-size: 22px;
+  }
+}
+
 @media (max-width: 768px) {
-  .top-header {
-    padding: 0 15px;
+  .header-content {
+    padding: 12px 16px;
+  }
+  
+  .header-left {
+    gap: 16px;
   }
   
   .page-title {
     font-size: 20px;
-    margin-left: 50px;
+  }
+  
+  .breadcrumb {
+    font-size: 12px;
   }
   
   .header-actions {
-    gap: 10px;
+    gap: 12px;
+  }
+  
+  .header-actions button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 12px;
+  }
+  
+  .header-left {
+    gap: 12px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  .breadcrumb {
+    display: none;
   }
 }
 

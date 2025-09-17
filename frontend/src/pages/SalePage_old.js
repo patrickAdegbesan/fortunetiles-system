@@ -287,7 +287,7 @@ const SalePage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="sale-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
         <TopHeader title="💰 Process Sale">
         <input

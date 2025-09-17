@@ -99,19 +99,30 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
         </div>
 
         <div className="receipt" id="receipt-content">
+          {/* Watermark behind receipt content */}
+          <img
+            src="/assets/logo-circle.png"
+            alt="" 
+            className="receipt-watermark"
+          />
+
           {/* Company Header */}
           <div className="company-header">
-            <div className="logo">FT</div>
-            <h1>FORTUNE TILES</h1>
+            {/* Full logo for receipt header */}
+            <img
+              src="/assets/logo-full.png"
+              alt="Fortune Tiles"
+              className="receipt-logo-full"
+            />
             <h2>Premium Tile Importers & Distributors</h2>
             <div className="company-details">
               <div className="detail">
                 <span className="icon">📍</span>
-                <span>123 Lekki Phase 1, Lagos, Nigeria</span>
+                <span>Lekki-Epe Expressway, Opp Sapphire Garden Beside Danco Petrol Station, Awoyaya Lagos State</span>
               </div>
               <div className="detail">
                 <span className="icon">📞</span>
-                <span>+234-XXX-XXXX-XXX</span>
+                <span>+234 806 219 5610</span>
               </div>
               <div className="detail">
                 <span className="icon">📧</span>
@@ -322,7 +333,7 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
             </div>
 
             <div className="footer-contact">
-              <p>For inquiries, call: +234-XXX-XXXX-XXX</p>
+              <p>For inquiries, call: +234 806 219 5610</p>
               <p>Follow us on social media @FortunetilesNG</p>
             </div>
           </div>

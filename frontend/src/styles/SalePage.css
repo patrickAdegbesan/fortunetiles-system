@@ -1,6 +1,63 @@
 .sale-page {
   min-height: 100vh;
-  background: #faf8f5; /* Cream background */
+  background: #faf8f5;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 200px;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: #2563EB;
+  outline: none;
+}
+
+.location-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 150px;
+  transition: border-color 0.2s;
+}
+
+.location-select:focus {
+  border-color: #2563EB;
+  outline: none;
+}
+
+.view-mode-btn {
+  padding: 8px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-mode-btn.primary-button {
+  background: #2563EB;
+  color: white;
+  border-color: transparent;
+}
+
+.view-mode-btn.primary-button:hover {
+  background: #1D4ED8;
+}
+
+.view-mode-btn.secondary-button {
+  background: #F9FAFB;
+  color: #374151;
+}
+
+.view-mode-btn.secondary-button:hover {
+  background: #F3F4F6;
 }
 
 .payment-method-options {

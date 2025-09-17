@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import SidebarNav from '../components/SidebarNav';
+import PageHeader from '../components/PageHeader';
 import * as api from '../services/api';
 import '../styles/ReturnsManagementPage.css';
 
@@ -96,7 +97,7 @@ const ReturnsManagementPage = () => {
   if (loading) {
     return (
       <>
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="returns-management-page">
           <div className="loading-spinner">
             <div className="spinner"></div>
@@ -109,25 +110,18 @@ const ReturnsManagementPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="returns-management-page">
-      <div className="page-header">
-        <h1>Returns Management</h1>
-        <div className="stats-summary">
-          <div className="stat-card">
-            <div className="stat-number">{pendingReturns.length}</div>
-            <div className="stat-label">Pending Returns</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{processedReturns.length}</div>
-            <div className="stat-label">Processed Returns</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">{returns.length}</div>
-            <div className="stat-label">Total Returns</div>
-          </div>
-        </div>
-      </div>
+        <PageHeader
+          icon="↩️"
+          title="Returns Management"
+          subtitle="Process and track return requests"
+          stats={[
+            { label: 'Pending Returns', value: pendingReturns.length },
+            { label: 'Processed Returns', value: processedReturns.length },
+            { label: 'Total Returns', value: returns.length }
+          ]}
+        />
 
       {error && (
         <div className="error-message">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import Receipt from '../components/Receipt';
 import '../styles/OrderHistoryPage.css';
 
@@ -167,9 +167,13 @@ const OrderHistoryPage = () => {
   if (loading) {
     return (
       <>
-        <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="order-history-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="Order History" />
+          <PageHeader
+            icon="📦"
+            title="Order History"
+            subtitle="Loading..."
+          />
           <div className="loading">Loading order history...</div>
         </div>
       </>
@@ -178,19 +182,22 @@ const OrderHistoryPage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="order-history-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="Order History" />
+        <PageHeader
+          icon="📦"
+          title="Order History"
+          subtitle="View and manage all orders"
+          stats={[
+            { label: 'Total Orders', value: orders.length },
+            { label: 'Completed', value: orders.filter(order => order.status === 'completed').length },
+            { label: 'Pending', value: orders.filter(order => order.status === 'pending').length },
+            { label: 'Cancelled', value: orders.filter(order => order.status === 'cancelled').length },
+            { label: 'Total Sales', value: formatCurrency(orders.reduce((total, order) => total + (order.total || 0), 0)) }
+          ]}
+        />
         
         <div className="order-history-container">
-          {/* Compact Stats Header */}
-          <div className="header-stats">
-            <span>Total Orders: {orders.length}</span>
-            <span>Completed: {orders.filter(order => order.status === 'completed').length}</span>
-            <span>Pending: {orders.filter(order => order.status === 'pending').length}</span>
-            <span>Cancelled: {orders.filter(order => order.status === 'cancelled').length}</span>
-            <span>Total Sales: {formatCurrency(orders.reduce((total, order) => total + (order.total || 0), 0))}</span>
-          </div>
 
           {error && (
             <div className="error-message">

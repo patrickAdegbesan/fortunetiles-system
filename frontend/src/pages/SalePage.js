@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import Receipt from '../components/Receipt';
 import { FaBox } from 'react-icons/fa';
 import '../styles/SalePage.css';
@@ -190,71 +190,48 @@ const SalePage = () => {
 
   return (
     <>
-      <SidebarNav />
+  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="sale-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="💰 Process Sale">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              width: '200px'
-            }}
-          />
-          
-          <select 
-            value={selectedLocation} 
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              fontSize: '14px',
-              minWidth: '150px'
-            }}
-          >
-            <option value="">Select Location</option>
-            {locations.map(location => (
-              <option key={location.id} value={location.id}>{location.name}</option>
-            ))}
-          </select>
-          
-          <button 
-            style={{
-              padding: '8px 12px',
-              backgroundColor: viewMode === 'grid' ? '#007bff' : '#f8f9fa',
-              color: viewMode === 'grid' ? 'white' : '#495057',
-              border: '1px solid #dee2e6',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-            onClick={() => setViewMode('grid')}
-          >
-            🔲 Grid
-          </button>
-          <button 
-            style={{
-              padding: '8px 12px',
-              backgroundColor: viewMode === 'table' ? '#007bff' : '#f8f9fa',
-              color: viewMode === 'table' ? 'white' : '#495057',
-              border: '1px solid #dee2e6',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-            onClick={() => setViewMode('table')}
-          >
-            📋 Table
-          </button>
-        </TopHeader>
+        <PageHeader
+          icon="💰"
+          title="Process Sale"
+          subtitle="Create a new sale transaction"
+          actions={
+            <>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+              
+              <select 
+                value={selectedLocation} 
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="location-select"
+              >
+                <option value="">Select Location</option>
+                {locations.map(location => (
+                  <option key={location.id} value={location.id}>{location.name}</option>
+                ))}
+              </select>
+              
+              <button 
+                className={`view-mode-btn ${viewMode === 'grid' ? 'primary-button' : 'secondary-button'}`}
+                onClick={() => setViewMode('grid')}
+              >
+                🔲 Grid
+              </button>
+              <button 
+                className={`view-mode-btn ${viewMode === 'table' ? 'primary-button' : 'secondary-button'}`}
+                onClick={() => setViewMode('table')}
+              >
+                📋 Table
+              </button>
+            </>
+          }
+        />
         
         <div className="sale-container" style={{ padding: '20px' }}>
           {error && <div className="error-message">{error}</div>}
