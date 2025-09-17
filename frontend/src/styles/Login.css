@@ -5,6 +5,11 @@
   justify-content: center;
   background: linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%); /* Cream gradient */
   padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .login-card {
@@ -15,6 +20,8 @@
   width: 100%;
   max-width: 400px;
   border: 1px solid #e8e6e0; /* Light border */
+  position: relative;
+  margin: 0 auto;
 }
 
 .login-header {
