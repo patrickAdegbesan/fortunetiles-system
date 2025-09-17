@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchDashboardData, fetchInventory, fetchProducts, fetchLocations, fetchCategories } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import TopHeader from '../components/TopHeader';
+import PageHeader from '../components/PageHeader';
 import DashboardStats from '../components/DashboardStats';
+// import { formatCurrency } from '../utils/formatters';
 import InventoryManager from '../components/InventoryManager';
 import '../styles/Dashboard.css';
 
@@ -94,41 +95,42 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <>
-        <SidebarNav />
-        <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="📊 Dashboard" />
-          <div style={{ padding: '20px' }}>
-            <div className="loading-spinner">Loading dashboard...</div>
-          </div>
+      <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+        <PageHeader 
+          icon="📊"
+          title="Dashboard"
+          subtitle="Loading..."
+        />
+        <div style={{ padding: '20px' }}>
+          <div className="loading-spinner">Loading dashboard...</div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <SidebarNav />
-        <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="📊 Dashboard" />
-          <div style={{ padding: '20px' }}>
-            <div className="error-message">{error}</div>
-          </div>
+      <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+        <PageHeader 
+          icon="📊"
+          title="Dashboard"
+          subtitle="Error"
+        />
+        <div style={{ padding: '20px' }}>
+          <div className="error-message">{error}</div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
     <>
-      <SidebarNav />
       <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <TopHeader title="📊 Dashboard">
-          <div style={{ fontSize: '16px', color: '#6c757d' }}>
-            Welcome back, {user?.firstName}!
-          </div>
-        </TopHeader>
+        <PageHeader
+          icon="📊"
+          title="Dashboard"
+          subtitle={`Welcome back, ${user?.firstName}!`}
+        />
         
         <div className="dashboard-content" style={{ padding: '20px' }}>
 
@@ -183,19 +185,9 @@ const Dashboard = () => {
 
         {/* Active Filter Indicator */}
         {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
-          <div className="filter-info">
+          <div className="filter-info compact">
             <div className="active-filters">
-              <span className="filter-label">📊 Showing data for:</span>
-              {selectedLocation !== 'all' && (
-                <span className="filter-tag">
-                  📍 {locations.find(l => l.id.toString() === selectedLocation)?.name || 'Unknown Location'}
-                </span>
-              )}
-              {selectedCategory !== 'all' && (
-                <span className="filter-tag">
-                  📂 {selectedCategory || 'Unknown Category'}
-                </span>
-              )}
+              <span className="filter-indicator">� Filtered Results Active</span>
             </div>
           </div>
         )}

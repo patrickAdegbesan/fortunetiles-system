@@ -2,14 +2,17 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(4, minmax(250px, 1fr));
+  gap: 10px;
+  width: 100%;
+  overflow-x: auto;
 }
+
+/* Remove conflicting media queries */
 
 /* Filter Indicator */
 .stats-filter-info {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   text-align: center;
 }
 
@@ -364,11 +367,8 @@
   }
 }
 
+/* Ensure consistent sizing on mobile */
 @media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .low-stock-grid {
     grid-template-columns: 1fr;
   }
@@ -379,5 +379,9 @@
   
   .stat-icon {
     font-size: 2rem;
+  }
+  
+  .stats-grid {
+    padding: 0;
   }
 }

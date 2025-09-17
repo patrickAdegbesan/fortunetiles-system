@@ -11,14 +11,7 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
 
   return (
     <div className="dashboard-stats">
-      {/* Filter Indicator */}
-      {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
-        <div className="stats-filter-info">
-          <span className="filter-indicator">
-            📊 Filtered Results Active
-          </span>
-        </div>
-      )}
+      {/* Removed duplicate filter indicator */}
 
       <div className="stats-grid">
         <div className="stat-card sales">
