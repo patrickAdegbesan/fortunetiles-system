@@ -5,11 +5,13 @@ import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
 import { FaBox } from 'react-icons/fa';
 import '../styles/ProductsPage.css';
+import { spanishTileProducts, bulkImportTiles } from '../utils/bulkProductImport';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +179,41 @@ const ProductsPage = () => {
     a.download = `fortune-tiles-products-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+  
+  const handleBulkImport = async () => {
+    if (!window.confirm('You are about to bulk import 195 Spanish tile products. This operation cannot be undone. Continue?')) {
+      return;
+    }
+    
+    try {
+      setImportLoading(true);
+      setError('');
+      setSuccess('');
+      
+      // Create a small wrapper for the API functions needed by the bulkImportTiles function
+      const apiWrapper = {
+        post: async (url, data) => {
+          const response = await createProduct(data);
+          return { data: response };
+        }
+      };
+      
+      const results = await bulkImportTiles(spanishTileProducts, apiWrapper);
+      
+      // Calculate success and failures
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+      
+      setSuccess(`Successfully imported ${successful} Spanish tile products${failed > 0 ? ` (${failed} failed)` : ''}`);
+      loadProducts();
+      
+    } catch (error) {
+      console.error('Bulk import error:', error);
+      setError(`Failed to import Spanish tiles: ${error.message || 'Unknown error'}`);
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   const ProductCard = ({ product }) => (
@@ -493,6 +530,13 @@ const ProductsPage = () => {
                 📊 Export CSV
               </button>
               <button 
+                className="action-btn secondary-button"
+                onClick={handleBulkImport}
+                disabled={importLoading}
+              >
+                🧱 Import Spanish Tiles {importLoading && '...'}
+              </button>
+              <button 
                 className="action-btn primary-button"
                 onClick={handleCreateProduct}
               >
@@ -505,6 +549,20 @@ const ProductsPage = () => {
         <div style={{ padding: '20px' }}>
           {error && <div className="error-message">{error}</div>}
           {success && <div className="success-message">{success}</div>}
+          {importLoading && (
+            <div className="loading-message" style={{
+              padding: '15px',
+              background: '#e8f4f8',
+              border: '1px solid #b3e0e8',
+              borderRadius: '4px',
+              marginBottom: '15px',
+              color: '#0c5460',
+              textAlign: 'center'
+            }}>
+              <div>Importing Spanish tiles... This may take a few minutes.</div>
+              <div style={{ fontSize: '12px', marginTop: '5px' }}>Please don't refresh or leave the page.</div>
+            </div>
+          )}
 
           <div className="products-stats" style={{
             display: 'flex',
