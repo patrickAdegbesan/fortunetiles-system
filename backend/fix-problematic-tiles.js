@@ -51,13 +51,16 @@ const { Product } = require('./models');
           reason = '30x90 tiles -> corrected pricing';
         }
 
+        // Store old price before update
+        const oldPrice = tile.price;
+
         // Update the tile
         await Product.update(
           { price: newPrice },
           { where: { id: tile.id } }
         );
 
-        console.log(`✅ Updated "${tile.name}": ₦${tile.price.toLocaleString()} → ₦${newPrice.toLocaleString()} (${reason})`);
+        console.log(`✅ Updated "${tile.name}": ₦${oldPrice.toLocaleString()} → ₦${newPrice.toLocaleString()} (${reason})`);
         updatedCount++;
 
       } catch (error) {
