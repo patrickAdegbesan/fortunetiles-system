@@ -189,8 +189,29 @@ export const calculateTilePrice = (dimensions, pricePerSqm) => {
 // Bulk import function
 export const bulkImportTiles = async (tiles, api) => {
   const results = [];
-  const productTypeId = 1; // Assuming 1 is the ID for tiles, adjust as needed
   const initialLocation = 1; // Main warehouse ID, adjust as needed
+
+  // First, fetch the product types to get the correct ID for "Tiles"
+  let productTypeId = 1; // Default fallback
+  try {
+    const productTypesResponse = await api.get('/products/types');
+    const productTypes = productTypesResponse.data?.types || [];
+    const tilesProductType = productTypes.find(pt => 
+      pt.name.toLowerCase() === 'tiles' || 
+      pt.name.toLowerCase().includes('tile')
+    );
+    
+    if (tilesProductType) {
+      productTypeId = tilesProductType.id;
+      console.log(`Found Tiles product type with ID: ${productTypeId}`);
+    } else {
+      console.warn('Tiles product type not found, using default ID 1');
+      console.log('Available product types:', productTypes.map(pt => `${pt.id}: ${pt.name}`));
+    }
+  } catch (error) {
+    console.error('Error fetching product types:', error);
+    console.warn('Using default product type ID: 1');
+  }
 
   // Add delay between requests to avoid overwhelming the server
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
