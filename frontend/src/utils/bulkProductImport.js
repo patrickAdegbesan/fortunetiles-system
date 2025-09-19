@@ -171,9 +171,38 @@ export const spanishTileProducts = [
   { name: "CALACATTA WHITE", sku: "120X260-CALACATTA-WHITE", category: "tiles", productType: "spanish tiles", dimensions: "120x260", pricePerSqm: 55000 }
 ];
 
-// Calculate actual price based on sqm and size
-export const calculateTilePrice = (dimensions, pricePerSqm) => {
-  const [width, height] = dimensions.split('x').map(d => parseFloat(d));
+// Correct pricing per square meter based on dimensions
+const correctPricing = {
+  '120x120': 35000,
+  '60x120': 25000,
+  '60x60': 21000,
+  '30x60': 19000,
+  '30x90': 19000,
+  '25x80': 19000,
+  '40x120': 23000,
+  '30x150': 23000,
+  '23x120': 22000,
+  '20x75': 21000,
+  '20x120': 22000,
+  '25x100': 22000,
+  '120x240': 55000,
+  '120x260': 55000,
+  '75x150': 35000,
+  '90x180': 36000,
+  '160x160': 45000,
+  '79x159': 35000,
+  '60x180': 35000,
+  '90x90': 28000
+};
+
+// Calculate actual price based on sqm and size with correct pricing
+export const calculateTilePrice = (dimensions, fallbackPricePerSqm) => {
+  const normalizedDimensions = dimensions.toLowerCase().replace(/\s+/g, '').replace('×', 'x');
+  
+  // Use correct pricing if available, otherwise use fallback
+  const pricePerSqm = correctPricing[normalizedDimensions] || fallbackPricePerSqm;
+  
+  const [width, height] = dimensions.split(/[x×]/).map(d => parseFloat(d.trim()));
   // Convert cm to m and calculate area (1cm = 0.01m)
   const widthInMeters = width / 100;
   const heightInMeters = height / 100;
