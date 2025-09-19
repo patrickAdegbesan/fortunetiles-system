@@ -191,27 +191,10 @@ export const bulkImportTiles = async (tiles, api) => {
   const results = [];
   const initialLocation = 1; // Main warehouse ID, adjust as needed
 
-  // First, fetch the product types to get the correct ID for "Tiles"
-  let productTypeId = 1; // Default fallback
-  try {
-    const productTypesResponse = await api.get('/products/types');
-    const productTypes = productTypesResponse.data?.types || [];
-    const tilesProductType = productTypes.find(pt => 
-      pt.name.toLowerCase() === 'tiles' || 
-      pt.name.toLowerCase().includes('tile')
-    );
-    
-    if (tilesProductType) {
-      productTypeId = tilesProductType.id;
-      console.log(`Found Tiles product type with ID: ${productTypeId}`);
-    } else {
-      console.warn('Tiles product type not found, using default ID 1');
-      console.log('Available product types:', productTypes.map(pt => `${pt.id}: ${pt.name}`));
-    }
-  } catch (error) {
-    console.error('Error fetching product types:', error);
-    console.warn('Using default product type ID: 1');
-  }
+  // Use the product type ID for "spanish tiles" based on your existing data
+  let productTypeId = 34; // Based on database check, this is your "spanish tiles" type
+  
+  console.log(`Using Product Type ID: ${productTypeId} for spanish tiles`);
 
   // Add delay between requests to avoid overwhelming the server
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -223,33 +206,20 @@ export const bulkImportTiles = async (tiles, api) => {
       // Calculate price based on dimensions and price per sqm
       const price = calculateTilePrice(tile.dimensions, tile.pricePerSqm);
       
-      // Capitalize category properly
-      const formattedCategory = 'Spanish Tiles';
+      // Convert dimensions format to match your existing data (30x90 -> 30 × 90)
+      const formattedDimensions = tile.dimensions.replace('x', ' × ');
       
-      // Format the product data according to the backend requirements
+      // Format the product data according to your existing tile structure
       const productData = {
-        name: `${tile.name} ${tile.dimensions}`,
-        productTypeId: productTypeId,
+        name: tile.name, // Use the exact name from the data
+        productTypeId: productTypeId, // Use ID 34 for spanish tiles
         price: price,
         customAttributes: {
-          dimensions: tile.dimensions,
-          brand: "Fortune Tiles",
-          material: "Ceramic",
-          color: tile.name.includes("WHITE") ? "White" : 
-                 tile.name.includes("BLACK") ? "Black" : 
-                 tile.name.includes("GREY") || tile.name.includes("GRIS") ? "Grey" :
-                 tile.name.includes("BEIGE") || tile.name.includes("CREAM") || tile.name.includes("CREMA") ? "Beige" : 
-                 "Multi",
-          finish: tile.name.includes("MATT") ? "Matt" : 
-                  tile.name.includes("POL") ? "Polished" : 
-                  tile.name.includes("BRILLO") ? "Glossy" : 
-                  "Standard",
-          origin: "Spain",
-          pricePerSqm: tile.pricePerSqm.toString()
+          size: formattedDimensions // Match your existing format: "60 × 120"
         },
         supplierCode: tile.sku || '',
-        category: formattedCategory,
-        description: `${tile.name} Spanish tile, size ${tile.dimensions}. Premium quality Spanish porcelain tiles.`,
+        category: 'tiles', // Match your existing lowercase format
+        description: `${tile.name} Spanish tile, size ${formattedDimensions}. Premium quality Spanish porcelain tiles.`,
         // Important: These fields are required by the backend
         initialLocation: initialLocation,
         initialQuantity: 100 // Default initial stock, adjust as needed

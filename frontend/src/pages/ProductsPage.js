@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations, fetchProductTypes } from '../services/api';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
@@ -196,16 +196,6 @@ const ProductsPage = () => {
       
       // Create a small wrapper for the API functions needed by the bulkImportTiles function
       const apiWrapper = {
-        get: async (url) => {
-          try {
-            console.log('Fetching:', url);
-            const response = await fetchProductTypes(); // Use the existing API function
-            return { data: response };
-          } catch (error) {
-            console.error('Error fetching data:', error);
-            throw error;
-          }
-        },
         post: async (url, data) => {
           try {
             // Log the product data we're sending
