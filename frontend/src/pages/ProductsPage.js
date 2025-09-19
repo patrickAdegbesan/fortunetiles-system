@@ -191,19 +191,76 @@ const ProductsPage = () => {
       setError('');
       setSuccess('');
       
+      // Set initial progress message
+      setSuccess('Starting Spanish tiles import... (this may take several minutes)');
+      
       // Create a small wrapper for the API functions needed by the bulkImportTiles function
       const apiWrapper = {
         post: async (url, data) => {
-          const response = await createProduct(data);
-          return { data: response };
+          try {
+            // Log the product data we're sending
+            console.log('Sending product data:', JSON.stringify(data, null, 2));
+            const response = await createProduct(data);
+            console.log('API response:', JSON.stringify(response, null, 2));
+            return { data: response };
+          } catch (error) {
+            // Enhanced error logging
+            console.error('Error creating product:', {
+              message: error.message,
+              status: error.response?.status,
+              statusText: error.response?.statusText,
+              responseData: error.response?.data,
+              productName: data.name,
+              stack: error.stack
+            });
+            
+            // If backend returned a message, use it
+            if (error.response?.data?.message) {
+              console.error('Backend error message:', error.response.data.message);
+            }
+            
+            throw error;
+          }
         }
       };
       
-      const results = await bulkImportTiles(spanishTileProducts, apiWrapper);
+      // Show a progress counter
+      let completed = 0;
+      const total = spanishTileProducts.length;
+      const updateProgress = () => {
+        completed++;
+        setSuccess(`Processing Spanish tiles import... (${completed}/${total})`);
+      };
+      
+      // Modify to import in smaller batches to avoid overwhelming the server
+      const batchSize = 10;
+      const results = [];
+      
+      for (let i = 0; i < spanishTileProducts.length; i += batchSize) {
+        const batch = spanishTileProducts.slice(i, i + batchSize);
+        setSuccess(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(spanishTileProducts.length/batchSize)}...`);
+        
+        // Import this batch
+        const batchResults = await bulkImportTiles(batch, apiWrapper);
+        results.push(...batchResults);
+        
+        // Update progress
+        setSuccess(`Completed batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(spanishTileProducts.length/batchSize)}`);
+        
+        // Add a delay between batches
+        if (i + batchSize < spanishTileProducts.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay between batches
+        }
+      }
       
       // Calculate success and failures
       const successful = results.filter(r => r.success).length;
       const failed = results.filter(r => !r.success).length;
+      
+      // Show failures if any
+      if (failed > 0) {
+        console.error('Failed imports:', results.filter(r => !r.success));
+      }
       
       setSuccess(`Successfully imported ${successful} Spanish tile products${failed > 0 ? ` (${failed} failed)` : ''}`);
       loadProducts();
@@ -530,11 +587,42 @@ const ProductsPage = () => {
                 📊 Export CSV
               </button>
               <button 
-                className="action-btn secondary-button"
+                className={`action-btn ${importLoading ? 'warning-button' : 'primary-button'}`}
                 onClick={handleBulkImport}
                 disabled={importLoading}
+                style={{
+                  position: 'relative',
+                  backgroundColor: importLoading ? '#ffc107' : '#28a745',
+                  color: importLoading ? '#212529' : 'white',
+                  fontWeight: 'bold',
+                  minWidth: '180px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
               >
-                🧱 Import Spanish Tiles {importLoading && '...'}
+                {importLoading ? (
+                  <>
+                    <span className="spinner" style={{
+                      display: 'inline-block',
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid currentColor',
+                      borderRightColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.75s linear infinite'
+                    }}></span>
+                    <style>{`
+                      @keyframes spin {
+                        to { transform: rotate(360deg); }
+                      }
+                    `}</style>
+                    Importing...
+                  </>
+                ) : (
+                  <>🧱 Import Spanish Tiles</>
+                )}
               </button>
               <button 
                 className="action-btn primary-button"
@@ -547,20 +635,62 @@ const ProductsPage = () => {
         />
         
         <div style={{ padding: '20px' }}>
-          {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
-          {importLoading && (
-            <div className="loading-message" style={{
+          {error && (
+            <div className="error-message" style={{
               padding: '15px',
-              background: '#e8f4f8',
-              border: '1px solid #b3e0e8',
+              background: '#f8d7da',
+              border: '1px solid #f5c6cb',
               borderRadius: '4px',
               marginBottom: '15px',
-              color: '#0c5460',
-              textAlign: 'center'
+              color: '#721c24',
+              textAlign: 'center',
+              fontWeight: 'bold'
             }}>
-              <div>Importing Spanish tiles... This may take a few minutes.</div>
-              <div style={{ fontSize: '12px', marginTop: '5px' }}>Please don't refresh or leave the page.</div>
+              {error}
+            </div>
+          )}
+          {success && !importLoading && (
+            <div className="success-message" style={{
+              padding: '15px',
+              background: '#d4edda',
+              border: '1px solid #c3e6cb',
+              borderRadius: '4px',
+              marginBottom: '15px',
+              color: '#155724',
+              textAlign: 'center',
+              fontWeight: 'bold'
+            }}>
+              {success}
+            </div>
+          )}
+          {importLoading && (
+            <div className="loading-message" style={{
+              padding: '20px',
+              background: '#fff3cd',
+              border: '2px solid #ffc107',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              color: '#856404',
+              textAlign: 'center',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
+                Importing Spanish Tiles in Progress
+              </div>
+              <div style={{ fontSize: '14px', marginBottom: '10px' }}>
+                {success || 'Please wait while we import the products...'}
+              </div>
+              <div style={{ 
+                fontSize: '13px', 
+                backgroundColor: 'rgba(255,255,255,0.5)', 
+                padding: '8px', 
+                borderRadius: '4px',
+                marginTop: '10px',
+                color: '#495057',
+                fontStyle: 'italic'
+              }}>
+                Please don't refresh or leave the page during import.
+              </div>
             </div>
           )}
 

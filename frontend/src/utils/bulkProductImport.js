@@ -174,37 +174,111 @@ export const spanishTileProducts = [
 // Calculate actual price based on sqm and size
 export const calculateTilePrice = (dimensions, pricePerSqm) => {
   const [width, height] = dimensions.split('x').map(d => parseFloat(d));
-  const areaPerTile = (width * height) / 10000; // Convert cm² to m²
-  return Math.round(pricePerSqm * areaPerTile);
+  // Convert cm to m and calculate area (1cm = 0.01m)
+  const widthInMeters = width / 100;
+  const heightInMeters = height / 100;
+  const areaPerTile = widthInMeters * heightInMeters; // Area in square meters
+  
+  // Calculate price based on price per square meter
+  const price = Math.round(pricePerSqm * areaPerTile);
+  
+  // Ensure we have a valid price
+  return price > 0 ? price : 1000;
 };
 
 // Bulk import function
 export const bulkImportTiles = async (tiles, api) => {
   const results = [];
-  for (const tile of tiles) {
+  const productTypeId = 1; // Assuming 1 is the ID for tiles, adjust as needed
+  const initialLocation = 1; // Main warehouse ID, adjust as needed
+
+  // Add delay between requests to avoid overwhelming the server
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Process each tile product with proper delays between requests
+  for (let i = 0; i < tiles.length; i++) {
+    const tile = tiles[i];
     try {
+      // Calculate price based on dimensions and price per sqm
+      const price = calculateTilePrice(tile.dimensions, tile.pricePerSqm);
+      
+      // Capitalize category properly
+      const formattedCategory = 'Spanish Tiles';
+      
+      // Format the product data according to the backend requirements
       const productData = {
-        name: tile.name,
-        supplierCode: tile.sku,
-        category: tile.category,
-        price: calculateTilePrice(tile.dimensions, tile.pricePerSqm),
-        unitOfMeasure: 'sqm',
+        name: `${tile.name} ${tile.dimensions}`,
+        productTypeId: productTypeId,
+        price: price,
         customAttributes: {
           dimensions: tile.dimensions,
-          pricePerSqm: tile.pricePerSqm.toString(),
-          productType: tile.productType
-        }
+          brand: "Fortune Tiles",
+          material: "Ceramic",
+          color: tile.name.includes("WHITE") ? "White" : 
+                 tile.name.includes("BLACK") ? "Black" : 
+                 tile.name.includes("GREY") || tile.name.includes("GRIS") ? "Grey" :
+                 tile.name.includes("BEIGE") || tile.name.includes("CREAM") || tile.name.includes("CREMA") ? "Beige" : 
+                 "Multi",
+          finish: tile.name.includes("MATT") ? "Matt" : 
+                  tile.name.includes("POL") ? "Polished" : 
+                  tile.name.includes("BRILLO") ? "Glossy" : 
+                  "Standard",
+          origin: "Spain",
+          pricePerSqm: tile.pricePerSqm.toString()
+        },
+        supplierCode: tile.sku || '',
+        category: formattedCategory,
+        description: `${tile.name} Spanish tile, size ${tile.dimensions}. Premium quality Spanish porcelain tiles.`,
+        // Important: These fields are required by the backend
+        initialLocation: initialLocation,
+        initialQuantity: 100 // Default initial stock, adjust as needed
       };
+
+      console.log(`Importing product ${i+1}/${tiles.length}: ${productData.name}`);
       
-      const response = await api.post('/products', productData);
-      results.push({ success: true, product: tile.name, id: response.data.id });
+      // Send to API with detailed error logging
+      try {
+        const response = await api.post('/products', productData);
+        results.push({
+          success: true,
+          name: productData.name,
+          id: response.data?.product?.id
+        });
+        console.log(`Successfully imported: ${productData.name}`);
+      } catch (apiError) {
+        // Log detailed error info
+        console.error('API error details:', {
+          status: apiError.response?.status,
+          message: apiError.message,
+          responseData: apiError.response?.data,
+          product: productData.name
+        });
+        
+        results.push({
+          success: false,
+          name: productData.name,
+          error: apiError.response?.data?.message || apiError.message || 'Unknown error'
+        });
+      }
+      
+      // Add a small delay between requests to prevent overwhelming the server
+      if (i < tiles.length - 1) {
+        await delay(300); // 300ms delay between requests
+      }
     } catch (error) {
-      results.push({ 
-        success: false, 
-        product: tile.name, 
-        error: error.response?.data?.message || error.message 
+      console.error(`General error importing ${tile.name}:`, error);
+      results.push({
+        success: false,
+        name: tile.name,
+        error: error.message || 'Unknown error'
       });
+      
+      // Still add delay on error
+      if (i < tiles.length - 1) {
+        await delay(300);
+      }
     }
   }
+
   return results;
 };
