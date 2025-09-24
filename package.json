@@ -7,7 +7,7 @@
     "backend": "cd backend && npm start",
     "frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
-    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && npm install && npm run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
+    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && npm install --include=dev && npm run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
     "seed-types": "node seed-product-types.js"
   }
 }
