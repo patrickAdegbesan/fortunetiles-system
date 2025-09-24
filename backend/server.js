@@ -59,20 +59,59 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
 
-// Serve static frontend build
-app.use(express.static(path.join(__dirname, 'public')));
+// Webhook endpoint for automatic website updates
+const { exec } = require('child_process');
+app.post('/webhook/website-update', express.raw({type: 'application/json'}), (req, res) => {
+  console.log('📡 Website update webhook received');
+  
+  // Add basic security - you can enhance this with proper webhook verification
+  const userAgent = req.get('User-Agent') || '';
+  if (!userAgent.includes('GitHub-Hookshot')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  exec('git submodule update --remote website', { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
+    if (error) {
+      console.error('❌ Submodule update failed:', error);
+      return res.status(500).json({ error: 'Update failed', details: error.message });
+    }
+    
+    console.log('✅ Website updated:', stdout);
+    res.json({ success: true, message: 'Website updated successfully', output: stdout });
+  });
+});
+
+// Serve company website at root (/)
+app.use('/', express.static(path.join(__dirname, 'website-build')));
+
+// Serve inventory system at /inventory
+app.use('/inventory', express.static(path.join(__dirname, 'public')));
 
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// SPA fallback: let React Router handle non-API routes
+// API prefix for inventory system
+app.use('/inventory/api', (req, res, next) => {
+  // Remove /inventory from the path for API routes
+  req.url = req.url.replace('/inventory', '');
+  next();
+});
+
+// SPA fallback routing
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
     return res.status(404).json({ message: 'Route not found' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  
+  // If path starts with /inventory, serve inventory system
+  if (req.path.startsWith('/inventory')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    // Otherwise serve company website
+    res.sendFile(path.join(__dirname, 'website-build', 'index.html'));
+  }
 });
 
 // Initialize database and create default data
