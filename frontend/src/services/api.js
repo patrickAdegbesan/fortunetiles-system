@@ -71,8 +71,10 @@ export const registerUser = async (userData) => {
 export const fetchProducts = async (params = {}) => {
   try {
     // Include product type when fetching products and add any filter parameters
+    // Set limit to 1000 to ensure all products are fetched for the sales page
     const queryParams = {
       include: 'productType',
+      limit: 1000, // Increase limit to get all products
       ...params
     };
     
