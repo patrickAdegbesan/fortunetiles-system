@@ -593,6 +593,7 @@
   
   .products-table-container {
     overflow-x: auto;
+    /* Smooth scrolling for iOS Safari (legacy) */
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
   }

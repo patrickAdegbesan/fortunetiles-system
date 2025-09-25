@@ -21,34 +21,79 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
     const printWindow = window.open('', '_blank');
     const content = document.getElementById('receipt-content').innerHTML;
     
-    // Set up the print window
+    // Get all CSS from the current document
+    const styles = Array.from(document.styleSheets)
+      .map(styleSheet => {
+        try {
+          return Array.from(styleSheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('\n');
+        } catch (e) {
+          // Handle cross-origin stylesheets
+          return '';
+        }
+      })
+      .join('\n');
+    
+    // Set up the print window with enhanced styles
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print Receipt</title>
+          <title>Fortune Tiles Receipt</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            ${document.querySelector('style')?.innerHTML || ''}
-            ${Array.from(document.styleSheets)
-              .map(sheet => {
-                try {
-                  return Array.from(sheet.cssRules)
-                    .map(rule => rule.cssText)
-                    .join('\n');
-                } catch (e) {
-                  return '';
-                }
-              })
-              .join('\n')}
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            html, body {
+              margin: 0;
+              padding: 0;
+              height: auto;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            }
+            
+            ${styles}
+            
             @media print {
-              @page { 
-                size: auto;
-                margin: 0mm;
+              @page {
+                size: A4;
+                margin: 15mm;
               }
-              body { 
-                margin: 1cm;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+              
+              body {
+                margin: 0 !important;
+                padding: 10mm !important;
+                background: white !important;
+              }
+              
+              .receipt {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: white !important;
+                box-shadow: none !important;
+                border: none !important;
+              }
+            }
+            
+            @media screen {
+              body {
+                padding: 20px;
+                background: #f5f5f5;
+              }
+              
+              .receipt {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
               }
             }
           </style>
@@ -57,20 +102,32 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
           <div class="receipt">
             ${content}
           </div>
+          <script>
+            // Auto-print when page loads
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+            
+            // Close window after printing
+            window.onafterprint = function() {
+              setTimeout(function() {
+                window.close();
+              }, 100);
+            };
+          </script>
         </body>
       </html>
     `);
     
-    // Wait for content and styles to load
+    // Close the document to trigger loading
     printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-      // Close the window after printing (or if printing is cancelled)
-      setTimeout(() => {
-        printWindow.close();
-        if (onPrint) onPrint();
-      }, 500);
-    };
+    
+    // Fallback for older browsers
+    setTimeout(() => {
+      if (onPrint) onPrint();
+    }, 2000);
   };
 
   if (!sale) return null;
@@ -337,6 +394,9 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               <p>Follow us on social media @FortunetilesNG</p>
             </div>
           </div>
+          
+          {/* Extra spacing to ensure content is visible */}
+          <div style={{ height: '50px', clear: 'both' }}></div>
         </div>
       </div>
     </div>

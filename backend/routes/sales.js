@@ -5,36 +5,68 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// GET /api/sales - Get all sales
+// GET /api/sales - Get all sales with optimized queries
 router.get('/', async (req, res) => {
   try {
-    const { locationId, limit = 50 } = req.query;
+    const { locationId, limit = 50, offset = 0, startDate, endDate } = req.query;
     
-    const whereClause = locationId ? { locationId } : {};
+    // Build optimized where clause
+    const whereClause = {};
+    if (locationId) whereClause.locationId = locationId;
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
+      };
+    }
     
-    const sales = await Sale.findAll({
+    const sales = await Sale.findAndCountAll({
       where: whereClause,
       include: [
-        { model: Location, as: 'location' },
-        { model: User, as: 'cashier', attributes: ['firstName', 'lastName', 'email'] },
+        { 
+          model: Location, 
+          as: 'location',
+          attributes: ['id', 'name'] // Only fetch needed fields
+        },
+        { 
+          model: User, 
+          as: 'cashier', 
+          attributes: ['id', 'firstName', 'lastName', 'email'] 
+        },
         { 
           model: SaleItem, 
           as: 'items',
-          include: [{ model: Product, as: 'product' }]
+          attributes: ['id', 'quantity', 'unitPrice', 'lineTotal'],
+          include: [{ 
+            model: Product, 
+            as: 'product',
+            attributes: ['id', 'name', 'unitOfMeasure'] // Only fetch essential fields
+          }]
         }
       ],
       order: [['createdAt', 'DESC']],
-      limit: parseInt(limit)
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      // Add database-level optimization
+      subQuery: false
     });
 
     res.json({
       message: 'Sales retrieved successfully',
-      sales
+      sales: sales.rows,
+      pagination: {
+        total: sales.count,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: (parseInt(offset) + parseInt(limit)) < sales.count
+      }
     });
 
   } catch (error) {
     console.error('Get sales error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

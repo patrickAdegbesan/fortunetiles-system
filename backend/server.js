@@ -81,8 +81,26 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
   });
 });
 
-// Serve company website at root (/)
-app.use('/', express.static(path.join(__dirname, 'website-build')));
+// Serve company website at root (/) - check if directory exists first
+const websiteBuildPath = path.join(__dirname, 'website-build');
+const fs = require('fs');
+
+if (fs.existsSync(websiteBuildPath)) {
+  app.use('/', express.static(websiteBuildPath));
+} else {
+  // For local development - simple fallback
+  app.get('/', (req, res) => {
+    res.send(`
+      <h1>Fortune Tiles System - Local Development</h1>
+      <p>Welcome to the Fortune Tiles inventory system!</p>
+      <ul>
+        <li><a href="/inventory">Go to Inventory System</a></li>
+        <li><a href="/api/health">API Health Check</a></li>
+      </ul>
+      <p><small>Note: Company website will be available when deployed to production.</small></p>
+    `);
+  });
+}
 
 // Serve inventory system at /inventory
 app.use('/inventory', express.static(path.join(__dirname, 'public')));
@@ -90,6 +108,11 @@ app.use('/inventory', express.static(path.join(__dirname, 'public')));
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Handle service worker file for local development
+app.get('/sw.js', (req, res) => {
+  res.status(204).send(); // No content - service worker not needed in local dev
 });
 
 // API prefix for inventory system
@@ -107,10 +130,19 @@ app.get('*', (req, res) => {
   
   // If path starts with /inventory, serve inventory system
   if (req.path.startsWith('/inventory')) {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(inventoryIndexPath)) {
+      res.sendFile(inventoryIndexPath);
+    } else {
+      res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
+    }
   } else {
-    // Otherwise serve company website
-    res.sendFile(path.join(__dirname, 'website-build', 'index.html'));
+    // For local development, redirect to local development message
+    if (fs.existsSync(websiteBuildPath)) {
+      res.sendFile(path.join(websiteBuildPath, 'index.html'));
+    } else {
+      res.redirect('/');
+    }
   }
 });
 

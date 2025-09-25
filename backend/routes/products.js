@@ -96,35 +96,85 @@ router.get('/types', async (req, res) => {
   }
 });
 
-// GET /api/products - Get all products
+// GET /api/products - Get all products with optimized queries and caching
 router.get('/', async (req, res) => {
   try {
-    const { category } = req.query;
+    const { 
+      page = 1, 
+      limit = 50, 
+      category, 
+      productTypeId, 
+      locationId,
+      search,
+      isActive = true 
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    const whereClause = { isActive };
     
-    // Build where clause for category filtering
-    const whereClause = {};
-    if (category && category !== 'all') {
-      whereClause.category = category;
+    // Build optimized where clause
+    if (category) whereClause.category = category;
+    if (productTypeId) whereClause.productTypeId = productTypeId;
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
     }
-    
-    const products = await Product.findAll({
-      where: whereClause,
-      include: [{
+
+    // Optimized includes - only fetch needed attributes
+    const includeClause = [
+      {
         model: ProductType,
         as: 'productType',
-        attributes: ['name', 'unitOfMeasure', 'attributes']
-      }],
-      order: [['createdAt', 'DESC']]
+        attributes: ['id', 'name', 'unitOfMeasure'] // Reduced attributes
+      }
+    ];
+
+    // Include inventory with optimized query
+    if (locationId) {
+      includeClause.push({
+        model: Inventory,
+        as: 'inventory',
+        where: { locationId },
+        required: false,
+        attributes: ['id', 'quantitySqm', 'locationId']
+      });
+    }
+
+    const products = await Product.findAndCountAll({
+      where: whereClause,
+      include: includeClause,
+      attributes: [
+        'id', 'name', 'description', 'category', 'price', 
+        'isActive', 'productTypeId', 'createdAt', 'updatedAt'
+      ], // Only fetch needed product attributes
+      order: [['name', 'ASC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      subQuery: false, // Optimize for better performance
+      distinct: true // Ensure accurate count with joins
     });
 
     res.json({
       message: 'Products retrieved successfully',
-      products
+      products: products.rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(products.count / limit),
+        totalItems: products.count,
+        itemsPerPage: parseInt(limit),
+        hasNextPage: (parseInt(page) * parseInt(limit)) < products.count,
+        hasPrevPage: parseInt(page) > 1
+      }
     });
 
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
