@@ -147,7 +147,7 @@ router.get('/', async (req, res) => {
       include: includeClause,
       attributes: [
         'id', 'name', 'description', 'category', 'price', 
-        'isActive', 'productTypeId', 'createdAt', 'updatedAt'
+        'isActive', 'productTypeId', 'customAttributes', 'createdAt', 'updatedAt'
       ], // Only fetch needed product attributes
       order: [['name', 'ASC']],
       limit: parseInt(limit),

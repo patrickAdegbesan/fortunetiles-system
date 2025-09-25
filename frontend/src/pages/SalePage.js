@@ -236,7 +236,9 @@ const SalePage = () => {
   }, [inventory]);
 
   const getAvailableQuantity = useCallback((productId) => {
-    return inventoryMap.get(productId) || 0;
+    // Temporarily returning 0 for all products as requested
+    return 0;
+    // Original code: return inventoryMap.get(productId) || 0;
   }, [inventoryMap]);
 
   // Memoized filtered products for better performance
