@@ -365,7 +365,12 @@ const SalePage = () => {
   };
 
   const handleQuickView = (product) => {
-    setQuickViewProduct(product);
+    // Add the calculated available quantity to the product before showing in modal
+    const productWithQuantity = {
+      ...product,
+      availableQty: getAvailableQuantity(product.id)
+    };
+    setQuickViewProduct(productWithQuantity);
   };
 
   const closeQuickView = () => {
