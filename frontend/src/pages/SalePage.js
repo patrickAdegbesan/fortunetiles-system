@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo, memo } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '../services/api';
+import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '  const getAvailableQuantity = useCallback((productId) => {
+    return inventoryMap.get(productId) || 0;
+  }, [inventoryMap]);rvices/api';
 import Receipt from '../components/Receipt';
 import { 
   FaBox, 
