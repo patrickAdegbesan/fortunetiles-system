@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo, memo } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '  const getAvailableQuantity = useCallback((productId) => {
-    return inventoryMap.get(productId) || 0;
-  }, [inventoryMap]);rvices/api';
+import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '../services/api';
 import Receipt from '../components/Receipt';
 import { 
   FaBox, 
@@ -238,9 +236,7 @@ const SalePage = () => {
   }, [inventory]);
 
   const getAvailableQuantity = useCallback((productId) => {
-    // Temporarily returning 0 for all products as requested
-    return 0;
-    // Original code: return inventoryMap.get(productId) || 0;
+    return inventoryMap.get(productId) || 0;
   }, [inventoryMap]);
 
   // Memoized filtered products for better performance
