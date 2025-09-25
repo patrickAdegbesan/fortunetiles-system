@@ -44,7 +44,7 @@ function MainLayout({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename="/inventory">
         <MainLayout>
           <Routes>
             <Route path="/login" element={<Login />} />
