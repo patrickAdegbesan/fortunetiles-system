@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRotate } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { fetchSaleById, createReturn } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
@@ -101,7 +103,7 @@ const ReturnsPage = () => {
       <>
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="returns-page">
-          <TopHeader title="🔄 Process Return">
+          <TopHeader title={<><FontAwesomeIcon icon={faRotate} /> Process Return</>}>
             {loading ? 'Loading...' : 'Sale not found'}
           </TopHeader>
         </div>

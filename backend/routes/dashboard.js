@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op } = require('sequelize');
-const { Sale, SaleItem, Inventory, Product, Location, InventoryLog, User } = require('../models');
+const { Sale, SaleItem, Inventory, Product, Location, InventoryLog, User, Return, ReturnItem } = require('../models');
 const { sequelize } = require('../config/database');
 
 const router = express.Router();
@@ -155,7 +155,6 @@ router.get('/', async (req, res) => {
     });
 
     // Get recent returns activity
-    const { Return, ReturnItem } = require('../models');
     const returnActivity = await Return.findAll({
       include: [
         {

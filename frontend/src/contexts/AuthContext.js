@@ -1,4 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import useActivityTracker from '../hooks/useActivityTracker';
+
+// Helper function to check if token is expired (assuming JWT)
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (e) {
+    return true; // If not JWT or invalid, consider expired
+  }
+};
 
 const AuthContext = createContext();
 
@@ -17,14 +30,26 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const handleInactive = () => {
+    if (token) {
+      logout();
+    }
+  };
+
+  useActivityTracker(handleInactive);
+
   useEffect(() => {
     // Check for existing token and user data on app load
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedUser) {
+    if (storedToken && storedUser && !isTokenExpired(storedToken)) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
+    } else {
+      // Clear invalid/expired tokens
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
     setLoading(false);
   }, []);
@@ -43,14 +68,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     token,
     login,
     logout,
     loading,
     isAuthenticated: !!token,
-  };
+  }), [user, token, loading]);
 
   return (
     <AuthContext.Provider value={value}>

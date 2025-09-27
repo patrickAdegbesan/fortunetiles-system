@@ -9,5 +9,11 @@
     "build": "cd frontend && npm run build",
     "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && npm install --include=dev && npm run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
     "seed-types": "node seed-product-types.js"
+  },
+  "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^7.0.1",
+    "@fortawesome/react-fontawesome": "^3.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

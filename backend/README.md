@@ -43,7 +43,7 @@ A professional inventory and sales tracking system for tile importation business
 
 ## Default Admin Account
 
-- **Email**: admin@fortunetiles.com
+- **Email**: [Contact system administrator for access]
 - **Password**: admin123
 - **Role**: owner
 

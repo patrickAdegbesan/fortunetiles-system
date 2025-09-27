@@ -1,6 +1,15 @@
 import React from 'react';
 import '../styles/DashboardStats.css';
 import MoneyValue from './MoneyValue';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faMoneyBillTrendUp,
+  faChartLine,
+  faBoxesStacked,
+  faTriangleExclamation,
+  faBell,
+  faLocationDot
+} from '@fortawesome/free-solid-svg-icons';
 
 const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) => {
   if (!dashboardData) {
@@ -17,7 +26,9 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
       <div className="stats-grid">
         <div className="stat-card sales">
           <div className="stat-header">
-            <div className="stat-icon sales-icon">💰</div>
+            <div className="stat-icon sales-icon">
+              <FontAwesomeIcon icon={faMoneyBillTrendUp} />
+            </div>
             <div className="stat-info">
               <h3>TOTAL SALES</h3>
               <p className="stat-description">Number of completed transactions</p>
@@ -31,7 +42,9 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
         
         <div className="stat-card revenue">
           <div className="stat-header">
-            <div className="stat-icon revenue-icon">📈</div>
+            <div className="stat-icon revenue-icon">
+              <FontAwesomeIcon icon={faChartLine} />
+            </div>
             <div className="stat-info">
               <h3>TOTAL REVENUE</h3>
               <p className="stat-description">Total money earned from sales</p>
@@ -45,7 +58,9 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
         
         <div className="stat-card stock">
           <div className="stat-header">
-            <div className="stat-icon stock-icon">📦</div>
+            <div className="stat-icon stock-icon">
+              <FontAwesomeIcon icon={faBoxesStacked} />
+            </div>
             <div className="stat-info">
               <h3>STOCK VALUE</h3>
               <p className="stat-description">Total value of current inventory</p>
@@ -59,7 +74,9 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
         
         <div className="stat-card alerts">
           <div className="stat-header">
-            <div className="stat-icon alerts-icon">⚠️</div>
+            <div className="stat-icon alerts-icon">
+              <FontAwesomeIcon icon={faTriangleExclamation} />
+            </div>
             <div className="stat-info">
               <h3>LOW STOCK ITEMS</h3>
               <p className="stat-description">Products needing immediate restock</p>
@@ -75,7 +92,7 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
       {/* Low Stock Alert Section */}
       {Array.isArray(lowStockItems) && lowStockItems.length > 0 && (
         <div className="low-stock-section">
-          <h4>🚨 Low Stock Alerts</h4>
+          <h4><FontAwesomeIcon icon={faBell} /> Low Stock Alerts</h4>
           <div className="low-stock-grid">
             {lowStockItems.slice(0, 6).filter(item => item && item.id).map(item => (
               <div key={item.id} className="low-stock-item">
@@ -86,6 +103,7 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
                       .map(([key, value]) => `${value}`).join(' - ')}
                   </span>
                   <span className="item-location">
+                    <FontAwesomeIcon icon={faLocationDot} />
                     {typeof item.location === 'string' ? item.location : item.location?.name || 'Unknown Location'}
                   </span>
                 </div>

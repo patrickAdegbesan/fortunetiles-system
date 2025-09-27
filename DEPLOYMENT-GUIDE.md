@@ -231,7 +231,7 @@ Consider adding:
 ---
 
 **Default Login:**
-- Email: `admin@fortunetiles.com`
+- Email: [Contact system administrator for access]
 - Password: `admin123`
 
 **Support:** Update this section with your contact information.

@@ -1,13 +1,284 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
-import { FaBox } from 'react-icons/fa';
+import MoneyValue from '../components/MoneyValue';
+import QuickViewModal from '../components/QuickViewModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import '../styles/ProductsPage.css';
+import {
+  FaBox,
+  FaCubes,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaImage,
+  FaTags,
+  FaFilter,
+  FaSearch,
+  FaTh,
+  FaList,
+  FaDollarSign,
+  FaStore,
+  FaWarehouse,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaUpload,
+  FaDownload,
+  FaBarcode,
+  FaCube,
+  FaLayerGroup,
+  FaSortAmountDown,
+  FaSortAmountUp
+} from 'react-icons/fa';
+
 import { spanishTileProducts, bulkImportTiles } from '../utils/bulkProductImport';
 
+// Constants for sort options to improve maintainability
+const SORT_OPTIONS = [
+  { value: 'name', label: 'Sort by Name' },
+  { value: 'price', label: 'Sort by Price' },
+  { value: 'category', label: 'Sort by Category' },
+  { value: 'stock', label: 'Sort by Stock', requiresLocation: true }
+];
+
+// Memoized SortControls component for better performance and reusability
+const SortControls = memo(({
+  sortBy,
+  setSortBy,
+  sortOrder,
+  setSortOrder,
+  selectedLocation
+}) => {
+  // Error handling: validate sortBy against available options
+  const validSortBy = SORT_OPTIONS.some(opt => opt.value === sortBy) ? sortBy : 'name';
+
+  const handleSortByChange = (e) => {
+    const value = e.target.value;
+    // Additional validation before setting
+    if (SORT_OPTIONS.some(opt => opt.value === value)) {
+      setSortBy(value);
+    }
+  };
+
+  return (
+    <div className="sort-controls" role="group" aria-label="Product sorting controls">
+      <label htmlFor="sort-select" className="sr-only">Sort products by</label>
+      <select
+        id="sort-select"
+        value={validSortBy}
+        onChange={handleSortByChange}
+        className="sort-select"
+        aria-describedby="sort-order-btn"
+      >
+        {SORT_OPTIONS.map(option =>
+          !option.requiresLocation || selectedLocation ? (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ) : null
+        )}
+      </select>
+      <button
+        id="sort-order-btn"
+        className="sort-order-btn"
+        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+        aria-label={`Toggle sort order to ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+        title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+      >
+        {sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+      </button>
+    </div>
+  );
+});
+
+// Prop validation comments (since PropTypes not available)
+// SortControls.propTypes = {
+//   sortBy: PropTypes.oneOf(['name', 'price', 'category', 'stock']).isRequired,
+//   setSortBy: PropTypes.func.isRequired,
+//   sortOrder: PropTypes.oneOf(['asc', 'desc']).isRequired,
+//   setSortOrder: PropTypes.func.isRequired,
+//   selectedLocation: PropTypes.string
+// };
+
+// Memoized ProductCard component for better performance
+const ProductCard = memo(({
+  product,
+  availableQty,
+  onEdit,
+  onDelete,
+  onView,
+  isDeleting = false,
+  isEditing = false,
+  isViewing = false
+}) => (
+  <div className="sale-product-card">
+    {availableQty <= 0 && (
+      <div className="out-of-stock-badge">
+        <FaExclamationTriangle size={12} />
+        Out of Stock
+      </div>
+    )}
+    {availableQty > 0 && availableQty <= 10 && (
+      <div className="low-stock-badge">
+        <FaExclamationTriangle size={12} />
+        Low Stock
+      </div>
+    )}
+    {availableQty > 10 && (
+      <div className="in-stock-badge">
+        <FaCheckCircle size={12} />
+        In Stock
+      </div>
+    )}
+
+    <div className="product-image">
+      {product.imageUrl ? (
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          loading="lazy"
+        />
+      ) : (
+        <div className="image-placeholder">
+          <FaCube size={32} />
+        </div>
+      )}
+    </div>
+
+    <div className="product-info">
+      <h4 className="product-name" title={product.name}>
+        {product.name}
+      </h4>
+
+      {product.category && (
+        <div className="product-category">
+          <FaTags size={10} />
+          {product.category}
+        </div>
+      )}
+
+      <div className="product-attributes">
+        {Object.entries(product.customAttributes || {}).slice(0, 2).map(([key, value], i) => (
+          <span key={key} className="attribute-tag">
+            {String(value).substring(0, 15)}
+          </span>
+        ))}
+      </div>
+
+      <div className="price-stock-info">
+        <div className="product-price">
+          <MoneyValue amount={product.price || 0} sensitive={false} />
+        </div>
+        <div className="product-stock">
+          <FaStore size={10} />
+          {availableQty} {product.unitOfMeasure || 'pc'}
+        </div>
+      </div>
+    </div>
+
+    <div className="product-actions">
+      <button
+        className="edit-btn"
+        onClick={() => onEdit(product)}
+        title="Edit Product"
+      >
+        <FaEdit size={12} />
+        Edit
+      </button>
+      <button
+        className="view-btn"
+        onClick={() => onView(product)}
+        title="View Details"
+      >
+        <FaEye size={12} />
+        View
+      </button>
+      <button
+        className={`delete-btn ${isDeleting ? 'loading' : ''}`}
+        onClick={() => !isDeleting && onDelete(product.id)}
+        disabled={isDeleting}
+        title={isDeleting ? "Deleting..." : "Delete Product"}
+        aria-label={isDeleting ? "Deleting product..." : `Delete ${product.name}`}
+      >
+        {isDeleting ? <div className="btn-spinner" /> : <FaTrash size={12} />}
+        {isDeleting ? 'Deleting...' : 'Delete'}
+      </button>
+    </div>
+  </div>
+));
+
+// Memoized TableRow component for table view
+const ProductTableRow = memo(({
+  product,
+  availableQty,
+  onEdit,
+  onDelete,
+  onView,
+  isDeleting = false,
+  isEditing = false,
+  isViewing = false
+}) => (
+  <tr>
+    <td>
+      {product.imageUrl ? (
+        <img src={product.imageUrl} alt={product.name} className="product-image" />
+      ) : (
+        <div className="image-placeholder">
+          <FaCube size={16} />
+        </div>
+      )}
+    </td>
+    <td>
+      <div className="table-product-info">
+        <strong>{product.name}</strong>
+        <small><FaTags size={8} /> {product.category || 'Uncategorized'}</small>
+      </div>
+    </td>
+    <td>
+      <div className="table-attributes">
+        {Object.entries(product.customAttributes || {}).slice(0, 3).map(([key, value]) => (
+          <div key={key} className="table-attribute">
+            <span className="attribute-label">{key}:</span>
+            <span className="attribute-value">{String(value).substring(0, 10)}</span>
+          </div>
+        ))}
+      </div>
+    </td>
+    <td>
+      <MoneyValue amount={product.price || 0} sensitive={false} />
+    </td>
+    <td>
+      <div className={`inventory-status ${availableQty <= 0 ? 'out' : availableQty <= 10 ? 'low' : 'high'}`}>
+        <FaWarehouse size={10} />
+        {availableQty} {product.unitOfMeasure || 'pcs'}
+      </div>
+    </td>
+    <td>
+      <div className="table-actions">
+        <button className="edit-btn-small" onClick={() => onEdit(product)}>
+          <FaEdit size={10} />
+        </button>
+        <button className="edit-btn-small" onClick={() => onView(product)}>
+          <FaEye size={10} />
+        </button>
+        <button
+          className={`delete-btn-small ${isDeleting ? 'loading' : ''}`}
+          onClick={() => !isDeleting && onDelete(product.id)}
+          disabled={isDeleting}
+          title={isDeleting ? "Deleting..." : "Delete Product"}
+          aria-label={isDeleting ? "Deleting product..." : `Delete ${product.name}`}
+        >
+          {isDeleting ? <div className="btn-spinner-small" /> : <FaTrash size={10} />}
+        </button>
+      </div>
+    </td>
+  </tr>
+));
+
 const ProductsPage = () => {
+  // State management
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -18,12 +289,54 @@ const ProductsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showEditor, setShowEditor] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // grid or table
+  const [viewMode, setViewMode] = useState('grid');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
+  
   // Inventory context
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [inventory, setInventory] = useState([]);
   const [inStockOnly, setInStockOnly] = useState(false);
+  const [viewingProduct, setViewingProduct] = useState(null);
+  const [showQuickView, setShowQuickView] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [recentlyDeleted, setRecentlyDeleted] = useState([]);
+
+  // Operation tracking for better UX
+  const [operationInProgress, setOperationInProgress] = useState({
+    delete: new Set(),
+    edit: false,
+    create: false,
+    view: false
+  });
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState([]);
+  const [toastId, setToastId] = useState(0);
+
+  // Toast notification helper
+  const showToast = (message, type = 'info', duration = 4000) => {
+    const id = toastId;
+    setToastId(prev => prev + 1);
+
+    const toast = {
+      id,
+      message,
+      type, // 'success', 'error', 'warning', 'info'
+      duration
+    };
+
+    setToasts(prev => [...prev, toast]);
+
+    // Auto-remove toast after duration
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+
+    return id;
+  };
 
   const loadProducts = useCallback(async () => {
     try {
@@ -78,25 +391,80 @@ const ProductsPage = () => {
     loadInv();
   }, [selectedLocation]);
 
-  const getAvailableQuantity = (productId) => {
-    const inv = inventory.find(i => i.productId === productId);
-    if (!inv) return 0;
-    const qty = inv.quantity ?? inv.quantitySqm ?? inv.quantity_sqm;
-    return Number(qty) || 0;
-  };
+  // Optimized inventory map for better performance
+  const inventoryMap = useMemo(() => {
+    const map = new Map();
+    inventory.forEach(inv => {
+      const qty = inv.quantity ?? inv.quantitySqm ?? inv.quantity_sqm;
+      map.set(inv.productId, Number(qty) || 0);
+    });
+    return map;
+  }, [inventory]);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         Object.values(product.customAttributes || {}).some(value => 
-                           value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-                         ) ||
-                         product.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
-    const matchesStock = !inStockOnly || !selectedLocation || getAvailableQuantity(product.id) > 0;
+  const getAvailableQuantity = useCallback((productId) => {
+    return inventoryMap.get(productId) || 0;
+  }, [inventoryMap]);
 
-    return matchesSearch && matchesCategory && matchesStock;
-  });
+  // Memoized filtered and sorted products for better performance
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = products.filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           Object.values(product.customAttributes || {}).some(value => 
+                             value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+                           ) ||
+                           product.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = !selectedCategory || product.category === selectedCategory;
+      const matchesStock = !inStockOnly || !selectedLocation || getAvailableQuantity(product.id) > 0;
+
+      return matchesSearch && matchesCategory && matchesStock;
+    });
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'price':
+          aValue = parseFloat(a.price) || 0;
+          bValue = parseFloat(b.price) || 0;
+          break;
+        case 'category':
+          aValue = a.category || '';
+          bValue = b.category || '';
+          break;
+        case 'stock':
+          aValue = getAvailableQuantity(a.id);
+          bValue = getAvailableQuantity(b.id);
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [products, searchTerm, selectedCategory, inStockOnly, selectedLocation, getAvailableQuantity, sortBy, sortOrder]);
+
+  // Statistics for the header
+  const productStats = useMemo(() => ({
+    total: products.length,
+    filtered: filteredAndSortedProducts.length,
+    categories: new Set(products.map(p => p.category).filter(Boolean)).size,
+    inStock: selectedLocation ? products.filter(p => getAvailableQuantity(p.id) > 0).length : 0,
+    lowStock: selectedLocation ? products.filter(p => {
+      const qty = getAvailableQuantity(p.id);
+      return qty > 0 && qty <= 10;
+    }).length : 0,
+    outOfStock: selectedLocation ? products.filter(p => getAvailableQuantity(p.id) === 0).length : 0
+  }), [products, filteredAndSortedProducts.length, selectedLocation, getAvailableQuantity]);
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -133,36 +501,95 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDeleteProduct = async (productId, productName) => {
-    if (!window.confirm(`Are you sure you want to archive "${productName}"?`)) {
+  const handleDeleteProduct = (productId) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) {
+      showToast('Product not found', 'error');
       return;
     }
 
+    setProductToDelete(product);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+
+    const productId = productToDelete.id;
+    const productName = productToDelete.name;
+
+    // Add to operation tracking
+    setOperationInProgress(prev => ({
+      ...prev,
+      delete: new Set([...prev.delete, productId])
+    }));
+
     try {
-      setLoading(true);
       await deleteProduct(productId);
-      setSuccess('Product archived successfully');
+
+      // Store for undo functionality
+      const deletedProduct = { ...productToDelete, deletedAt: Date.now() };
+      setRecentlyDeleted(prev => [deletedProduct, ...prev.slice(0, 4)]); // Keep last 5
+
+      showToast(
+        <div className="toast-with-undo">
+          <span>"{productName}" has been archived successfully</span>
+          <button
+            className="undo-btn"
+            onClick={() => undoDelete(deletedProduct)}
+          >
+            Undo
+          </button>
+        </div>,
+        'success',
+        8000
+      );
+
       loadProducts();
-      setTimeout(() => setSuccess(''), 3000);
+      setShowDeleteModal(false);
+      setProductToDelete(null);
     } catch (error) {
       console.error('Delete product error:', error);
-      setError(error.response?.data?.message || 'Failed to archive product');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to archive product';
+      showToast(`Failed to archive "${productName}": ${errorMessage}`, 'error', 6000);
     } finally {
-      setLoading(false);
+      // Remove from operation tracking
+      setOperationInProgress(prev => ({
+        ...prev,
+        delete: new Set([...prev.delete].filter(id => id !== productId))
+      }));
     }
+  };
+
+  const undoDelete = async (deletedProduct) => {
+    try {
+      // Note: This assumes there's an API endpoint to restore products
+      // For now, we'll show a message that undo is not implemented
+      showToast('Undo functionality requires backend support. Product remains archived.', 'warning', 5000);
+
+      // Remove from recently deleted
+      setRecentlyDeleted(prev => prev.filter(p => p.id !== deletedProduct.id));
+    } catch (error) {
+      showToast('Failed to restore product', 'error');
+    }
+  };
+
+  const handleViewProduct = (product) => {
+    setViewingProduct({ ...product, availableQty: getAvailableQuantity(product.id) });
+    setShowQuickView(true);
   };
 
   const handleBulkExport = () => {
     // Get all unique attribute keys from all products
     const attributeKeys = [...new Set(
-      filteredProducts.flatMap(product => 
+      filteredAndSortedProducts.flatMap(product =>
         Object.keys(product.customAttributes || {})
       )
     )].sort();
 
     const csvContent = [
       ['Name', 'Category', 'Price', 'Unit of Measure', 'Supplier Code', ...attributeKeys],
-      ...filteredProducts.map(product => [
+      ...filteredAndSortedProducts.map(product => [
         product.name,
         product.category || 'General',
         product.price,
@@ -273,197 +700,7 @@ const ProductsPage = () => {
     }
   };
 
-  const ProductCard = ({ product }) => (
-    <div style={{ 
-      width: '280px', 
-      margin: '15px',
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: '20px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      border: '1px solid #e0e0e0',
-      transition: 'transform 0.2s, box-shadow 0.2s'
-    }}
-    onMouseEnter={(e) => {
-      e.target.style.transform = 'translateY(-2px)';
-      e.target.style.boxShadow = '0 6px 12px rgba(0,0,0,0.15)';
-    }}
-    onMouseLeave={(e) => {
-      e.target.style.transform = 'translateY(0)';
-      e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-    }}>
-      <div className="product-content">
-        <div className="product-image" style={{ textAlign: 'center', marginBottom: '15px' }}>
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} style={{ 
-              width: '200px', 
-              height: '150px', 
-              objectFit: 'cover',
-              borderRadius: '8px',
-              border: '1px solid #ddd'
-            }} />
-          ) : (
-            <div style={{ 
-              width: '200px', 
-              height: '150px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              backgroundColor: '#f8f9fa', 
-              border: '2px dashed #dee2e6',
-              borderRadius: '8px',
-              margin: '0 auto'
-            }}>
-              <FaBox size={40} color="#6c757d" />
-            </div>
-          )}
-        </div>
-        <div className="product-info">
-          <h4 style={{ 
-            margin: '0 0 10px 0', 
-            fontSize: '16px', 
-            fontWeight: '600',
-            color: '#2c3e50',
-            lineHeight: '1.3'
-          }}>{product.name}</h4>
-          
-          <div className="product-attributes" style={{ marginBottom: '12px' }}>
-            {Object.entries(product.customAttributes || {}).slice(0, 3).map(([key, value]) => (
-              <div key={key} style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                fontSize: '13px',
-                marginBottom: '4px',
-                color: '#6c757d'
-              }}>
-                <span style={{ fontWeight: '500' }}>{key}:</span>
-                <span>{String(value).substring(0, 15)}{String(value).length > 15 ? '...' : ''}</span>
-              </div>
-            ))}
-          </div>
-          
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '8px'
-          }}>
-            <span style={{ 
-              backgroundColor: '#e9ecef',
-              padding: '4px 8px',
-              borderRadius: '12px',
-              fontSize: '12px',
-              color: '#495057',
-              fontWeight: '500'
-            }}>
-              {product.category || 'General'}
-            </span>
-          </div>
-          
-          <p style={{ 
-            fontSize: '18px', 
-            fontWeight: '700',
-            color: '#007bff',
-            margin: '8px 0'
-          }}>
-            ₦{parseFloat(product.price).toLocaleString()}
-            {product.unitOfMeasure && <span style={{ fontSize: '14px', fontWeight: '400' }}>/{product.unitOfMeasure}</span>}
-          </p>
-          {selectedLocation && (
-            (() => {
-              const qty = getAvailableQuantity(product.id);
-              if (qty > 0) {
-                return (
-                  <p style={{ 
-                    fontSize: '12px', 
-                    color: '#155724', 
-                    backgroundColor: '#d4edda', 
-                    display: 'inline-block', 
-                    padding: '2px 8px', 
-                    borderRadius: '12px',
-                    marginTop: '4px'
-                  }}>
-                    Stock: {qty} {product.unitOfMeasure || 'pc'}
-                  </p>
-                );
-              }
-              return (
-                <p style={{ 
-                  fontSize: '12px', 
-                  color: '#721c24', 
-                  backgroundColor: '#f8d7da', 
-                  display: 'inline-block', 
-                  padding: '2px 8px', 
-                  borderRadius: '12px',
-                  marginTop: '4px'
-                }}>
-                  No stock at this location
-                </p>
-              );
-            })()
-          )}
-          
-          {product.supplierCode && (
-            <p style={{ 
-              fontSize: '12px',
-              color: '#6c757d',
-              margin: '5px 0 0 0',
-              fontFamily: 'monospace'
-            }}>
-              Code: {product.supplierCode}
-            </p>
-          )}
-        </div>
-      </div>
-      
-      <div style={{ 
-        display: 'flex', 
-        gap: '8px', 
-        marginTop: '15px',
-        paddingTop: '15px',
-        borderTop: '1px solid #e9ecef'
-      }}>
-        <button 
-          style={{
-            flex: 1,
-            padding: '10px 15px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#0056b3'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#007bff'}
-          onClick={() => handleEditProduct(product)}
-        >
-          ✏️ Edit
-        </button>
-        <button 
-          style={{
-            flex: 1,
-            padding: '10px 15px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
-          onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}
-          onClick={() => handleDeleteProduct(product.id, product.name)}
-        >
-          🗑️ Archive
-        </button>
-      </div>
-    </div>
-  );
+  // Removed duplicate inline ProductCard component. Use memoized ProductCard defined above.
 
   const ProductRow = ({ product }) => (
     <tr>
@@ -491,7 +728,7 @@ const ProductsPage = () => {
             const qty = getAvailableQuantity(product.id);
             if (qty > 0) {
               return (
-                <span className="stock-pill" style={{ background: '#e9f7ef', color: '#155724', padding: '2px 8px', borderRadius: '12px' }}>
+                <span className="stock-pill" >
                   {qty} {product.unitOfMeasure || 'pc'}
                 </span>
               );
@@ -503,17 +740,17 @@ const ProductsPage = () => {
             );
           })()
         ) : (
-          <span style={{ color: '#6c757d', fontSize: '12px' }}>Select a location</span>
+          <span>Select a location</span>
         )}
       </td>
       <td>
         <div className="table-actions">
-          <button 
+          <button
             className="edit-btn-small"
             onClick={() => handleEditProduct(product)}
             title="Edit Product"
           >
-            <span>✏️</span>
+            <FaEdit size={10} />
           </button>
           <button 
             className="delete-btn-small"
@@ -529,278 +766,276 @@ const ProductsPage = () => {
 
   return (
     <>
-  {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="products-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <PageHeader
-          icon="📦"
-          title="Product Management"
-          subtitle="Manage your product catalog and inventory"
-          stats={[
-            { label: 'Total Products', value: products.length },
-            { label: 'Categories', value: categories.length }
-          ]}
-          actions={
-            <>
+        {/* Enhanced Header */}
+        <div className="enhanced-header">
+          {/* Header Top Row */}
+          <div className="header-top">
+            <div className="header-title">
+              <FaCubes className="header-icon" />
+              <div className="title-content">
+                <h1>Product Management</h1>
+                <p>Manage your product catalog and inventory levels</p>
+              </div>
+            </div>
+            
+            <div className="header-stats">
+              <div className="stat-content">
+                <FaCube className="stat-ico" />
+                <span className="stat-value">{productStats.total}</span>
+                <span className="stat-label">Total Products</span>
+              </div>
+              <div className="stat-content">
+                 <FaTags className="stat-ico" />
+                  <span className="stat-value">{productStats.categories}</span>
+                  <span className="stat-label">Categories</span>
+              </div>
+              {selectedLocation && (
+                <>
+                  <div className="stat-card">
+                    <FaCheckCircle className="stat-icon in-stock" />
+                    <div className="stat-content">
+                      <span className="stat-value">{productStats.inStock}</span>
+                      <span className="stat-label">In Stock</span>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <FaExclamationTriangle className="stat-icon low-stock" />
+                    <div className="stat-content">
+                      <span className="stat-value">{productStats.lowStock}</span>
+                      <span className="stat-label">Low Stock</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Header Bottom Row */}
+          <div className="header-bottom">
+            <div className="search-container">
+              <FaSearch className="search-icon" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search products by name, category, or attributes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
+                className="enhanced-search-input"
               />
-              
+            </div>
+            
+            <div className="filter-controls">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="category-select"
+                className="enhanced-select"
               >
                 <option value="">All Categories</option>
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-
+              
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="location-select"
+                className="enhanced-location-select"
               >
                 <option value="">Select Location</option>
                 {locations.map(loc => (
                   <option key={loc.id} value={loc.id}>{loc.name}</option>
                 ))}
               </select>
-
-              <label className="stock-filter">
+              
+              <label className="stock-filter-enhanced">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
                 />
-                In stock only
+                <FaFilter size={10} />
+                 In stock only
               </label>
-
-              <button 
-                className="action-btn secondary-button"
-                onClick={handleBulkExport}
-              >
-                📊 Export CSV
-              </button>
-              <button 
-                className={`action-btn ${importLoading ? 'warning-button' : 'primary-button'}`}
-                onClick={handleBulkImport}
-                disabled={importLoading}
-                style={{
-                  position: 'relative',
-                  backgroundColor: importLoading ? '#ffc107' : '#28a745',
-                  color: importLoading ? '#212529' : 'white',
-                  fontWeight: 'bold',
-                  minWidth: '180px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                {importLoading ? (
-                  <>
-                    <span className="spinner" style={{
-                      display: 'inline-block',
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid currentColor',
-                      borderRightColor: 'transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 0.75s linear infinite'
-                    }}></span>
-                    <style>{`
-                      @keyframes spin {
-                        to { transform: rotate(360deg); }
-                      }
-                    `}</style>
-                    Importing...
-                  </>
-                ) : (
-                  <>🧱 Import Spanish Tiles</>
-                )}
-              </button>
-              <button 
-                className="action-btn primary-button"
-                onClick={handleCreateProduct}
-              >
-                ➕ Add Product
-              </button>
-            </>
-          }
-        />
-        
-        <div style={{ padding: '20px' }}>
-          {error && (
-            <div className="error-message" style={{
-              padding: '15px',
-              background: '#f8d7da',
-              border: '1px solid #f5c6cb',
-              borderRadius: '4px',
-              marginBottom: '15px',
-              color: '#721c24',
-              textAlign: 'center',
-              fontWeight: 'bold'
-            }}>
-              {error}
-            </div>
-          )}
-          {success && !importLoading && (
-            <div className="success-message" style={{
-              padding: '15px',
-              background: '#d4edda',
-              border: '1px solid #c3e6cb',
-              borderRadius: '4px',
-              marginBottom: '15px',
-              color: '#155724',
-              textAlign: 'center',
-              fontWeight: 'bold'
-            }}>
-              {success}
-            </div>
-          )}
-          {importLoading && (
-            <div className="loading-message" style={{
-              padding: '20px',
-              background: '#fff3cd',
-              border: '2px solid #ffc107',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              color: '#856404',
-              textAlign: 'center',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px' }}>
-                Importing Spanish Tiles in Progress
-              </div>
-              <div style={{ fontSize: '14px', marginBottom: '10px' }}>
-                {success || 'Please wait while we import the products...'}
-              </div>
-              <div style={{ 
-                fontSize: '13px', 
-                backgroundColor: 'rgba(255,255,255,0.5)', 
-                padding: '8px', 
-                borderRadius: '4px',
-                marginTop: '10px',
-                color: '#495057',
-                fontStyle: 'italic'
-              }}>
-                Please don't refresh or leave the page during import.
-              </div>
-            </div>
-          )}
-
-          <div className="products-stats" style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '10px 15px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '6px',
-            marginBottom: '15px',
-            border: '1px solid #e9ecef'
-          }}>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <span style={{ fontSize: '14px', color: '#495057', fontWeight: '500' }}>
-                Total Products: {filteredProducts.length}
-              </span>
-              <span style={{ fontSize: '14px', color: '#495057', fontWeight: '500' }}>
-                Categories: {categories.length}
-              </span>
             </div>
             
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px'
-            }}>
-              <button 
-                style={{
-                  padding: '6px 10px',
-                  backgroundColor: viewMode === 'grid' ? '#007bff' : '#f8f9fa',
-                  color: viewMode === 'grid' ? 'white' : '#495057',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-                onClick={() => setViewMode('grid')}
-              >
-                🔲 Grid
-              </button>
-              <button 
-                style={{
-                  padding: '6px 10px',
-                  backgroundColor: viewMode === 'table' ? '#007bff' : '#f8f9fa',
-                  color: viewMode === 'table' ? 'white' : '#495057',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-                onClick={() => setViewMode('table')}
-              >
-                📋 Table
-              </button>
+            <div className="filter-control">
+              <div className="view-controls">
+                <button 
+                  className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                >
+                  <FaTh className="view-icon" />
+                  Grid
+                </button>
+                <button 
+                  className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                  onClick={() => setViewMode('table')}
+                >
+                  <FaList className="view-icon" />
+                  Table
+                </button>
+              </div>
+              
+              <div className="sort-controls">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="sort-select"
+                >
+                  <option value="name">Sort by Name</option>
+                  <option value="price">Sort by Price</option>
+                  <option value="category">Sort by Category</option>
+                  {selectedLocation && <option value="stock">Sort by Stock</option>}
+                </select>
+                <button
+                  className="sort-order-btn"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                >
+                  {sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                </button>
+              </div>
+              
+              <div className="primary-actions">
+                <button 
+                  className="action-btn secondary-action"
+                  onClick={handleBulkExport}
+                >
+                  <FaDownload size={12} />
+                  Export
+                </button>
+                {/* <button 
+                  className={`action-btn ${importLoading ? 'loading' : 'secondary-action'}`}
+                  onClick={handleBulkImport}
+                  disabled={importLoading}
+                >
+                  {importLoading ? (
+                    <>
+                      <div className="spinner"></div>
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <FaUpload size={12} />
+                      Import Tiles
+                    </>
+                  )}
+                </button> */}
+                <button 
+                  className="action-btn primary-action"
+                  onClick={handleCreateProduct}
+                >
+                  <FaPlus size={12} />
+                  Add Product
+                </button>
+              </div>
             </div>
           </div>
-
-          {loading && <div className="loading">Loading products...</div>}
-
-          {!loading && (
-            <>
-              {viewMode === 'grid' ? (
-                <div className="products-grid">
-                  {filteredProducts.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              ) : (
-                <div className="products-table-container">
-                  <table className="products-table">
-                    <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Attributes</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Stock</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProducts.map(product => (
-                        <ProductRow key={product.id} product={product} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {filteredProducts.length === 0 && !loading && (
-                <div className="no-products">
-                  <p>No products found matching your criteria.</p>
-                  <button onClick={handleCreateProduct} className="add-first-product-btn">
-                    Add Your First Product
-                  </button>
-                </div>
-              )}
-            </>
-          )}
         </div>
 
+        {/* Main Content Container */}
+        <div className="products-container products-container-clean">
+          {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
+
+          {/* Compact Statistics Bar */}
+          <div className="compact-stats">
+            <span className="compact-stat">
+              <FaCube className="compact-icon" /> {productStats.filtered} of {productStats.total} Products
+            </span>
+            {selectedLocation && (
+              <>
+                <span className="compact-stat in-stock">
+                  <FaCheckCircle className="compact-icon" /> {productStats.inStock} In Stock
+                </span>
+                <span className="compact-stat low-stock">
+                  <FaExclamationTriangle className="compact-icon" /> {productStats.lowStock} Low Stock
+                </span>
+                <span className="compact-stat out-of-stock">
+                  <FaTimesCircle className="compact-icon" /> {productStats.outOfStock} Out of Stock
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Products Display Area */}
+          <div className="products-conten">
+            {loading ? (
+              <div className="loading-state">
+                <div className="spinner large"></div>
+                <p>Loading products...</p>
+              </div>
+            ) : filteredAndSortedProducts.length === 0 ? (
+              <div className="empty-state">
+                <FaCube size={48} className="empty-icon" />
+                <h3>No products found</h3>
+                <p>
+                  {products.length === 0 
+                    ? "Start by adding your first product to the catalog."
+                    : "Try adjusting your search or filter criteria."
+                  }
+                </p>
+                {products.length === 0 && (
+                  <button className="empty-action-btn" onClick={handleCreateProduct}>
+                    <FaPlus size={12} />
+                    Add Your First Product
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="products-grid products-grid-clean">
+                    {filteredAndSortedProducts.map(product => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        availableQty={getAvailableQuantity(product.id)}
+                        onEdit={handleEditProduct}
+                        onDelete={handleDeleteProduct}
+                        onView={handleViewProduct}
+                        isDeleting={operationInProgress.delete.has(product.id)}
+                        isEditing={operationInProgress.edit}
+                        isViewing={operationInProgress.view}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="table-view-container">
+                    <table className="products-table products-table-enhanced">
+                      <thead>
+                        <tr>
+                          <th>Image</th>
+                          <th>Product Info</th>
+                          <th>Attributes</th>
+                          <th className="center">Price</th>
+                          {selectedLocation && <th className="center">Stock</th>}
+                          <th className="center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAndSortedProducts.map(product => (
+                          <ProductTableRow
+                            key={product.id}
+                            product={product}
+                            availableQty={getAvailableQuantity(product.id)}
+                            onEdit={handleEditProduct}
+                            onDelete={handleDeleteProduct}
+                            onView={handleViewProduct}
+                            isDeleting={operationInProgress.delete.has(product.id)}
+                            isEditing={operationInProgress.edit}
+                            isViewing={operationInProgress.view}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Product Editor Modal */}
         {showEditor && (
           <ProductEditor
             product={editingProduct}
@@ -809,6 +1044,32 @@ const ProductsPage = () => {
               setShowEditor(false);
               setEditingProduct(null);
             }}
+          />
+        )}
+
+        {/* Quick View Modal */}
+        {showQuickView && (
+          <QuickViewModal
+            product={viewingProduct}
+            isOpen={showQuickView}
+            onRequestClose={() => {
+              setShowQuickView(false);
+              setViewingProduct(null);
+            }}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <DeleteConfirmationModal
+            product={productToDelete}
+            isOpen={showDeleteModal}
+            onConfirm={confirmDeleteProduct}
+            onCancel={() => {
+              setShowDeleteModal(false);
+              setProductToDelete(null);
+            }}
+            isDeleting={productToDelete ? operationInProgress.delete.has(productToDelete.id) : false}
           />
         )}
       </div>

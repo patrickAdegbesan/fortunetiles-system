@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchProductTypes, fetchLocations, fetchCategories } from '../services/api';
+import { FaPen, FaDollarSign, FaImage, FaCog, FaInfoCircle, FaCreditCard, FaCamera, FaUpload, FaCheck, FaTimes } from 'react-icons/fa';
 import '../styles/ProductEditor.css';
 
 const ProductEditor = ({ product, onSave, onCancel }) => {
@@ -410,10 +411,11 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
 
         <form onSubmit={handleSubmit} className="editor-form">
           {error && <div className="form-error-message">{error}</div>}
-          <div className="form-grid">
+          <div className="form-content">
+            <div className="form-grid">
             {/* Basic Information */}
             <div className="form-section basic-info">
-              <h3>Basic Information</h3>
+              <h3><span className="section-icon"><FaPen /></span> Basic Information</h3>
               
               <div className="form-group">
                 <label>Product Name *</label>
@@ -462,10 +464,10 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
             </div>
 
             {/* Product Type Attributes - Separate Card */}
-            {selectedType && selectedType.attributes && 
+            {selectedType && selectedType.attributes &&
              (selectedType.attributes.requiredFields?.length || selectedType.attributes.optionalFields?.length) ? (
               <div className="form-section full-width product-attributes-card">
-                <h3>{selectedType.name} Attributes</h3>
+                <h3><span className="section-icon"><FaCog /></span> {selectedType.name} Attributes</h3>
                 <div className="product-attributes-grid">
                   {selectedType.attributes.requiredFields?.map(field => (
                     <div className="form-group" key={`req_${field}`}>
@@ -501,7 +503,7 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
 
             {/* Pricing & Supplier */}
             <div className="form-section">
-              <h3>Pricing & Supplier</h3>
+              <h3><span className="section-icon"><FaDollarSign /></span> Pricing & Supplier</h3>
               
               <div className="form-group">
                 <label>Price ({selectedType ? `per ${selectedType.unitOfMeasure}` : ''}) (₦) *</label>
@@ -571,7 +573,7 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
 
             {/* Image & Description */}
             <div className="form-section full-width">
-              <h3>Image & Description</h3>
+              <h3><span className="section-icon"><FaImage /></span> Image & Description</h3>
 
               <div className="form-group">
                 <label>Product Image</label>
@@ -588,10 +590,10 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                     {!isCapturing ? (
                       <>
                         <button type="button" onClick={startCamera} className="camera-btn">
-                          📷 Take Photo
+                          <FaCamera /> Take Photo
                         </button>
                         <label htmlFor="image-upload" className="file-label">
-                          Choose Image
+                          <FaUpload /> Choose Image
                         </label>
                       </>
                     ) : null}
@@ -624,10 +626,10 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                       </div>
                       <div className="camera-controls">
                         <button type="button" onClick={captureImage} className="capture-btn">
-                          📸 Take Photo
+                          <FaCheck /> Take Photo
                         </button>
                         <button type="button" onClick={stopCamera} className="cancel-camera-btn">
-                          ❌ Close Camera
+                          <FaTimes /> Close Camera
                         </button>
                       </div>
                     </div>
@@ -677,6 +679,7 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
                 </label>
               </div>
             </div>
+            </div>
           </div>
 
           <div className="editor-actions">
@@ -690,7 +693,7 @@ const ProductEditor = ({ product, onSave, onCancel }) => {
         </form>
       </div>
     </div>
-  );
+);
 };
 
 export default ProductEditor;

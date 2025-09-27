@@ -46,11 +46,7 @@
   line-height: 20px;
 }
 
-.header-stats {
-  display: flex;
-  gap: 32px;
-  margin-top: 16px;
-}
+
 
 .stat-item {
   display: flex;

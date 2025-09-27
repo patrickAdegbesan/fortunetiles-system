@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import SalePage from './pages/SalePage';
 import ProductsPage from './pages/ProductsPage';
@@ -11,21 +12,20 @@ import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
 import LocationsPage from './pages/LocationsPage';
 import AdminSettings from './pages/AdminSettings';
-import OrderHistoryPage from './pages/OrderHistoryPage';
-import ReturnsManagementPage from './pages/ReturnsManagementPage';
+import TransactionsPage from './pages/TransactionsPage';
 import './App.css';
 import './styles/Layout.css';
 
 function MainLayout({ children }) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isLoginPage = location.pathname === '/login';
+  const isAuthPage = location.pathname === '/login' || location.pathname.startsWith('/reset-password/');
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  if (isLoginPage) {
+  if (isAuthPage) {
     return children;
   }
 
@@ -44,10 +44,11 @@ function MainLayout({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/inventory">
+      <Router>
         <MainLayout>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route 
               path="/dashboard" 
               element={
@@ -105,22 +106,23 @@ function App() {
               } 
             />
             <Route 
-              path="/orders" 
+              path="/transactions" 
               element={
                 <ProtectedRoute>
-                  <OrderHistoryPage />
+                  <TransactionsPage />
                 </ProtectedRoute>
               } 
             />
             <Route 
-              path="/returns-management" 
+              path="/inventory" 
               element={
-                <ProtectedRoute allowedRoles={['manager', 'owner']}>
-                  <ReturnsManagementPage />
+                <ProtectedRoute>
+                  <ProductsPage />
                 </ProtectedRoute>
               } 
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </MainLayout>
       </Router>

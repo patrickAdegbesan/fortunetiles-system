@@ -191,7 +191,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
     }
 
     // Get sales with items and product details
-    const salesData = await Sale.findAll({
+    let salesData = await Sale.findAll({
       where: whereClause,
       include: [
         {
@@ -220,8 +220,17 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
     let totalRevenue = 0;
     let totalCost = 0;
 
+    // Filter out any sales with null data
+    salesData = salesData.filter(sale => 
+      sale && 
+      sale.items && 
+      Array.isArray(sale.items) && 
+      sale.items.every(item => item && item.product)
+    );
+    
     salesData.forEach(sale => {
       sale.items.forEach(item => {
+        if (!item.product) return; // Skip items without product data
         const revenue = parseFloat(item.lineTotal);
         const estimatedCost = revenue * COST_RATIO;
         const profit = revenue - estimatedCost;
@@ -232,11 +241,11 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
 
         profitabilityData.push({
           saleId: sale.id,
-          productId: item.product.id,
-          productName: item.product.name,
-          category: item.product.category,
-          location: sale.location.name,
-          quantitySqm: parseFloat(item.quantity),
+          productId: item.product?.id || 0,
+          productName: item.product?.name || 'Unknown Product',
+          category: item.product?.category || 'Uncategorized',
+          location: sale.location?.name || 'Unknown Location',
+          quantitySqm: parseFloat(item.quantity || 0),
           unitPrice: parseFloat(item.unitPrice),
           revenue: revenue,
           estimatedCost: estimatedCost,
@@ -320,8 +329,8 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       whereClause.locationId = locationId;
     }
 
-    // Get top products by quantity sold
-    const topProductsByQuantity = await SaleItem.findAll({
+    // Get top products by quantity sold and filter out any items with null products
+    let topProductsByQuantity = await SaleItem.findAll({
       attributes: [
         'productId',
         [sequelize.fn('SUM', sequelize.col('SaleItem.quantity')), 'totalQuantitySold'],
@@ -348,8 +357,11 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       raw: false
     });
 
+    // Filter out entries with null products
+    topProductsByQuantity = topProductsByQuantity.filter(item => item && item.product);
+    
     // Get top products by revenue
-    const topProductsByRevenue = await SaleItem.findAll({
+    let topProductsByRevenue = await SaleItem.findAll({
       attributes: [
         'productId',
         [sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'totalRevenue'],
@@ -379,10 +391,10 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
     // Format the data
     const formatProductData = (products) => {
       return products.map(item => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        category: item.product.category,
-        currentPrice: parseFloat(item.product.price),
+        productId: item.product?.id || 0,
+        productName: item.product?.name || 'Unknown Product',
+        category: item.product?.category || 'Uncategorized',
+        currentPrice: parseFloat(item.product?.price || 0),
         totalQuantitySold: parseFloat(item.dataValues.totalQuantitySold || 0),
         totalRevenue: parseFloat(item.dataValues.totalRevenue || 0),
         totalTransactions: parseInt(item.dataValues.totalTransactions || 0),
@@ -417,6 +429,9 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       raw: true
     });
 
+    // Filter out entries with null products
+    topProductsByRevenue = topProductsByRevenue.filter(item => item && item.product);
+    
     res.json({
       message: 'Top products report retrieved successfully',
       data: {

@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faChartColumn,
+  faLocationDot,
+  faFolder,
+  faRotate,
+  faFilter,
+  faBoxesStacked,
+  faChartLine,
+  faClockRotateLeft,
+  faBuilding,
+  faMoneyBillWave,
+  faCartShopping,
+  faMoneyBills
+} from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchDashboardData, fetchInventory, fetchProducts, fetchLocations, fetchCategories } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
-import PageHeader from '../components/PageHeader';
+import TopHeader from '../components/TopHeader';
 import DashboardStats from '../components/DashboardStats';
-// import { formatCurrency } from '../utils/formatters';
 import InventoryManager from '../components/InventoryManager';
 import '../styles/Dashboard.css';
 
@@ -95,49 +109,48 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <PageHeader 
-          icon="📊"
-          title="Dashboard"
-          subtitle="Loading..."
-        />
-        <div style={{ padding: '20px' }}>
-          <div className="loading-spinner">Loading dashboard...</div>
+      <>
+        <SidebarNav />
+        <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+          <TopHeader title="📊 Dashboard" />
+          <div style={{ padding: '20px' }}>
+            <div className="loading-spinner">Loading dashboard...</div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <PageHeader 
-          icon="📊"
-          title="Dashboard"
-          subtitle="Error"
-        />
-        <div style={{ padding: '20px' }}>
-          <div className="error-message">{error}</div>
+      <>
+        <SidebarNav />
+        <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+          <TopHeader title="📊 Dashboard" />
+          <div style={{ padding: '20px' }}>
+            <div className="error-message">{error}</div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
+      <SidebarNav />
       <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-        <PageHeader
-          icon="📊"
-          title="Dashboard"
-          subtitle={`Welcome back, ${user?.firstName}!`}
-        />
+        <TopHeader title={<><FontAwesomeIcon icon={faChartColumn} /> Dashboard</>}>
+          <div style={{ fontSize: '16px', color: '#6c757d' }}>
+            Welcome back, {user?.firstName}!
+          </div>
+        </TopHeader>
         
         <div className="dashboard-content" style={{ padding: '20px' }}>
 
         {/* Dashboard Filters */}
         <div className="dashboard-filters">
           <div className="filter-group">
-            <label htmlFor="location-filter">📍 Location:</label>
+            <label htmlFor="location-filter"><FontAwesomeIcon icon={faLocationDot} /> Location:</label>
             <select
               id="location-filter"
               value={selectedLocation}
@@ -154,7 +167,7 @@ const Dashboard = () => {
           </div>
 
           <div className="filter-group">
-            <label htmlFor="category-filter">📂 Category:</label>
+            <label htmlFor="category-filter"><FontAwesomeIcon icon={faFolder} /> Category:</label>
             <select
               id="category-filter"
               value={selectedCategory}
@@ -178,16 +191,26 @@ const Dashboard = () => {
               }}
               className="reset-filters-btn"
             >
-              🔄 Reset Filters
+              <FontAwesomeIcon icon={faRotate} /> Reset Filters
             </button>
           </div>
         </div>
 
         {/* Active Filter Indicator */}
         {(selectedLocation !== 'all' || selectedCategory !== 'all') && (
-          <div className="filter-info compact">
+          <div className="filter-info">
             <div className="active-filters">
-              <span className="filter-indicator">� Filtered Results Active</span>
+              <span className="filter-label"><FontAwesomeIcon icon={faFilter} /> Showing data for:</span>
+              {selectedLocation !== 'all' && (
+                <span className="filter-tag">
+                  <FontAwesomeIcon icon={faLocationDot} /> {locations.find(l => l.id.toString() === selectedLocation)?.name || 'Unknown Location'}
+                </span>
+              )}
+              {selectedCategory !== 'all' && (
+                <span className="filter-tag">
+                  <FontAwesomeIcon icon={faFolder} /> {selectedCategory || 'Unknown Category'}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -210,7 +233,7 @@ const Dashboard = () => {
         <div className="dashboard-grid">
           {/* Recent Activity */}
           <div className="dashboard-section">
-            <h2>Recent Activity</h2>
+            <h2><FontAwesomeIcon icon={faClockRotateLeft} /> Recent Activity</h2>
             <div className="activity-list" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
               {(() => {
                 // Filter recent activity by location and category
@@ -263,7 +286,7 @@ const Dashboard = () => {
 
           {/* Enhanced Quick Stats */}
           <div className="dashboard-section">
-            <h2>Quick Stats</h2>
+            <h2><FontAwesomeIcon icon={faChartLine} /> Quick Stats</h2>
             <div className="quick-stats scrollable">
               {(() => {
                 // Filter products by category if selected
@@ -310,7 +333,7 @@ const Dashboard = () => {
                     <div className="stat-item featured">
                       <div className="stat-content">
                         <span>
-                          {selectedCategory ? `${selectedCategory} Products` : 'Total Products'}
+                          <FontAwesomeIcon icon={faBoxesStacked} /> {selectedCategory ? `${selectedCategory} Products` : 'Total Products'}
                         </span>
                         <strong>{filteredProducts.length}</strong>
                       </div>
@@ -319,7 +342,7 @@ const Dashboard = () => {
                     <div className="stat-item featured">
                       <div className="stat-content">
                         <span>
-                          Items in Stock
+                          <FontAwesomeIcon icon={faBoxesStacked} /> Items in Stock
                           {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
                             ? ' (Filtered)' 
                             : ''}
@@ -331,7 +354,7 @@ const Dashboard = () => {
                     <div className="stat-item featured">
                       <div className="stat-content">
                         <span>
-                          {selectedLocation && selectedLocation !== 'all' 
+                          <FontAwesomeIcon icon={faBuilding} /> {selectedLocation && selectedLocation !== 'all' 
                             ? 'Selected Location' 
                             : 'Your Location'}
                         </span>
@@ -349,7 +372,7 @@ const Dashboard = () => {
                     <div className="stat-item">
                       <div className="stat-content">
                         <span>
-                          Recent Activities
+                          <FontAwesomeIcon icon={faCartShopping} /> Recent Activities
                           {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
                             ? ' (Filtered)' 
                             : ''}
@@ -361,7 +384,7 @@ const Dashboard = () => {
                     <div className="stat-item">
                       <div className="stat-content">
                         <span>
-                          Stock Value
+                          <FontAwesomeIcon icon={faMoneyBills} /> Stock Value
                           {(selectedLocation && selectedLocation !== 'all') || (selectedCategory && selectedCategory !== 'all') 
                             ? ' (Filtered)' 
                             : ''}
@@ -372,7 +395,7 @@ const Dashboard = () => {
                     
                     <div className="stat-item">
                       <div className="stat-content">
-                        <span>Total Revenue</span>
+                                                <span><FontAwesomeIcon icon={faMoneyBillWave} /> Total Revenue</span>
                         <strong>₦{(Number(dashboardData?.totalRevenue) || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}</strong>
                       </div>
                     </div>

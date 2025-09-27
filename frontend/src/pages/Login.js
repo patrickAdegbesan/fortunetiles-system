@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { loginUser } from '../services/api';
 import '../styles/Login.css';
+import '../styles/ForgotPasswordModal.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -11,20 +15,44 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
+  useEffect(() => {
+    let wakeLock = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.log('Wake lock not supported or failed:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release();
+      }
+    };
+  }, []);
+
+  const handleChange = useCallback((e) => {
+    setFormData(prev => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
     // Clear error when user starts typing
     if (error) setError('');
-  };
+  }, [error]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -38,6 +66,10 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  }, [formData, login, navigate]);
+
+  const toggleForgotPasswordModal = () => {
+    setShowForgotPasswordModal(!showForgotPasswordModal);
   };
 
   return (
@@ -61,31 +93,49 @@ const Login = () => {
           )}
           
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-              disabled={loading}
-            />
+            <div className="input-container">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className={formData.email ? 'has-content' : ''}
+              />
+              <label htmlFor="email" className="floating-label">Email Address</label>
+            </div>
           </div>
-          
+
           <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Enter your password"
-              disabled={loading}
-            />
+            <div className="input-container password-container">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                className={formData.password ? 'has-content' : ''}
+              />
+              <label htmlFor="password" className="floating-label">Password</label>
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+              </button>
+            </div>
+            <div className="forgot-password">
+              <a href="#" onClick={(e) => { e.preventDefault(); toggleForgotPasswordModal(); }}>
+                Forgot Password?
+              </a>
+            </div>
           </div>
           
           <button 
@@ -97,10 +147,11 @@ const Login = () => {
           </button>
         </form>
         
-        <div className="login-footer">
-          <p>Default Admin: admin@fortunetiles.com / admin123</p>
-        </div>
+        {/* Removed default admin credentials for security */}
       </div>
+      {showForgotPasswordModal && (
+        <ForgotPasswordModal onClose={toggleForgotPasswordModal} />
+      )}
     </div>
   );
 };

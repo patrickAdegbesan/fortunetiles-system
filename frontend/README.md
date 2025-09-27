@@ -61,7 +61,7 @@ src/
    Navigate to `http://localhost:3000`
 
 ### Default Login Credentials
-- **Email**: admin@fortunetiles.com
+- **Email**: [Contact system administrator for access]
 - **Password**: admin123
 
 ## Available Scripts

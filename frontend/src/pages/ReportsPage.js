@@ -143,13 +143,13 @@ const ReportsPage = () => {
     return (
       <>
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
-        <div className="reports-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+        <div className="reports-page">
           <PageHeader
-            icon="📊"
+            icon={<i className="fas fa-lock"></i>}
             title="Business Reports"
             subtitle="Access Denied"
           />
-          <div style={{ padding: '20px' }}>
+          <div className="access-denied-container">
             <div className="access-denied">
               <h2>Access Denied</h2>
               <p>You don't have permission to view reports.</p>
@@ -163,9 +163,9 @@ const ReportsPage = () => {
   return (
     <>
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
-      <div className="reports-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
+      <div className="reports-page">
         <PageHeader
-          icon="📊"
+          icon={<i className="fas fa-chart-pie"></i>}
           title="Business Reports"
           subtitle="View and analyze business performance"
           actions={
@@ -175,22 +175,27 @@ const ReportsPage = () => {
                 onClick={() => handleExportReport('pdf')}
                 disabled={loading}
               >
-                📄 Export PDF
+                <i className="fas fa-file-pdf"></i> Export PDF
               </button>
               <button 
                 className="export-btn secondary-button"
                 onClick={() => handleExportReport('excel')}
                 disabled={loading}
               >
-                📊 Export Excel
+                <i className="fas fa-file-excel"></i> Export Excel
               </button>
             </div>
           }
         />
         
-        <div className="reports-container" style={{ padding: '20px' }}>
+        <div className="reports-container">
 
-        {error && <div className="error-message">{error}</div>}
+        {error && (
+          <div className="error-message">
+            <i className="fas fa-exclamation-circle"></i>
+            {error}
+          </div>
+        )}
 
         <div className="reports-controls">
           <div className="report-tabs">
@@ -198,25 +203,25 @@ const ReportsPage = () => {
               className={`tab-btn ${activeReport === 'sales-daily' ? 'active' : ''}`}
               onClick={() => setActiveReport('sales-daily')}
             >
-              📈 Daily Sales
+              <i className="fas fa-chart-line"></i> Daily Sales
             </button>
             <button 
               className={`tab-btn ${activeReport === 'inventory-valuation' ? 'active' : ''}`}
               onClick={() => setActiveReport('inventory-valuation')}
             >
-              📦 Inventory Value
+              <i className="fas fa-boxes"></i> Inventory Value
             </button>
             <button 
               className={`tab-btn ${activeReport === 'profit-margin' ? 'active' : ''}`}
               onClick={() => setActiveReport('profit-margin')}
             >
-              💰 Profit Analysis
+              <i className="fas fa-chart-pie"></i> Profit Analysis
             </button>
             <button 
               className={`tab-btn ${activeReport === 'top-products' ? 'active' : ''}`}
               onClick={() => setActiveReport('top-products')}
             >
-              🏆 Top Products
+              <i className="fas fa-trophy"></i> Top Products
             </button>
           </div>
 
@@ -242,30 +247,35 @@ const ReportsPage = () => {
           </div>
         </div>
 
-        {loading && <div className="loading">Loading report data...</div>}
+        {loading && (
+          <div className="loading">
+            <i className="fas fa-circle-notch fa-spin"></i>
+            Loading report data...
+          </div>
+        )}
 
         {!loading && (
           <div className="report-content">
             {/* Sales Daily Report */}
             {activeReport === 'sales-daily' && salesDailyData && (
               <div className="report-section">
-                <h2>Daily Sales Report</h2>
+                <h2><i className="fas fa-chart-bar"></i> Daily Sales Report</h2>
                 
                 <div className="summary-cards">
                   <div className="summary-card">
-                    <h3>Total Revenue</h3>
+                    <h3><i className="fas fa-coins"></i> Total Revenue</h3>
                     <p className="metric-value">{formatCurrency(salesDailyData.summary.totalRevenue)}</p>
                   </div>
                   <div className="summary-card">
-                    <h3>Total Transactions</h3>
+                    <h3><i className="fas fa-shopping-cart"></i> Total Transactions</h3>
                     <p className="metric-value">{salesDailyData.summary.totalTransactions}</p>
                   </div>
                   <div className="summary-card">
-                    <h3>Average Order Value</h3>
+                    <h3><i className="fas fa-calculator"></i> Average Order Value</h3>
                     <p className="metric-value">{formatCurrency(salesDailyData.summary.averageOrderValue)}</p>
                   </div>
                   <div className="summary-card">
-                    <h3>Peak Order Value</h3>
+                    <h3><i className="fas fa-chart-line"></i> Peak Order Value</h3>
                     <p className="metric-value">{formatCurrency(salesDailyData.summary.maxOrderValue)}</p>
                   </div>
                 </div>
@@ -307,7 +317,7 @@ const ReportsPage = () => {
             {/* Inventory Valuation Report */}
             {activeReport === 'inventory-valuation' && inventoryValuationData && (
               <div className="report-section">
-                <h2>Inventory Valuation Report</h2>
+                <h2><i className="fas fa-warehouse"></i> Inventory Valuation Report</h2>
                 
                 <div className="summary-cards">
                   <div className="summary-card">
@@ -365,7 +375,7 @@ const ReportsPage = () => {
             {/* Profit Margin Report */}
             {activeReport === 'profit-margin' && profitMarginData && (
               <div className="report-section">
-                <h2>Profit Margin Analysis</h2>
+                <h2><i className="fas fa-chart-pie"></i> Profit Margin Analysis</h2>
                 
                 <div className="summary-cards">
                   <div className="summary-card">
@@ -425,14 +435,14 @@ const ReportsPage = () => {
             {/* Top Products Report */}
             {activeReport === 'top-products' && topProductsData && (
               <div className="report-section">
-                <h2>Top Products Report</h2>
+                <h2><i className="fas fa-award"></i> Top Products Report</h2>
                 
                 <div className="top-products-grid">
                   <div className="top-products-section">
-                    <h3>🏆 Top Products by Quantity Sold</h3>
+                    <h3><i className="fas fa-medal"></i> Top Products by Quantity Sold</h3>
                     <div className="products-list">
                       {topProductsData.topProductsByQuantity.map((product, index) => (
-                        <div key={index} className="product-card">
+                        <div key={index} className="product-car">
                           <div className="product-rank">#{index + 1}</div>
                           <div className="product-info">
                             <h4>{product.productName}</h4>
@@ -449,10 +459,10 @@ const ReportsPage = () => {
                   </div>
 
                   <div className="top-products-section">
-                    <h3>💰 Top Products by Revenue</h3>
+                    <h3><i className="fas fa-crown"></i> Top Products by Revenue</h3>
                     <div className="products-list">
                       {topProductsData.topProductsByRevenue.map((product, index) => (
-                        <div key={index} className="product-card">
+                        <div key={index} className="product-car">
                           <div className="product-rank">#{index + 1}</div>
                           <div className="product-info">
                             <h4>{product.productName}</h4>

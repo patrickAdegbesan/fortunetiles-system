@@ -19,21 +19,7 @@
 }
 
 
-.header-stats {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  color: #666;
-  font-weight: 600;
-  background: #ffffff; /* Pure white */
-  padding: 8px 12px; /* More compact padding */
-  border-radius: 8px;
-  margin-bottom: 10px; /* Reduced margin */
-  border: 1px solid #e8e6e0; /* Light border */
-  box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-  font-size: 0.85rem; /* Smaller font */
-}
+
 
 .header-stats span {
   white-space: nowrap;

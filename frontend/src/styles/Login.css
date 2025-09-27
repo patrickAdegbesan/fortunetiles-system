@@ -3,25 +3,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #faf8f5 0%, #f5f2ed 100%); /* Cream gradient */
+  background: linear-gradient(135deg, hsl(224, 99%, 33%) 0%, hsl(225, 87%, 32%) 25%, hsl(0, 0%, 0%) 50%, hsla(229, 96%, 29%, 0.733) 100%);
   padding: 20px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .login-card {
-  background: #ffffff; /* Pure white */
+  background: hsl(0, 0%, 100%);
   border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(44, 44, 44, 0.15);
+  box-shadow: 0 8px 32px -8px hsl(225, 60%, 25%, 0.1);
   padding: 40px;
   width: 100%;
   max-width: 400px;
-  border: 1px solid #e8e6e0; /* Light border */
+  border: 1px solid hsl(220, 13%, 91%);
   position: relative;
   margin: 0 auto;
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .login-header {
@@ -33,14 +45,14 @@
 }
 
 .login-header h1 {
-  color: #2c2c2c; /* Soft black */
+  color: hsl(225, 60%, 15%);
   font-size: 2.5rem;
   margin-bottom: 8px;
   font-weight: 700;
 }
 
 .login-header p {
-  color: #666;
+  color: hsl(225, 40%, 50%);
   font-size: 1rem;
   margin: 0;
 }
@@ -60,53 +72,145 @@
 .form-group {
   display: flex;
   flex-direction: column;
+  margin-bottom: 20px;
 }
 
-.form-group label {
-  color: #2c2c2c; /* Soft black */
-  font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+.input-container {
+  position: relative;
 }
 
-.form-group input {
-  padding: 12px 16px;
-  border: 2px solid #e8e6e0; /* Light border */
+.floating-label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(225, 40%, 50%);
+  font-size: 1rem;
+  font-weight: 500;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  padding: 0 4px;
+}
+
+.input-container input {
+  padding: 16px 16px 16px 16px;
+  border: 2px solid hsl(220, 13%, 91%);
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
-  background-color: #ffffff; /* Pure white */
-  color: #2c2c2c; /* Soft black */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: hsl(0, 0%, 100%);
+  color: hsl(225, 60%, 15%);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.form-group input:focus {
+.input-container input:focus {
   outline: none;
-  border-color: #2c2c2c; /* Soft black focus */
-  box-shadow: 0 0 0 3px rgba(44, 44, 44, 0.1);
-  background-color: #fcfbf8; /* Light cream on focus */
+  border-color: hsl(225, 60%, 25%);
+  box-shadow: 0 0 0 3px hsla(225, 60%, 25%, 0.1);
+  background-color: hsl(0, 0%, 100%);
 }
 
-.form-group input:disabled {
-  background-color: #fcfbf8; /* Light cream */
+.input-container input:disabled {
+  background-color: hsl(220, 40%, 96%);
   cursor: not-allowed;
 }
 
+/* Floating label animation */
+.input-container input:focus + .floating-label,
+.input-container input.has-content + .floating-label {
+  top: -8px;
+  left: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: hsl(225, 60%, 25%);
+  background: hsl(0, 0%, 100%);
+  padding: 0 8px;
+}
+
+/* Adjust padding for password input to make room for toggle button */
+.password-container input {
+  padding-right: 60px;
+}
+
+.input-container input:focus + .floating-label {
+  color: hsl(225, 60%, 25%);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: hsl(225, 40%, 50%);
+  font-size: 0.9rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  background-color: hsl(220, 40%, 96%);
+  z-index: 2;
+}
+
+.password-toggle:hover {
+  color: hsl(225, 60%, 25%);
+  background-color: hsl(220, 30%, 94%);
+}
+
+.forgot-password {
+  text-align: right;
+  margin-top: 8px;
+}
+
+.forgot-password a {
+  color: hsl(225, 60%, 25%);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.forgot-password a:hover {
+  color: hsl(225, 50%, 20%);
+  text-decoration: underline;
+}
+
 .login-button {
-  background: linear-gradient(135deg, #2c2c2c 0%, #000000 100%); /* Black gradient */
-  color: #ffffff; /* Pure white text */
+  background: linear-gradient(135deg, hsl(225, 60%, 25%) 0%, hsl(225, 50%, 20%) 100%);
+  color: hsl(0, 0%, 100%);
   border: none;
   padding: 14px 20px;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   margin-top: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.login-button:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(44, 44, 44, 0.4);
+  box-shadow: 0 6px 20px hsla(225, 60%, 25%, 0.4);
 }
 
 .login-button:disabled {
@@ -129,11 +233,11 @@
   text-align: center;
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 1px solid #e8e6e0; /* Light border */
+  border-top: 1px solid hsl(220, 13%, 91%);
 }
 
 .login-footer p {
-  color: #666;
+  color: hsl(225, 40%, 50%);
   font-size: 0.85rem;
   margin: 0;
 }
