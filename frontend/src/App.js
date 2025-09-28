@@ -2,17 +2,15 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import SidebarNav from './components/SidebarNav';
+import SidebarNav from './components/SidebarNav_fixed';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import SalePage from './pages/SalePage';
 import ProductsPage from './pages/ProductsPage';
-import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
-import LocationsPage from './pages/LocationsPage';
-import AdminSettings from './pages/AdminSettings';
 import TransactionsPage from './pages/TransactionsPage';
+import SettingsPage from './pages/SettingsPage';
 import './App.css';
 import './styles/Layout.css';
 
@@ -73,37 +71,21 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/users" 
-              element={
-                <ProtectedRoute>
-                  <UsersPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/reports" 
+            <Route
+              path="/reports"
               element={
                 <ProtectedRoute>
                   <ReportsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/locations" 
+            <Route
+              path="/settings"
               element={
                 <ProtectedRoute>
-                  <LocationsPage />
+                  <SettingsPage />
                 </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute>
-                  <AdminSettings />
-                </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/transactions" 

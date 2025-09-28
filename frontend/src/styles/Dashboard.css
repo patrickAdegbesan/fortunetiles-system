@@ -248,9 +248,15 @@
   gap: 4px;
 }
 
+table {
+    border-collapse: separate;
+    text-indent: initial;
+    border-spacing: 2px;
+}
+
 /* ============ DASHBOARD CONTENT ============ */
 .dashboard-content {
-  padding: 20px;
+  padding: 0px;
   max-width: 1400px;
   margin: 0 auto;
 }

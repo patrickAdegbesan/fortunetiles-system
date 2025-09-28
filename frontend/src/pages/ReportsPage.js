@@ -7,7 +7,7 @@ import {
   fetchTopProductsReport,
   fetchLocations 
 } from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import PageHeader from '../components/PageHeader';
 import ReportChart from '../components/ReportChart';
 import DateRangeSelector from '../components/DateRangeSelector';

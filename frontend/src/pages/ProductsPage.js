@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
 import MoneyValue from '../components/MoneyValue';

@@ -16,7 +16,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchDashboardData, fetchInventory, fetchProducts, fetchLocations, fetchCategories } from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import TopHeader from '../components/TopHeader';
 import DashboardStats from '../components/DashboardStats';
 import InventoryManager from '../components/InventoryManager';
@@ -145,7 +145,7 @@ const Dashboard = () => {
           </div>
         </TopHeader>
         
-        <div className="dashboard-content" style={{ padding: '20px' }}>
+        <div className="dashboard-content" >
 
         {/* Dashboard Filters */}
         <div className="dashboard-filters">

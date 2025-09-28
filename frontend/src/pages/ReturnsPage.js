@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRotate } from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from 'react-router-dom';
 import { fetchSaleById, createReturn } from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import TopHeader from '../components/TopHeader';
 import MoneyValue from '../components/MoneyValue';
 

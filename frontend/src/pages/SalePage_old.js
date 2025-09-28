@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import TopHeader from '../components/TopHeader';
 import Receipt from '../components/Receipt';
 import { FaBox } from 'react-icons/fa';

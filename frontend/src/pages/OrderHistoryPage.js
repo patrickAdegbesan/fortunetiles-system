@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import SidebarNav from '../components/SidebarNav';
+import SidebarNav from '../components/SidebarNav_fixed';
 import PageHeader from '../components/PageHeader';
 import Receipt from '../components/Receipt';
 import MoneyValue from '../components/MoneyValue';
