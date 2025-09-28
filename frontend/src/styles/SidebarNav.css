@@ -716,6 +716,8 @@
 
 .sidebar-nav {
   scrollbar-width: thin;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+  -webkit-overflow-scrolling: touch;
   scrollbar-color: rgba(0, 123, 255, 0.3) rgba(52, 73, 94, 0.1);
 }
 
