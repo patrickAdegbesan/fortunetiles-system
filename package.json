@@ -2,6 +2,9 @@
   "name": "fortunetiles-system",
   "private": true,
   "version": "1.0.0",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "cd backend && npm start",
     "backend": "cd backend && npm start",
