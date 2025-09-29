@@ -104,8 +104,19 @@ if (fs.existsSync(websiteBuildPath)) {
   });
 }
 
-// Serve inventory system at root
-app.use('/', express.static(path.join(__dirname, 'public')));
+// Serve inventory system at /system (protected route)
+app.use('/system', (req, res, next) => {
+  // Basic auth check - you can enhance this with your authentication logic
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    res.set('WWW-Authenticate', 'Basic realm="Fortune Tiles System"');
+    return res.status(401).send('Authentication required');
+  }
+  next();
+}, express.static(path.join(__dirname, 'public')));
+
+// Serve website at root URL
+app.use('/', express.static(path.join(__dirname, '..', 'website', 'dist')));
 
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
@@ -125,12 +136,23 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'Route not found' });
   }
   
-  // Serve the inventory system for all routes
-  const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
-  if (fs.existsSync(inventoryIndexPath)) {
-    res.sendFile(inventoryIndexPath);
-  } else {
-    res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
+  // Handle SPA routing for inventory system
+  if (req.path.startsWith('/system')) {
+    const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(inventoryIndexPath)) {
+      res.sendFile(inventoryIndexPath);
+    } else {
+      res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
+    }
+  } 
+  // Handle website SPA routing
+  else {
+    const websiteIndexPath = path.join(__dirname, '..', 'website', 'dist', 'index.html');
+    if (fs.existsSync(websiteIndexPath)) {
+      res.sendFile(websiteIndexPath);
+    } else {
+      res.status(404).send('Website is being built. Please try again later.');
+    }
   }
 });
 
