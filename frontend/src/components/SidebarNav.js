@@ -25,34 +25,68 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
     }
   }, [isOpen]);
 
-  // Mobile state: render a topbar + overlay drawer on small screens
+  // Mobile state: render bottom navigation bar on small screens
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const openMobileMenu = () => setMobileOpen(true);
-  const closeMobileMenu = () => setMobileOpen(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   if (isMobile) {
     return (
       <>
-        <div className="sidebar-topbar">
-          <div className="brand-left">
-            <Link to="/">
-              <img className="logo-circle-mobile brand-logo" src={logoCircle} alt="F&F" />
-            </Link>
-          </div>
-          <input className="search-input" placeholder="Search..." aria-label="Search" />
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div className="avatar-btn">{(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</div>
-            <button className="menu-btn" onClick={openMobileMenu} aria-label="Open menu">
-              <FaBars />
-            </button>
+        {/* Bottom Navigation Bar */}
+        <div className="mobile-bottom-nav">
+          {[
+            { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
+            { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
+            { path: '/transactions', icon: FaClipboardList, label: 'Transactions' },
+            { path: '/products', icon: FaBox, label: 'Products' },
+            { path: '/reports', icon: FaChartLine, label: 'Reports' },
+            { path: '/settings', icon: FaCog, label: 'Settings' }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                title={item.label}
+                aria-label={item.label}
+                className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={20} />
+              </Link>
+            );
+          })}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setMobileExpanded(true)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setMobileExpanded(true); }}
+            className="mobile-nav-item expand-btn"
+            title="Expand Menu"
+          >
+            <FaBars size={20} />
           </div>
         </div>
-        {mobileOpen && (
-          <div className="mobile-overlay" onClick={closeMobileMenu}>
+
+        {/* Expanded Mobile Menu Overlay */}
+        {mobileExpanded && (
+          <div className="mobile-overlay" onClick={() => setMobileExpanded(false)}>
             <div className="mobile-drawer" onClick={(e) => e.stopPropagation()}>
-              <div style={{ padding: '0' }}>
+              <div className="mobile-drawer-header">
+                <div className="mobile-drawer-logo">
+                  <Link to="/" onClick={() => setMobileExpanded(false)}>
+                    <img src={logo} alt="F&F Logo" className="mobile-drawer-logo-img" />
+                  </Link>
+                </div>
+                <button
+                  className="mobile-drawer-close"
+                  onClick={() => setMobileExpanded(false)}
+                  aria-label="Close menu"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
+              <div className="mobile-drawer-nav">
                 {[
                   { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
                   { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
@@ -67,36 +101,35 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      onClick={closeMobileMenu}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px 16px',
-                        color: isActive ? '#007bff' : '#ecf0f1',
-                        textDecoration: 'none'
-                      }}
+                      onClick={() => setMobileExpanded(false)}
+                      className={`mobile-drawer-item ${isActive ? 'active' : ''}`}
                     >
-                      <Icon size={18} />
+                      <Icon size={20} />
                       <span>{item.label}</span>
                     </Link>
                   );
                 })}
               </div>
-              <div style={{ marginTop: 'auto', padding: 12, borderTop: '1px solid #34495e' }}>
+              <div className="mobile-drawer-footer">
+                <div className="mobile-user-info">
+                  <div className="mobile-user-avatar">
+                    {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                  </div>
+                  <div className="mobile-user-details">
+                    <div className="mobile-user-name">
+                      {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email}
+                    </div>
+                    <div className="mobile-user-role">
+                      {user?.role}
+                    </div>
+                  </div>
+                </div>
                 <button
-                  onClick={() => { closeMobileMenu(); logout(); }}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    backgroundColor: '#e74c3c',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 6,
-                    cursor: 'pointer'
-                  }}
+                  className="mobile-logout-btn"
+                  onClick={() => { setMobileExpanded(false); logout(); }}
                 >
-                  Logout
+                  <FaSignOutAlt size={16} />
+                  <span>Logout</span>
                 </button>
               </div>
             </div>

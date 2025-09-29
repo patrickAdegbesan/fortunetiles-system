@@ -21,12 +21,12 @@
       "purpose": "maskable any"
     }
   ],
-  "start_url": "/system/",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#007bff",
   "background_color": "#ffffff",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en",
-  "scope": "/system/"
+  "scope": "/"
 }
