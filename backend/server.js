@@ -84,25 +84,7 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
 });
 
 // Serve company website at root (/) - check if directory exists first
-const websiteBuildPath = path.join(__dirname, 'website-build');
-const fs = require('fs');
-
-if (fs.existsSync(websiteBuildPath)) {
-  app.use('/', express.static(websiteBuildPath));
-} else {
-  // For local development - simple fallback
-  app.get('/', (req, res) => {
-    res.send(`
-      <h1>Fortune Tiles System - Local Development</h1>
-      <p>Welcome to the Fortune Tiles inventory system!</p>
-      <ul>
-        <li><a href="/inventory">Go to Inventory System</a></li>
-        <li><a href="/api/health">API Health Check</a></li>
-      </ul>
-      <p><small>Note: Company website will be available when deployed to production.</small></p>
-    `);
-  });
-}
+// Website is now served from website-build directory
 
 // Serve inventory system at /system (protected route)
 app.use('/system', (req, res, next) => {
@@ -116,7 +98,7 @@ app.use('/system', (req, res, next) => {
 }, express.static(path.join(__dirname, 'public')));
 
 // Serve website at root URL
-app.use('/', express.static(path.join(__dirname, '..', 'website', 'dist')));
+app.use('/', express.static(path.join(__dirname, 'website-build')));
 
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
@@ -147,7 +129,7 @@ app.get('*', (req, res) => {
   } 
   // Handle website SPA routing
   else {
-    const websiteIndexPath = path.join(__dirname, '..', 'website', 'dist', 'index.html');
+    const websiteIndexPath = path.join(__dirname, 'website-build', 'index.html');
     if (fs.existsSync(websiteIndexPath)) {
       res.sendFile(websiteIndexPath);
     } else {
