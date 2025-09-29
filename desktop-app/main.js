@@ -23,7 +23,8 @@ function createWindow() {
   });
 
   // Load the app - change this URL to your deployed Heroku app
-  const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
+  const baseUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
+  const appUrl = `${baseUrl}/system`;
   mainWindow.loadURL(appUrl);
 
   // Show window when ready to prevent visual flash
@@ -138,10 +139,27 @@ function createMenu() {
           type: 'separator'
         },
         {
-          label: 'Open Web Version',
+          label: 'Switch to Website',
           click: () => {
-            const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
-            shell.openExternal(appUrl);
+            const baseUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
+            mainWindow.loadURL(baseUrl);
+          }
+        },
+        {
+          label: 'Switch to Inventory System',
+          click: () => {
+            const baseUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
+            mainWindow.loadURL(`${baseUrl}/system`);
+          }
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Open in Browser',
+          click: () => {
+            const currentUrl = mainWindow.webContents.getURL();
+            shell.openExternal(currentUrl);
           }
         }
       ]
