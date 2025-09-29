@@ -1,6 +1,8 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import logo from '../assets/logo.jpeg';
+// Using logo from public/assets folder for better loading
+const logo = process.env.PUBLIC_URL + '/assets/logo.png';
+const logoCircle = process.env.PUBLIC_URL + '/assets/logo.png';
 import { AuthContext } from '../contexts/AuthContext';
 import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaClipboardList } from 'react-icons/fa';
 import '../styles/SidebarNav.css';
@@ -23,19 +25,9 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
     }
   }, [isOpen]);
 
-  // ...existing code...
-  // ...existing code for mobile and desktop rendering...
   // Mobile state: render a topbar + overlay drawer on small screens
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const onResize = () => setIsMobile(window.innerWidth <= 768);
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   const openMobileMenu = () => setMobileOpen(true);
   const closeMobileMenu = () => setMobileOpen(false);
@@ -46,7 +38,7 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
         <div className="sidebar-topbar">
           <div className="brand-left">
             <Link to="/">
-              <img className="logo-circle-mobile brand-logo" src={logo} alt="F&F" />
+              <img className="logo-circle-mobile brand-logo" src={logoCircle} alt="F&F" />
             </Link>
           </div>
           <input className="search-input" placeholder="Search..." aria-label="Search" />
@@ -117,131 +109,118 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
   // Desktop sidebar rendering
   return (
     <div className={`sidebar-container ${isExpanded ? 'expanded' : 'collapsed'}`}>
-      {/* Collapsed Sidebar */}
-      {!isExpanded && (
-        <>
-          <div className="collapsed-header">
-            <div className="collapsed-logo-container">
-              <Link to="/">
-                <img src={logo} alt="F&F Logo" className="collapsed-logo brand-logo" />
-              </Link>
-            </div>
-            <div className="collapsed-expand-button">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => { setIsExpanded(true); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsExpanded(true); } }}
-                className="icon-button"
-              >
-                <FaBars size={20} />
-              </div>
-            </div>
+      {/* Collapsed Sidebar - Always rendered, visibility controlled by CSS */}
+      <div className="collapsed-header">
+        <div className="ollapsed-logo-container">
+          <Link to="/">
+            <img src={logo} alt="F&F Logo" className="collapsed-logo brand-logo" />
+          </Link>
+        </div>
+        <div className="collapsed-expand-button">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => { setIsExpanded(true); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setIsExpanded(true); } }}
+            className="icon-button"
+          >
+            <FaBars size={20} />
           </div>
-          <div className="collapsed-nav">
-            {[
-              { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
-              { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
-              { path: '/transactions', icon: FaClipboardList, label: 'Transactions' },
-              { path: '/products', icon: FaBox, label: 'Products' },
-              { path: '/reports', icon: FaChartLine, label: 'Reports' },
-              { path: '/settings', icon: FaCog, label: 'Settings' }
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  title={item.label}
-                  aria-label={item.label}
-                  onClick={(e) => {
-                    if (!isExpanded) {
-                      e.preventDefault();
-                      setIsExpanded(true);
-                    }
-                  }}
-                  className={`collapsed-nav-item ${isActive ? 'active' : ''}`}
-                >
-                  <Icon size={22} />
-                </Link>
-              );
-            })}
-          </div>
-          <div className="user-profile">
-            <div className="user-avatar">
-              {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
-            </div>
-          </div>
-        </>
-      )}
-      {/* Expanded Sidebar */}
-      {isExpanded && (
-        <>
-          <div className="expanded-header">
-            <div className="expanded-logo-container">
-              <Link to="/" className="expanded-logo-link">
-                <img src={logo} alt="F&F Logo" className="expanded-logo brand-logo" />
-              </Link>
-            </div>
-            <div className="icon-button" 
-                 role="button"
-                 tabIndex={0}
-                 onClick={() => setIsExpanded(false)}
-                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsExpanded(false); }}>
-              <FaTimes size={16} />
-            </div>
-          </div>
-          <div className="expanded-nav">
-            {[
-              { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
-              { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
-              { path: '/transactions', icon: FaClipboardList, label: 'Transactions' },
-              { path: '/products', icon: FaBox, label: 'Products' },
-              { path: '/reports', icon: FaChartLine, label: 'Reports' },
-              { path: '/settings', icon: FaCog, label: 'Settings' }
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`expanded-nav-item ${isActive ? 'active' : ''}`}
-                >
-                  <Icon size={20} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-          <div className="user-profile">
-            <div className="user-info">
-              <div className="user-avatar">
-                {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
-              </div>
-              <div className="user-details">
-                <div className="user-name">
-                  {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email}
-                </div>
-                <div className="user-role">
-                  {user?.role}
-                </div>
-              </div>
-            </div>
-            <button
-              className="logout-button"
-              onClick={() => {
-                setIsExpanded(false);
-                logout();
-              }}
+        </div>
+      </div>
+      <div className="collapsed-nav">
+        {[
+          { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
+          { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
+          { path: '/transactions', icon: FaClipboardList, label: 'Transactions' },
+          { path: '/products', icon: FaBox, label: 'Products' },
+          { path: '/reports', icon: FaChartLine, label: 'Reports' },
+          { path: '/settings', icon: FaCog, label: 'Settings' }
+        ].map((item, index) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              title={item.label}
+              aria-label={item.label}
+              className={`collapsed-nav-item ${isActive ? 'active' : ''}`}
             >
-              <FaSignOutAlt size={16} />
-              <span>Logout</span>
-            </button>
+              <Icon size={22} />
+            </Link>
+          );
+        })}
+      </div>
+      <div className="user-profile collapsed-user-profile">
+        <div className="user-avatar">
+          {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+        </div>
+      </div>
+
+      {/* Expanded Sidebar - Always rendered, visibility controlled by CSS */}
+      <div className="expanded-header">
+        <div className="expanded-logo-container">
+          <Link to="/" className="expanded-logo-link">
+            <img src={logo} alt="F&F Logo" className="expanded-logo rand-logo" />
+          </Link>
+        </div>
+        <div className="icon-button"
+              role="button"
+              tabIndex={0}
+              onClick={() => setIsExpanded(false)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsExpanded(false); }}>
+          <FaTimes size={16} />
+        </div>
+      </div>
+      <div className="expanded-nav">
+        {[
+          { path: '/dashboard', icon: FaTachometerAlt, label: 'Dashboard' },
+          { path: '/sales', icon: FaMoneyBillWave, label: 'Sales' },
+          { path: '/transactions', icon: FaClipboardList, label: 'Transactions' },
+          { path: '/products', icon: FaBox, label: 'Products' },
+          { path: '/reports', icon: FaChartLine, label: 'Reports' },
+          { path: '/settings', icon: FaCog, label: 'Settings' }
+        ].map((item, index) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`expanded-nav-item ${isActive ? 'active' : ''}`}
+            >
+              <Icon size={20} />
+              <span className="nav-item-text">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+      <div className="user-profile expanded-user-profile">
+        <div className="user-info">
+          <div className="user-avatar">
+            {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
           </div>
-        </>
-      )}
+          <div className="user-details">
+            <div className="user-name">
+              {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : user?.email}
+            </div>
+            <div className="user-role">
+              {user?.role}
+            </div>
+          </div>
+        </div>
+        <button
+          className="logout-button"
+          onClick={() => {
+            setIsExpanded(false);
+            logout();
+          }}
+        >
+          <FaSignOutAlt size={16} />
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   );
 });

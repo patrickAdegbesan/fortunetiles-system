@@ -90,9 +90,7 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
 // Website is now served from website-build directory
 
 // Serve inventory system at /system
-app.use('/system', express.static(path.join(__dirname, 'public'), {
-  maxAge: '1h'
-}));
+app.use('/system', express.static(path.join(__dirname, '..', 'frontend', 'build')));
 
 // Serve website at root URL
 app.use('/', express.static(path.join(__dirname, 'website-build')));
@@ -117,7 +115,7 @@ app.get('*', (req, res) => {
   
   // Handle SPA routing for inventory system
   if (req.path.startsWith('/system')) {
-    const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+    const inventoryIndexPath = path.join(__dirname, '..', 'frontend', 'build', 'index.html');
     if (fs.existsSync(inventoryIndexPath)) {
       res.sendFile(inventoryIndexPath);
     } else {
