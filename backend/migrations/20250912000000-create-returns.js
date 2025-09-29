@@ -13,7 +13,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Sales',
+          model: 'sales',
           key: 'id'
         },
         onDelete: 'CASCADE'
@@ -22,7 +22,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'users',
           key: 'id'
         }
       },
@@ -77,7 +77,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Returns',
+          model: 'returns',
           key: 'id'
         },
         onDelete: 'CASCADE'
@@ -86,7 +86,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'SaleItems',
+          model: 'sale_items',
           key: 'id'
         }
       },
@@ -94,7 +94,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Products',
+          model: 'products',
           key: 'id'
         }
       },
@@ -102,7 +102,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Locations',
+          model: 'locations',
           key: 'id'
         }
       },
@@ -127,7 +127,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: 'Products',
+          model: 'products',
           key: 'id'
         }
       },
