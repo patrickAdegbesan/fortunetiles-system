@@ -104,8 +104,8 @@ if (fs.existsSync(websiteBuildPath)) {
   });
 }
 
-// Serve inventory system at /inventory
-app.use('/inventory', express.static(path.join(__dirname, 'public')));
+// Serve inventory system at root
+app.use('/', express.static(path.join(__dirname, 'public')));
 
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
@@ -117,12 +117,7 @@ app.get('/sw.js', (req, res) => {
   res.status(204).send(); // No content - service worker not needed in local dev
 });
 
-// API prefix for inventory system
-app.use('/inventory/api', (req, res, next) => {
-  // Remove /inventory from the path for API routes
-  req.url = req.url.replace('/inventory', '');
-  next();
-});
+// API routes are already configured at /api
 
 // SPA fallback routing
 app.get('*', (req, res) => {
@@ -130,21 +125,12 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'Route not found' });
   }
   
-  // If path starts with /inventory, serve inventory system
-  if (req.path.startsWith('/inventory')) {
-    const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
-    if (fs.existsSync(inventoryIndexPath)) {
-      res.sendFile(inventoryIndexPath);
-    } else {
-      res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
-    }
+  // Serve the inventory system for all routes
+  const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(inventoryIndexPath)) {
+    res.sendFile(inventoryIndexPath);
   } else {
-    // For local development, redirect to local development message
-    if (fs.existsSync(websiteBuildPath)) {
-      res.sendFile(path.join(websiteBuildPath, 'index.html'));
-    } else {
-      res.redirect('/');
-    }
+    res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
   }
 });
 
