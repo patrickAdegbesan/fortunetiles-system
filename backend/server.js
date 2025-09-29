@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
+const fs = require('fs');
 
 const { sequelize, testConnection } = require('./config/database');
 const { User, Location } = require('./models');
