@@ -124,8 +124,8 @@
   overflow: hidden;
   margin: 4px 8px;
   border-radius: 8px;
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .nav-item::after {
@@ -630,7 +630,7 @@
 /* User Profile Section */
 .user-profile {
   border-top: 1px solid #34495e;
-  padding: 12px;
+  padding: 20px;
   background-color: #34495e;
   width: 100%;
   box-sizing: border-box;
@@ -644,8 +644,8 @@
 }
 
 .user-avatar {
-  width: 35px;
-  height: 35px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background-color: #ff6b6b;
   display: flex;
@@ -714,31 +714,7 @@
   background: rgba(0, 123, 255, 0.5);
 }
 
-.sidebar-nav {
-  scrollbar-width: thin;
-  -ms-overflow-style: -ms-autohiding-scrollbar;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-color: rgba(0, 123, 255, 0.3) rgba(52, 73, 94, 0.1);
-  overflow-y: auto;
-}
 
-.sidebar-nav::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.sidebar-nav::-webkit-scrollbar-track {
-  background: rgba(52, 73, 94, 0.1);
-}
-
-.sidebar-nav::-webkit-scrollbar-thumb {
-  background: rgba(0, 123, 255, 0.3);
-  border-radius: 4px;
-}
-
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 123, 255, 0.5);
-}
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: #0056b3;

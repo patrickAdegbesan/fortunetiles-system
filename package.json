@@ -2,16 +2,15 @@
   "name": "fortunetiles-system",
   "private": true,
   "version": "1.0.0",
-  "engines": {
-    "node": "18.x"
-  },
   "scripts": {
-    "start": "cd backend && npm start",
+    "start": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run website\"",
     "backend": "cd backend && npm start",
     "frontend": "cd frontend && npm start",
-    "build": "cd frontend && npm run build",
-    "heroku-postbuild": "export NODE_OPTIONS=--max_old_space_size=4096 && cd backend && npm install && cd ../frontend && npm install && npm run build && cd .. && mkdir -p backend/public && cp -r frontend/build/* backend/public/",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "website": "cd website && bun dev",
+    "build": "npm run build:frontend && npm run build:website",
+    "build:frontend": "cd frontend && npm run build",
+    "build:website": "cd website && bun run build",
+    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && bun install && bun run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
     "seed-types": "node seed-product-types.js"
   },
   "dependencies": {
