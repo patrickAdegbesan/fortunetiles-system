@@ -10,6 +10,7 @@ const { User, Location } = require('./models');
 const authRoutes = require('./routes/auth');
 const passwordResetRoutes = require('./routes/passwordReset');
 const productRoutes = require('./routes/products');
+const contactRoutes = require('./routes/contact');
 const productTypesRoutes = require('./routes/productTypes');
 const categoriesRoutes = require('./routes/categories');
 const inventoryRoutes = require('./routes/inventory');
@@ -49,6 +50,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', passwordResetRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/contact', contactRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/product-types', productTypesRoutes);
 app.use('/api/categories', categoriesRoutes);
@@ -86,16 +88,8 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
 // Serve company website at root (/) - check if directory exists first
 // Website is now served from website-build directory
 
-// Serve inventory system at /system (protected route)
-app.use('/system', (req, res, next) => {
-  // Basic auth check - you can enhance this with your authentication logic
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    res.set('WWW-Authenticate', 'Basic realm="Fortune Tiles System"');
-    return res.status(401).send('Authentication required');
-  }
-  next();
-}, express.static(path.join(__dirname, 'public')));
+// Serve inventory system at /system
+app.use('/system', express.static(path.join(__dirname, 'public')));
 
 // Serve website at root URL
 app.use('/', express.static(path.join(__dirname, 'website-build')));
