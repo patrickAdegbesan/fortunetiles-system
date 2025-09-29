@@ -1,0 +1,32 @@
+{
+  "short_name": "fortune et fevur inventory",
+  "name": "fortune et fevur inventory",
+  "description": "fortune et fevur inventory",
+  "icons": [
+    {
+      "src": "assets/logo-circle.png?v=2",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/logo-circle.png?v=2",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/logo-circle.png?v=2",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable any"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en",
+  "scope": "/"
+}
