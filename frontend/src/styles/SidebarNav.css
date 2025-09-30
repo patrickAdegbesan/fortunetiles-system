@@ -265,7 +265,7 @@
 /* Add padding to main content when mobile nav is present */
 @media (max-width: 768px) {
   .main-content {
-    padding-bottom: 100px; /* 60px nav + 40px spacing for better scrolling */
+    padding-bottom: 120px; /* 60px nav + 60px spacing for better scrolling */
   }
 }
 

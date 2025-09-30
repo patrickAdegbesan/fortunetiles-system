@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav_fixed';
 import Login from './pages/Login';
@@ -16,8 +16,46 @@ import './styles/Layout.css';
 
 function MainLayout({ children }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const isAuthPage = location.pathname === '/login' || location.pathname.startsWith('/reset-password/');
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Show the install prompt only if user is logged in and on system pages
+    if (deferredPrompt && user && !isAuthPage) {
+      // Delay to avoid showing immediately on load
+      const timer = setTimeout(() => {
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          } else {
+            console.log('User dismissed the install prompt');
+          }
+          setDeferredPrompt(null);
+        });
+      }, 3000); // 3 seconds delay
+
+      return () => clearTimeout(timer);
+    }
+  }, [deferredPrompt, user, isAuthPage]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
