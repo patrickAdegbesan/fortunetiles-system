@@ -265,7 +265,7 @@
 /* Add padding to main content when mobile nav is present */
 @media (max-width: 640px) {
   .main-content {
-    padding-bottom: 80px; /* 60px nav + 20px spacing */
+    padding-bottom: 100px; /* 60px nav + 40px spacing for better scrolling */
   }
 }
 
@@ -344,9 +344,11 @@
 @keyframes slideUp {
   from {
     transform: translateY(100%);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
