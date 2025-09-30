@@ -63,19 +63,13 @@ body {
 @media (max-width: 768px) {
   .app-layout {
     padding-left: 0;
-    padding-bottom: 60px;
+    padding-bottom: 0px;
   }
-  
+
   .sidebar-open .app-layout {
     padding-left: 0;
   }
-}
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .main-content {
-    padding: 5px;
-  }
 }
 
 .App-logo {
