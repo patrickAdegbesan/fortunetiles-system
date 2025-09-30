@@ -90,3 +90,22 @@ jspm_packages/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Website folder (excluded from repository)
+website/
+
+# Windows batch files
+*.bat
+
+# Internal documentation (not needed for public repo)
+DEPLOYMENT-GUIDE.md
+MODERNIZATION_TODO.md
+OPTIMIZATION-COMPLETE.md
+PERFORMANCE-OPTIMIZATION.md
+RUN-INSTRUCTIONS.md
+setup-website-integration.md
+
+# Database and seed files (sensitive data)
+*.db
+*.sqlite
+*.sqlite3
