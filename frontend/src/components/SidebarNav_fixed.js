@@ -26,13 +26,13 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
   }, [isOpen]);
 
   // Mobile state: render bottom navigation bar on small screens
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
   // Update mobile state on window resize
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 640);
+      setIsMobile(window.innerWidth <= 768);
     };
 
     window.addEventListener('resize', handleResize);

@@ -1,7 +1,7 @@
 {
-  "short_name": "Fortune Tiles",
-  "name": "Fortune Tiles Inventory",
-  "description": "Professional inventory management system for Fortune Tiles",
+  "short_name": "fortune et fevur inventory",
+  "name": "fortune et fevur inventory",
+  "description": "fortune et fevur inventory",
   "icons": [
     {
       "src": "assets/logo.png",
@@ -21,13 +21,12 @@
       "purpose": "maskable any"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#1a1a1a",
-  "background_color": "#1a1a1a",
+  "theme_color": "#007bff",
+  "background_color": "#ffffff",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en",
-  "scope": ".",
-  "prefer_related_applications": false
+  "scope": "/"
 }

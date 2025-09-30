@@ -63,6 +63,7 @@ body {
 @media (max-width: 768px) {
   .app-layout {
     padding-left: 0;
+    padding-bottom: 20px;
   }
   
   .sidebar-open .app-layout {
@@ -78,7 +79,7 @@ body {
 }
 
 .App-logo {
-  height: 40vmin;
+  height: 60vmin;
   pointer-events: none;
 }
 
