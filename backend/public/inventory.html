@@ -62,9 +62,23 @@
             border-radius: 4px;
             font-weight: bold;
             transition: background-color 0.2s;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            margin: 0.5rem;
         }
         .button:hover {
             background-color: #0069d9;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 2rem;
+            display: none;
+            padding: 1rem;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            max-width: 500px;
         }
     </style>
 </head>
@@ -72,406 +86,51 @@
     <div class="loading-container">
         <img src="/inventory/assets/logo.png" alt="Fortune et Feveur Logo" class="logo" />
         <h1>Fortune ET Feveur Inventory System</h1>
-        <p>The system is loading. Please wait...</p>
-        <div class="spinner"></div>
+        <p>Click the button below to launch the inventory system.</p>
+        <div class="spinner" style="display: none;"></div>
         <div id="root"></div>
-        <!-- The button will be hidden once the app loads -->
-        <a href="javascript:void(0)" class="button" onclick="manuallyStartApp()">Launch Inventory System</a>
-        <div id="error-container" style="color: #dc3545; margin-top: 2rem; display: none;"></div>
+        
+        <!-- Launch buttons -->
+        <button class="button" onclick="launchApp()">Launch Inventory System</button>
+        <a href="/inventory/index.html" class="button">Direct Link to App</a>
+        
+        <div id="error-message" class="error-message">
+            <strong>Loading Issue:</strong> <span id="error-text">The app is taking longer than expected to load.</span><br>
+            <button onclick="window.location.reload()" class="button" style="margin-top: 10px;">Refresh Page</button>
+            <a href="/inventory/index.html" class="button" style="margin-top: 10px;">Try Direct Link</a>
+        </div>
     </div>
 
     <script>
-        // Function to manually start the app when the button is clicked
-        function manuallyStartApp() {
-            document.querySelector('.button').style.display = 'none';
+        function launchApp() {
+            console.log('Launching inventory app...');
+            
+            // Hide buttons and show spinner
+            const buttons = document.querySelectorAll('.button');
+            buttons.forEach(btn => btn.style.display = 'none');
             document.querySelector('.spinner').style.display = 'block';
             
-            // Try to load app directly from index.html first - most reliable approach
-            fetch('/inventory/index.html')
-                .then(response => response.text())
-                .then(html => {
-                    console.log('Successfully fetched index.html');
-                    
-                    // Extract scripts and styles
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const scripts = Array.from(doc.querySelectorAll('script[src]'));
-                    const styles = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
-                    
-                    console.log(`Found ${scripts.length} scripts and ${styles.length} styles`);
-                    
-                    // Load all styles first
-                    styles.forEach(style => {
-                        // Fix the src attribute to be absolute if it's relative
-                        let href = style.getAttribute('href');
-                        if (href.startsWith('./')) {
-                            href = href.replace('./', '/inventory/');
-                        } else if (!href.startsWith('/')) {
-                            href = '/inventory/' + href;
-                        }
-                        
-                        // Only add if not already present
-                        if (!document.querySelector(`link[href="${href}"]`)) {
-                            const newStyle = document.createElement('link');
-                            newStyle.rel = 'stylesheet';
-                            newStyle.href = href;
-                            document.head.appendChild(newStyle);
-                            console.log('Added style:', href);
-                        }
-                    });
-                    
-                    // Now load scripts in order
-                    loadScriptsSequentially(scripts.map(script => {
-                        let src = script.getAttribute('src');
-                        if (src.startsWith('./')) {
-                            src = src.replace('./', '/inventory/');
-                        } else if (!src.startsWith('/')) {
-                            src = '/inventory/' + src;
-                        }
-                        return src;
-                    }));
-                })
-                .catch(error => {
-                    console.error('Error fetching index.html:', error);
-                    loadAppScripts(); // Fall back to the old approach
-                });
-        }
-        
-        // Function to load scripts in sequence (important for React)
-        function loadScriptsSequentially(scriptSrcs) {
-            let index = 0;
-            
-            function loadNextScript() {
-                if (index >= scriptSrcs.length) {
-                    console.log('All scripts loaded successfully');
-                    setTimeout(() => {
-                        // Check if React rendered anything
-                        const root = document.getElementById('root');
-                        if (root && root.children.length === 0) {
-                            console.error('React did not render anything');
-                            showError('Application did not load correctly. Try refreshing the page.');
-                        } else {
-                            hideLoadingContainer();
-                        }
-                    }, 3000); // Give React 3 seconds to render
-                    return;
-                }
-                
-                const src = scriptSrcs[index];
-                console.log(`Loading script ${index + 1}/${scriptSrcs.length}: ${src}`);
-                
-                // Skip if already loaded
-                if (document.querySelector(`script[src="${src}"]`)) {
-                    console.log(`Script ${src} already loaded, skipping`);
-                    index++;
-                    loadNextScript();
-                    return;
-                }
-                
-                const script = document.createElement('script');
-                script.src = src;
-                
-                script.onload = function() {
-                    console.log(`Script ${src} loaded successfully`);
-                    index++;
-                    loadNextScript();
-                };
-                
-                script.onerror = function(error) {
-                    console.error(`Error loading script ${src}:`, error);
-                    showError(`Failed to load script: ${src}`);
-                    // Try to continue anyway
-                    index++;
-                    loadNextScript();
-                };
-                
-                document.body.appendChild(script);
-            }
-            
-            loadNextScript();
-        }
-        
-        // Create root element for the React application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Don't automatically start loading to prevent redirect loops
-            console.log('Inventory page loaded. Click the button to start the app.');
-            
-            // Hide spinner initially until button is clicked
-            document.querySelector('.spinner').style.display = 'none';
-            
-            // Add debug info for troubleshooting
-            console.log('Current path:', window.location.pathname);
-            console.log('Current host:', window.location.host);
-        });
-        
-        // Find all main js files in the static directory - fallback approach
-        function loadAppScripts() {
-            // First try to look for scripts already in the page
-            const existingScripts = document.querySelectorAll('script[src*="/inventory/static/js/"]');
-            if (existingScripts.length > 0) {
-                console.log('App scripts already loaded, not loading again');
-                hideLoadingContainer();
-                return;
-            }
-            
-            console.log('Loading app scripts using direct path approach...');
-            
-            // Load files directly - try different possible filenames
-            const possibleCssPaths = [
-                '/inventory/static/css/main.css',
-                '/inventory/static/css/main.chunk.css',
-                '/inventory/static/css/main.075fdb14.css',
-                '/inventory/static/css/main.075fdb14.chunk.css'
-            ];
-            
-            const possibleJsPaths = [
-                '/inventory/static/js/main.js',
-                '/inventory/static/js/bundle.js',
-                '/inventory/static/js/main.6fbd7057.js',
-                '/inventory/static/js/main.chunk.js'
-            ];
-            
-            // Load at least one CSS file
-            let cssLoaded = false;
-            for (const cssPath of possibleCssPaths) {
-                try {
-                    const style = document.createElement('link');
-                    style.rel = 'stylesheet';
-                    style.href = cssPath;
-                    document.head.appendChild(style);
-                    console.log('Attempted to load CSS:', cssPath);
-                    cssLoaded = true;
-                    break; // Load only one CSS file
-                } catch (error) {
-                    console.error(`Failed to load CSS ${cssPath}:`, error);
-                }
-            }
-            
-            // Load JS files
-            let loadedJsCount = 0;
-            const totalJsToLoad = Math.min(2, possibleJsPaths.length); // Try to load at least 2 JS files
-            
-            for (const jsPath of possibleJsPaths) {
-                try {
-                    const script = document.createElement('script');
-                    script.src = jsPath;
-                    
-                    script.onload = function() {
-                        console.log(`Script ${jsPath} loaded successfully`);
-                        loadedJsCount++;
-                        
-                        if (loadedJsCount >= totalJsToLoad) {
-                            console.log('Sufficient scripts loaded, checking for React rendering');
-                            setTimeout(() => checkForAppLoaded(), 2000);
-                        }
-                    };
-                    
-                    script.onerror = function() {
-                        console.error(`Failed to load script ${jsPath}`);
-                        // If we've tried all scripts and none worked, try the manifest approach
-                        if (loadedJsCount === 0 && jsPath === possibleJsPaths[possibleJsPaths.length - 1]) {
-                            tryManifestApproach();
-                        }
-                    };
-                    
-                    document.body.appendChild(script);
-                } catch (error) {
-                    console.error(`Error appending script ${jsPath}:`, error);
-                }
-            }
-        
-        // Try loading via the asset manifest if direct loading fails
-        function tryManifestApproach() {
-            console.log('Trying to load app via manifest...');
-            
-            fetch('/inventory/asset-manifest.json')
-                .then(response => response.json())
-                .then(manifest => {
-                    console.log('Manifest loaded:', manifest);
-                    
-                    // Load CSS
-                    if (manifest.files && manifest.files['main.css']) {
-                        const style = document.createElement('link');
-                        style.rel = 'stylesheet';
-                        style.href = manifest.files['main.css'];
-                        document.head.appendChild(style);
-                    }
-                    
-                    // Load all JS files in order
-                    const jsEntries = [];
-                    if (manifest.entrypoints) {
-                        manifest.entrypoints.forEach(entry => {
-                            if (entry.endsWith('.js')) jsEntries.push(entry);
-                        });
-                    } else if (manifest.files) {
-                        // Fallback to files if no entrypoints
-                        Object.keys(manifest.files).forEach(key => {
-                            if (key.endsWith('.js') || key.includes('js/')) {
-                                jsEntries.push(manifest.files[key]);
-                            }
-                        });
-                    }
-                    
-                    console.log('Found JS entries:', jsEntries);
-                    
-                    if (jsEntries.length > 0) {
-                        loadScriptsSequentially(jsEntries);
-                    } else {
-                        console.error('No JS entries found in manifest');
-                        useFallbackLoader();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading manifest:', error);
-                    useFallbackLoader();
-                });
-        }
-        
-        // Final fallback - try to load from index.html by fetching it
-        function useFallbackLoader() {
-            console.log('Using fallback loader to extract script tags from index.html');
-            
-            fetch('/inventory/index.html')
-                .then(response => response.text())
-                .then(html => {
-                    // Extract script tags
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    
-                    // Find and load CSS
-                    const cssLinks = tempDiv.querySelectorAll('link[rel="stylesheet"]');
-                    cssLinks.forEach(link => {
-                        const href = link.getAttribute('href');
-                        if (!document.querySelector(`link[href="${href}"]`)) {
-                            const newLink = document.createElement('link');
-                            newLink.rel = 'stylesheet';
-                            newLink.href = href.startsWith('/') ? href : `/inventory/${href}`;
-                            document.head.appendChild(newLink);
-                            console.log('Added CSS:', newLink.href);
-                        }
-                    });
-                    
-                    // Find and load JS
-                    const scripts = Array.from(tempDiv.querySelectorAll('script[src]'));
-                    if (scripts.length === 0) {
-                        showError('No scripts found in index.html');
-                        return;
-                    }
-                    
-                    const scriptSrcs = scripts.map(script => {
-                        const src = script.getAttribute('src');
-                        return src.startsWith('/') ? src : `/inventory/${src}`;
-                    });
-                    
-                    console.log('Loading scripts from index.html:', scriptSrcs);
-                    loadScriptsSequentially(scriptSrcs);
-                })
-                .catch(error => {
-                    console.error('Error with fallback loader:', error);
-                    showError('Failed to load application. Please try refreshing the page.');
-                    
-                    // Last resort - direct attempt to load a known script
-                    const script = document.createElement('script');
-                    script.src = '/inventory/index.html';
-                    document.body.appendChild(script);
-                });
-        }
-        
-        // Check if the app has loaded correctly
-        function checkForAppLoaded() {
-            const root = document.getElementById('root');
-            if (!root || root.children.length === 0) {
-                console.log('App not loaded yet, trying next approach');
-                tryManifestApproach();
-            } else {
-                console.log('App loaded successfully!');
-                hideLoadingContainer();
-            }
-        }
-        
-        // Hide loading container when app is loaded
-        function hideLoadingContainer() {
+            // Simple redirect after a short delay
             setTimeout(() => {
-                const loadingContainer = document.querySelector('.loading-container');
-                if (loadingContainer) {
-                    loadingContainer.style.display = 'none';
+                console.log('Redirecting to inventory app...');
+                window.location.href = '/inventory/index.html';
+            }, 1500);
+            
+            // Show error message after 10 seconds if still on this page
+            setTimeout(() => {
+                if (window.location.pathname === '/inventory') {
+                    document.getElementById('error-message').style.display = 'block';
+                    document.querySelector('.spinner').style.display = 'none';
                 }
-            }, 500);
+            }, 10000);
         }
         
-        // Show error message
-        function showError(message) {
-            const spinner = document.querySelector('.spinner');
-            if (spinner) spinner.style.display = 'none';
+        // Auto-launch after page loads (optional)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Inventory loading page ready');
             
-            // Use the error container if it exists
-            const errorContainer = document.getElementById('error-container');
-            if (errorContainer) {
-                errorContainer.style.display = 'block';
-                errorContainer.innerHTML = `<div style="padding: 1rem; border: 1px solid #dc3545; border-radius: 4px; background-color: #f8d7da;">
-                    <strong>Error:</strong> ${message}<br>
-                    <button onclick="window.location.reload()" 
-                        style="margin-top:10px;padding:5px 10px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;">
-                        Refresh Page
-                    </button>
-                    <button onclick="manuallyStartApp()" 
-                        style="margin-top:10px;margin-left:10px;padding:5px 10px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;">
-                        Try Again
-                    </button>
-                </div>`;
-                return;
-            }
-            
-            // Fallback if error container doesn't exist
-            const errorDiv = document.createElement('div');
-            errorDiv.style.color = '#dc3545';
-            errorDiv.style.marginTop = '1rem';
-            errorDiv.style.padding = '1rem';
-            errorDiv.style.border = '1px solid #dc3545';
-            errorDiv.style.borderRadius = '4px';
-            errorDiv.style.backgroundColor = '#f8d7da';
-            errorDiv.innerHTML = `<strong>Error:</strong> ${message}<br>
-                <button onclick="window.location.reload()" 
-                    style="margin-top:10px;padding:5px 10px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;">
-                    Refresh Page
-                </button>
-                <button onclick="manuallyStartApp()" 
-                    style="margin-top:10px;margin-left:10px;padding:5px 10px;background:#007bff;color:white;border:none;border-radius:4px;cursor:pointer;">
-                    Try Again
-                </button>`;
-            
-            const loadingContainer = document.querySelector('.loading-container');
-            if (loadingContainer) {
-                loadingContainer.appendChild(errorDiv);
-            }
-        }
-    </script>
-    
-    <!-- Direct script injection for emergency fallback -->
-    <script>
-        // If nothing else works, try direct path
-        window.addEventListener('error', function(e) {
-            console.error('Caught error:', e);
-            
-            // Only act if root is empty after 8 seconds
-            setTimeout(function() {
-                const root = document.getElementById('root');
-                if (root && !root.children.length) {
-                    console.log('Emergency: direct navigation to index.html');
-                    // Add direct link
-                    const link = document.createElement('a');
-                    link.href = '/inventory/index.html';
-                    link.textContent = 'Open Inventory System Directly';
-                    link.className = 'button';
-                    link.style.display = 'block';
-                    link.style.margin = '1rem auto';
-                    
-                    const container = document.querySelector('.loading-container');
-                    if (container) {
-                        container.appendChild(link);
-                    }
-                }
-            }, 8000);
+            // Optional: Auto-launch after 3 seconds
+            // setTimeout(launchApp, 3000);
         });
     </script>
 </body>
