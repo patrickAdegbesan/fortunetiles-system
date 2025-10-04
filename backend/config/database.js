@@ -20,8 +20,8 @@ if (process.env.DATABASE_URL) {
       },
     } : {},
     pool: {
-      max: 5,
-      min: 0,
+      max: 20,      // Increase max connections for higher concurrency
+      min: 5,       // Keep minimum 5 connections ready
       acquire: 30000,
       idle: 10000,
     },

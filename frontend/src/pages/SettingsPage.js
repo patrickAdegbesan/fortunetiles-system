@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import AdminDeleteModal from '../components/AdminDeleteModal';
 import {
   fetchLocations,
   createLocation,
@@ -84,6 +85,13 @@ const SettingsPage = () => {
   const [renameForm, setRenameForm] = useState({ from: '', to: '' });
   const [deletingCategory, setDeletingCategory] = useState(null);
   const [deleteForm, setDeleteForm] = useState({ name: '', reassignTo: 'General' });
+
+  // Modal states
+  const [showProductTypeDeleteModal, setShowProductTypeDeleteModal] = useState(false);
+  const [showCategoryDeleteModal, setShowCategoryDeleteModal] = useState(false);
+  const [productTypeToDelete, setProductTypeToDelete] = useState(null);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
 
   // Check permissions
   const isOwner = user?.role === 'owner';
@@ -319,6 +327,52 @@ const SettingsPage = () => {
     }
   };
 
+  const handleEditProductType = (productType) => {
+    setEditingProductType(productType);
+    setNewProductType({
+      name: productType.name,
+      unitOfMeasure: productType.unitOfMeasure
+    });
+    // Scroll to the form
+    document.querySelector('.create-form').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleDeleteProductType = async (productType) => {
+    setProductTypeToDelete(productType);
+    setShowProductTypeDeleteModal(true);
+  };
+
+  const confirmDeleteProductType = async () => {
+    if (!productTypeToDelete) return;
+
+    try {
+      setIsDeletingItem(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/product-types/${productTypeToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setProductTypes(productTypes.filter(pt => pt.id !== productTypeToDelete.id));
+        setSuccess('Product type deleted successfully');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to delete product type');
+      }
+    } catch (error) {
+      setError('Failed to delete product type');
+      console.error('Delete product type error:', error);
+    } finally {
+      setIsDeletingItem(false);
+      setShowProductTypeDeleteModal(false);
+      setProductTypeToDelete(null);
+    }
+  };
+
   const handleCreateProductType = async (e) => {
     e.preventDefault();
     if (!newProductType.name || !newProductType.unitOfMeasure) return;
@@ -330,8 +384,17 @@ const SettingsPage = () => {
         optionalFields: newAttr.optional
       };
       
-      const response = await fetch('/api/product-types', {
-        method: 'POST',
+      let url = '/api/product-types';
+      let method = 'POST';
+      
+      if (editingProductType) {
+        // Check if we're updating an existing product type
+        url = `/api/product-types/${editingProductType.id}`;
+        method = 'PUT';
+      }
+        
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -344,14 +407,27 @@ const SettingsPage = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setProductTypes([...productTypes, data.productType]);
+        
+        if (editingProductType) {
+          // Update existing product type in the list
+          setProductTypes(productTypes.map(pt => 
+            pt.id === editingProductType.id ? {...pt, ...data.productType} : pt
+          ));
+          setSuccess('Product type updated successfully');
+        } else {
+          // Add new product type to the list
+          setProductTypes([...productTypes, data.productType]);
+          setSuccess('Product type created successfully');
+        }
+        
+        // Reset form
         setNewProductType({ name: '', unitOfMeasure: '' });
         setNewAttr({ required: [], optional: [], reqInput: '', optInput: '', reqBulk: '', optBulk: '' });
-        setSuccess('Product type created successfully');
+        setEditingProductType(null);
         setTimeout(() => setSuccess(''), 3000);
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Failed to create product type');
+        setError(errorData.message || `Failed to ${editingProductType ? 'update' : 'create'} product type`);
         setTimeout(() => setError(''), 3000);
       }
     } catch (error) {
@@ -360,18 +436,93 @@ const SettingsPage = () => {
     }
   };
 
+  const handleEditCategory = (category) => {
+    setRenamingCategory(category);
+    setRenameForm({
+      from: category.name,
+      to: category.name
+    });
+    setNewCategory(category.name); // Set in the input field
+    // Scroll to the form
+    document.querySelector('.create-form').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleDeleteCategory = async (categoryName) => {
+    if (!window.confirm('Are you sure you want to delete this category? Products in this category will be moved to General.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // The backend API expects POST with a body, not a path parameter
+      const response = await fetch('/api/categories', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: categoryName, reassignTo: 'General' })
+      });
+
+      if (response.ok) {
+        setCategories(categories.filter(cat => 
+          typeof cat === 'string' ? cat !== categoryName : cat.name !== categoryName
+        ));
+        setSuccess('Category deleted successfully');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to delete category');
+      }
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message || 'Failed to delete category');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     if (!newCategory.trim()) return;
 
     try {
-      const data = await createCategory({ name: newCategory.trim() });
-      setCategories([...categories, data.category]);
+      if (renamingCategory) {
+        // If we're editing, this is a rename operation
+        const data = await fetch('/api/categories/rename', {
+          method: 'PUT', // Backend expects PUT for rename
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: renamingCategory.name,
+            to: newCategory.trim()
+          })
+        });
+        
+        if (data.ok) {
+          // Update the local state by replacing the category name
+          setCategories(categories.map(cat => 
+            typeof cat === 'string' ? 
+              (cat === renamingCategory.name ? newCategory.trim() : cat) : 
+              (cat.name === renamingCategory.name ? {...cat, name: newCategory.trim()} : cat)
+          ));
+          setSuccess('Category renamed successfully');
+        } else {
+          setError('Failed to rename category');
+        }
+        setRenamingCategory(null);
+      } else {
+        // Regular create operation
+        const data = await createCategory({ name: newCategory.trim() });
+        setCategories([...categories, data.category]);
+        setSuccess('Category created successfully');
+      }
       setNewCategory('');
-      setSuccess('Category created successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError(error.message || 'Failed to create category');
+      setError(error.message || 'Failed to save category');
       setTimeout(() => setError(''), 3000);
     }
   };
@@ -462,9 +613,9 @@ const SettingsPage = () => {
                     </div>
                     <div className="stat">
                       <span className="stat-value">
-                        {locations.filter(loc => inventoryData[loc.id]?.length > 0).length}
+                        {locations.filter(loc => inventoryData[loc.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0)).length}
                       </span>
-                      <span className="stat-label">With Inventory</span>
+                      <span className="stat-label">With Stock</span>
                     </div>
                   </div>
                   <button 
@@ -605,9 +756,9 @@ const SettingsPage = () => {
                     
                     <div className="location-stats">
                       <div className="stat-item">
-                        <span className="stat-label">Products</span>
+                        <span className="stat-label">Products In Stock</span>
                         <span className="stat-value">
-                          {inventoryData[location.id]?.length || 0}
+                          {inventoryData[location.id]?.filter(item => parseFloat(item.quantitySqm || 0) > 0).length || 0}
                         </span>
                       </div>
                       <div className="stat-item">
@@ -636,7 +787,7 @@ const SettingsPage = () => {
                       <button 
                         className="action-btn delete"
                         onClick={() => handleDeleteLocation(location.id)}
-                        disabled={inventoryData[location.id]?.length > 0}
+                        disabled={inventoryData[location.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0)}
                       >
                         Delete
                       </button>
@@ -645,18 +796,20 @@ const SettingsPage = () => {
                     {/* Inventory Details */}
                     {selectedLocation === location.id && (
                       <div className="inventory-details">
-                        {inventoryData[location.id]?.length > 0 ? (
+                        {inventoryData[location.id]?.filter(item => parseFloat(item.quantitySqm || 0) > 0).length > 0 ? (
                           <div className="inventory-list">
-                            {inventoryData[location.id].map(item => (
-                              <div key={item.id} className="inventory-item">
-                                <div className="item-info">
-                                  <span className="item-name">{item.product?.name}</span>
-                                  <span className="item-category">{item.product?.category}</span>
+                            {inventoryData[location.id]
+                              .filter(item => parseFloat(item.quantitySqm || 0) > 0)
+                              .map(item => (
+                                <div key={item.id} className="inventory-item">
+                                  <div className="item-info">
+                                    <span className="item-name">{item.product?.name}</span>
+                                    <span className="item-category">{item.product?.category}</span>
+                                  </div>
+                                  <div className="item-quantity">
+                                    {parseFloat(item.quantitySqm || 0).toLocaleString()} {item.product?.productType?.unitOfMeasure || 'pcs'}
+                                  </div>
                                 </div>
-                                <div className="item-quantity">
-                                  {parseFloat(item.quantitySqm || 0).toLocaleString()} {item.product?.productType?.unitOfMeasure || 'pcs'}
-                                </div>
-                              </div>
                             ))}
                           </div>
                         ) : (
@@ -880,8 +1033,20 @@ const SettingsPage = () => {
                           <option value="l">Liters (l)</option>
                         </select>
                         <button type="submit" className="primary-button">
-                          Add Type
+                          {editingProductType ? 'Update Type' : 'Add Type'}
                         </button>
+                        {editingProductType && (
+                          <button 
+                            type="button" 
+                            className="secondary-button"
+                            onClick={() => {
+                              setEditingProductType(null);
+                              setNewProductType({ name: '', unitOfMeasure: '' });
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -892,6 +1057,20 @@ const SettingsPage = () => {
                         <h4>{productType.name}</h4>
                         <p>Unit: {productType.unitOfMeasure}</p>
                         <p>Status: {productType.isActive ? 'Active' : 'Inactive'}</p>
+                        <div className="admin-item-actions">
+                          <button 
+                            className="action-btn edit"
+                            onClick={() => handleEditProductType(productType)}
+                          >
+                            <MdEdit size={14} /> Edit
+                          </button>
+                          <button 
+                            className="action-btn delete"
+                            onClick={() => handleDeleteProductType(productType)}
+                          >
+                            <MdDelete size={14} /> Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -912,18 +1091,47 @@ const SettingsPage = () => {
                           required
                         />
                         <button type="submit" className="primary-button">
-                          Add Category
+                          {renamingCategory ? 'Update Category' : 'Add Category'}
                         </button>
+                        {renamingCategory && (
+                          <button 
+                            type="button" 
+                            className="secondary-button"
+                            onClick={() => {
+                              setRenamingCategory(null);
+                              setNewCategory('');
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </div>
                     </form>
                   </div>
 
                   <div className="items-grid">
-                    {categories.map(category => (
-                      <div key={category.name} className="admin-item-card">
-                        <h4>{category.name}</h4>
-                      </div>
-                    ))}
+                    {categories.map(category => {
+                      const categoryName = typeof category === 'string' ? category : category.name;
+                      return (
+                        <div key={categoryName} className="admin-item-card">
+                          <h4>{categoryName}</h4>
+                          <div className="admin-item-actions">
+                            <button 
+                              className="action-btn edit"
+                              onClick={() => handleEditCategory({ name: categoryName })}
+                            >
+                              <MdEdit size={14} /> Edit
+                            </button>
+                            <button 
+                              className="action-btn delete"
+                              onClick={() => handleDeleteCategory(categoryName)}
+                            >
+                              <MdDelete size={14} /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -931,6 +1139,29 @@ const SettingsPage = () => {
           )}
         </div>
       </div>
+      
+      {/* Delete Confirmation Modals */}
+      {showProductTypeDeleteModal && (
+        <AdminDeleteModal
+          isOpen={showProductTypeDeleteModal}
+          onConfirm={confirmDeleteProductType}
+          onCancel={() => setShowProductTypeDeleteModal(false)}
+          itemToDelete={productTypeToDelete}
+          itemType="Product Type"
+          isDeleting={isDeletingItem}
+        />
+      )}
+      
+      {showCategoryDeleteModal && (
+        <AdminDeleteModal
+          isOpen={showCategoryDeleteModal}
+          onConfirm={confirmDeleteCategory}
+          onCancel={() => setShowCategoryDeleteModal(false)}
+          itemToDelete={categoryToDelete}
+          itemType="Category"
+          isDeleting={isDeletingItem}
+        />
+      )}
     </div>
   );
 };

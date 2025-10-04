@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression');
 
 const { sequelize, testConnection } = require('./config/database');
 const { User, Location } = require('./models');
@@ -25,23 +26,47 @@ const ordersRoutes = require('./routes/orders');
 const app = express();
 
 // Middleware
+// Enable compression for all responses
+app.use(compression({ level: 6, threshold: 0 }));
+
+// Set cache headers for static assets
+const setCache = function (req, res, next) {
+  // Skip caching for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Cache static assets for 1 week
+  const period = 60 * 60 * 24 * 7; // 1 week in seconds
+  if (req.method === 'GET') {
+    res.set('Cache-Control', `public, max-age=${period}`);
+  } else {
+    // for other requests, no cache
+    res.set('Cache-Control', 'no-store');
+  }
+  next();
+};
+app.use(setCache);
+
 // Increase limits to accommodate base64 images from camera/file uploads
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(cors());
 
-// Logging middleware
+// Logging middleware - only log in development mode
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  if (req.body && Object.keys(req.body).length > 0) {
-    try {
-      const bodyForLog = { ...req.body };
-      if (typeof bodyForLog.imageUrl === 'string' && bodyForLog.imageUrl.startsWith('data:image')) {
-        bodyForLog.imageUrl = '[base64 image omitted]';
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`${req.method} ${req.url}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+      try {
+        const bodyForLog = { ...req.body };
+        if (typeof bodyForLog.imageUrl === 'string' && bodyForLog.imageUrl.startsWith('data:image')) {
+          bodyForLog.imageUrl = '[base64 image omitted]';
+        }
+        console.log('Request body:', bodyForLog);
+      } catch (e) {
+        console.log('Request body present (omitted for size)');
       }
-      console.log('Request body:', bodyForLog);
-    } catch (e) {
-      console.log('Request body present (omitted for size)');
     }
   }
   next();
@@ -86,14 +111,19 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
   });
 });
 
-// Serve company website at root (/) - check if directory exists first
-// Website is now served from website-build directory
+// Configure static file serving with improved caching and performance
+const staticOptions = {
+  maxAge: '7d',       // Cache for 7 days
+  etag: true,         // Use ETags for caching
+  lastModified: true, // Use Last-Modified for caching
+  index: false        // Don't automatically serve index.html
+};
 
-// Serve inventory system at /system
-app.use('/system', express.static(path.join(__dirname, 'public')));
+// Serve inventory system at /inventory with clear branding
+app.use('/inventory', express.static(path.join(__dirname, 'public'), staticOptions));
 
-// Serve website at root URL
-app.use('/', express.static(path.join(__dirname, 'website-build')));
+// Serve website assets at root URL with optimized performance
+app.use('/', express.static(path.join(__dirname, 'website-build'), staticOptions));
 
 // Health check (for platform probes)
 app.get('/health', (req, res) => {
@@ -105,30 +135,57 @@ app.get('/sw.js', (req, res) => {
   res.status(204).send(); // No content - service worker not needed in local dev
 });
 
+// Redirect old /system URLs to /inventory for backward compatibility
+app.get('/system*', (req, res) => {
+  const newPath = req.path.replace('/system', '/inventory');
+  console.log(`Redirecting from ${req.path} to ${newPath}`);
+  res.redirect(301, newPath);
+});
+
+// Add clear systems access page
+app.get('/systems', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'systems.html'));
+});
+
 // API routes are already configured at /api
 
-// SPA fallback routing
+// Clear SPA fallback routing with streamlined downloads
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
     return res.status(404).json({ message: 'Route not found' });
   }
   
-  // Handle SPA routing for inventory system
-  if (req.path.startsWith('/system')) {
+  // Handle SPA routing for inventory system with clear branding
+  if (req.path.startsWith('/inventory')) {
     const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+    
+    // Set appropriate headers to improve download experience
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('X-Application-Name', 'Fortune Tiles Inventory System');
+    
     if (fs.existsSync(inventoryIndexPath)) {
       res.sendFile(inventoryIndexPath);
     } else {
-      res.status(404).json({ message: 'Inventory system not built. Please run: npm run build in the frontend directory.' });
+      res.status(404).json({ 
+        message: 'Inventory system not available. Please contact support.',
+        system: 'Fortune Tiles Inventory'
+      });
     }
   }
-  // Handle website SPA routing
+  // Handle website SPA routing with improved error handling
   else {
     const websiteIndexPath = path.join(__dirname, 'website-build', 'index.html');
+    
+    // Set appropriate headers to improve download experience
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('X-Application-Name', 'Fortune et Feveur');
+    
     if (fs.existsSync(websiteIndexPath)) {
       res.sendFile(websiteIndexPath);
     } else {
-      res.status(404).send('Website is being built. Please try again later.');
+      res.status(503).send('Website maintenance in progress. Please try again shortly.');
     }
   }
 });

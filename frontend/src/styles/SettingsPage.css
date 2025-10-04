@@ -813,6 +813,14 @@
   font-size: 14px;
 }
 
+.admin-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+  border-top: 1px solid hsl(220, 13%, 91%);
+  padding-top: 15px;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
