@@ -119,7 +119,20 @@ const staticOptions = {
   index: false        // Don't automatically serve index.html
 };
 
-// Serve inventory system at /inventory with clear branding
+// Special route for the exact /inventory path
+app.get('/inventory', (req, res) => {
+  const inventoryHtmlPath = path.join(__dirname, 'public', 'inventory.html');
+  
+  // Set headers to prevent caching issues
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
+  // Send the special inventory.html file that loads the app without redirects
+  return res.sendFile(inventoryHtmlPath);
+});
+
+// Serve inventory system at /inventory/... with clear branding
 app.use('/inventory', express.static(path.join(__dirname, 'public'), staticOptions));
 
 // Serve website assets at root URL with optimized performance
@@ -168,37 +181,26 @@ app.get('/systems', (req, res) => {
 
 // API routes are already configured at /api
 
-// Direct route for /inventory path - serve index.html directly instead of redirecting
-app.get('/inventory', (req, res) => {
-  // Directly serve the index.html without redirection to prevent loops
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  
-  if (fs.existsSync(indexPath)) {
-    // Set headers to prevent caching issues
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('X-Application-Name', 'Fortune Tiles Inventory System');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    return res.sendFile(indexPath);
-  } else {
-    return res.status(404).send('Inventory system not available. Please contact support.');
-  }
-});
+// This route is now handled by the earlier '/inventory' route handler
+// which serves inventory.html instead of index.html to prevent redirect loops
 
 // Clear SPA fallback routing with streamlined downloads
-app.get('*', (req, res) => {
+app.get('*', (req, res, next) => {
+  // Don't handle API routes or webhooks
   if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
     return res.status(404).json({ message: 'Route not found' });
   }
   
+  // Don't handle /inventory exact path (already handled by specific route)
+  if (req.path === '/inventory') {
+    return res.status(404).json({ message: 'Route already handled by specific handler' });
+  }
+  
   // Handle SPA routing for inventory system with clear branding
-  if (req.path.startsWith('/inventory')) {
-    // Skip exact /inventory match as it's handled by the specific route above
-    if (req.path === '/inventory') {
-      return next();
+  if (req.path.startsWith('/inventory/') || (req.path.startsWith('/inventory') && req.path.length > '/inventory'.length)) {
+    // Don't handle static files in SPA fallback
+    if (req.path.includes('/static/')) {
+      return res.status(404).send('File not found');
     }
     
     const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');

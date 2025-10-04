@@ -74,17 +74,194 @@
         <h1>Fortune ET Feveur Inventory System</h1>
         <p>The system is loading. Please wait...</p>
         <div class="spinner"></div>
-        <a href="/inventory/index.html" class="button">Launch Inventory System</a>
+        <div id="root"></div>
+        <!-- The button will be hidden once the app loads -->
+        <a href="javascript:void(0)" class="button" onclick="manuallyStartApp()">Launch Inventory System</a>
     </div>
 
     <script>
-        // Simple solution - direct the user to the correct path
+        // Function to manually start the app when the button is clicked
+        function manuallyStartApp() {
+            document.querySelector('.button').style.display = 'none';
+            document.querySelector('.spinner').style.display = 'block';
+            loadAppScripts();
+        }
+        
+        // Create root element for the React application
         document.addEventListener('DOMContentLoaded', function() {
-            // Add a slight delay before redirecting to allow the page to render
-            setTimeout(function() {
-                window.location.href = '/inventory/index.html';
-            }, 1500);
+            // Don't automatically start loading to prevent redirect loops
+            console.log('Inventory page loaded. Click the button to start the app.');
+            
+            // Hide spinner initially until button is clicked
+            document.querySelector('.spinner').style.display = 'none';
         });
+        
+        // Find all main js files in the static directory
+        function loadAppScripts() {
+            // First try to look for scripts already in the page
+            const existingScripts = document.querySelectorAll('script[src*="/inventory/static/js/"]');
+            if (existingScripts.length > 0) {
+                console.log('App scripts already loaded, not loading again');
+                hideLoadingContainer();
+                return;
+            }
+            
+            console.log('Loading app scripts...');
+            
+            // Try direct loading of specific files first - fastest path
+            const cssPath = '/inventory/static/css/main.075fdb14.css';
+            const jsPath = '/inventory/static/js/main.6fbd7057.js';
+            
+            // Load CSS
+            const style = document.createElement('link');
+            style.rel = 'stylesheet';
+            style.href = cssPath;
+            document.head.appendChild(style);
+            
+            // Load JS
+            const script = document.createElement('script');
+            script.src = jsPath;
+            script.onload = function() {
+                console.log('App script loaded successfully');
+                hideLoadingContainer();
+            };
+            script.onerror = function() {
+                console.error('Failed to load main script, trying alternative approach');
+                tryManifestApproach();
+            };
+            
+            document.body.appendChild(script);
+        }
+        
+        // Try loading via the asset manifest if direct loading fails
+        function tryManifestApproach() {
+            console.log('Trying to load app via manifest...');
+            
+            fetch('/inventory/asset-manifest.json')
+                .then(response => response.json())
+                .then(manifest => {
+                    console.log('Manifest loaded:', manifest);
+                    
+                    // Load CSS
+                    if (manifest.files && manifest.files['main.css']) {
+                        const style = document.createElement('link');
+                        style.rel = 'stylesheet';
+                        style.href = manifest.files['main.css'];
+                        document.head.appendChild(style);
+                    }
+                    
+                    // Load JS - find the main entry
+                    if (manifest.files && manifest.files['main.js']) {
+                        const script = document.createElement('script');
+                        script.src = manifest.files['main.js'];
+                        script.onload = function() {
+                            console.log('App loaded via manifest approach');
+                            hideLoadingContainer();
+                        };
+                        script.onerror = function() {
+                            console.error('Failed to load via manifest, using final fallback');
+                            useFallbackLoader();
+                        };
+                        document.body.appendChild(script);
+                    } else {
+                        console.error('No main.js in manifest, using fallback');
+                        useFallbackLoader();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading manifest:', error);
+                    useFallbackLoader();
+                });
+        }
+        
+        // Final fallback - try to load from index.html by fetching it
+        function useFallbackLoader() {
+            console.log('Using fallback loader to extract script tags from index.html');
+            
+            fetch('/inventory/index.html')
+                .then(response => response.text())
+                .then(html => {
+                    // Extract script tags
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Find and load CSS
+                    const cssLinks = tempDiv.querySelectorAll('link[rel="stylesheet"]');
+                    cssLinks.forEach(link => {
+                        if (!document.querySelector(`link[href="${link.href}"]`)) {
+                            const newLink = document.createElement('link');
+                            newLink.rel = 'stylesheet';
+                            newLink.href = link.href;
+                            document.head.appendChild(newLink);
+                        }
+                    });
+                    
+                    // Find and load JS
+                    const scripts = tempDiv.querySelectorAll('script[src]');
+                    let loadedScripts = 0;
+                    
+                    scripts.forEach((script, index) => {
+                        if (!document.querySelector(`script[src="${script.src}"]`)) {
+                            const newScript = document.createElement('script');
+                            newScript.src = script.src;
+                            newScript.onload = function() {
+                                loadedScripts++;
+                                if (loadedScripts === scripts.length) {
+                                    console.log('All scripts loaded via fallback');
+                                    hideLoadingContainer();
+                                }
+                            };
+                            document.body.appendChild(newScript);
+                        } else {
+                            loadedScripts++;
+                        }
+                    });
+                    
+                    // If no scripts found, show error
+                    if (scripts.length === 0) {
+                        showError('Failed to load application scripts');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error with fallback loader:', error);
+                    showError('Failed to load application. Please try refreshing the page.');
+                });
+        }
+        
+        // Hide loading container when app is loaded
+        function hideLoadingContainer() {
+            setTimeout(() => {
+                const loadingContainer = document.querySelector('.loading-container');
+                if (loadingContainer) {
+                    loadingContainer.style.display = 'none';
+                }
+            }, 500);
+        }
+        
+        // Show error message
+        function showError(message) {
+            const spinner = document.querySelector('.spinner');
+            if (spinner) spinner.style.display = 'none';
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = '#dc3545';
+            errorDiv.style.marginTop = '1rem';
+            errorDiv.style.padding = '1rem';
+            errorDiv.style.border = '1px solid #dc3545';
+            errorDiv.style.borderRadius = '4px';
+            errorDiv.style.backgroundColor = '#f8d7da';
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message}<br>
+                <button onclick="window.location.reload()" 
+                    style="margin-top:10px;padding:5px 10px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;">
+                    Refresh Page
+                </button>`;
+            
+            const loadingContainer = document.querySelector('.loading-container');
+            if (loadingContainer) {
+                loadingContainer.appendChild(errorDiv);
+            }
+        }
+    </script>
     </script>
 </body>
 </html>
