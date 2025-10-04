@@ -149,6 +149,18 @@ app.get('/systems', (req, res) => {
 
 // API routes are already configured at /api
 
+// Provide direct access to inventory.html
+app.get('/inventory', (req, res) => {
+  // First try to serve the inventory.html redirect page
+  const inventoryRedirectPath = path.join(__dirname, 'public', 'inventory.html');
+  if (fs.existsSync(inventoryRedirectPath)) {
+    return res.sendFile(inventoryRedirectPath);
+  }
+  
+  // Fall back to index.html
+  res.redirect('/inventory/');
+});
+
 // Clear SPA fallback routing with streamlined downloads
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
@@ -163,6 +175,12 @@ app.get('*', (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('X-Application-Name', 'Fortune Tiles Inventory System');
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // Add special handling for the base inventory URL
+    if (req.path === '/inventory/') {
+      console.log('Serving inventory index page');
+    }
     
     if (fs.existsSync(inventoryIndexPath)) {
       res.sendFile(inventoryIndexPath);

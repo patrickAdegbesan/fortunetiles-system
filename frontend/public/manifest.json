@@ -1,7 +1,7 @@
 {
-  "short_name": "fortune et fevur inventory",
-  "name": "fortune et fevur inventory",
-  "description": "fortune et fevur inventory",
+  "short_name": "Fortune Inventory",
+  "name": "Fortune ET Feveur Inventory",
+  "description": "Fortune ET Feveur Inventory System",
   "icons": [
     {
       "src": "assets/logo.png",
@@ -21,12 +21,12 @@
       "purpose": "maskable any"
     }
   ],
-  "start_url": "/",
+  "start_url": "/inventory/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#007bff",
   "background_color": "#ffffff",
   "categories": ["business", "productivity", "utilities"],
   "lang": "en",
-  "scope": "/"
+  "scope": "/inventory/"
 }
