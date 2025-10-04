@@ -127,13 +127,41 @@ app.get('/inventory', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Content-Type', 'text/html');
+  
+  // Log for debugging
+  console.log('Serving inventory.html for /inventory path');
   
   // Send the special inventory.html file that loads the app without redirects
   return res.sendFile(inventoryHtmlPath);
 });
 
-// Serve inventory system at /inventory/... with clear branding
-app.use('/inventory', express.static(path.join(__dirname, 'public'), staticOptions));
+// Serve inventory system static files at /inventory/... with clear branding
+app.use('/inventory', express.static(path.join(__dirname, 'public'), {
+  ...staticOptions,
+  setHeaders: (res, path) => {
+    // Log static file requests for debugging
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Serving static file: ${path}`);
+    }
+    
+    // Set appropriate headers for different file types
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache JS for 1 year
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache CSS for 1 year
+    } else if (path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.gif')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache images for 1 year
+    }
+    
+    // Ensure proper content sniffing prevention
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
 // Serve website assets at root URL with optimized performance
 app.use('/', express.static(path.join(__dirname, 'website-build'), staticOptions));
@@ -186,6 +214,9 @@ app.get('/systems', (req, res) => {
 
 // Clear SPA fallback routing with streamlined downloads
 app.get('*', (req, res, next) => {
+  // Log the requested path for debugging
+  console.log(`Catch-all handler for path: ${req.path}`);
+  
   // Don't handle API routes or webhooks
   if (req.path.startsWith('/api/') || req.path.startsWith('/webhook/')) {
     return res.status(404).json({ message: 'Route not found' });
@@ -193,7 +224,12 @@ app.get('*', (req, res, next) => {
   
   // Don't handle /inventory exact path (already handled by specific route)
   if (req.path === '/inventory') {
-    return res.status(404).json({ message: 'Route already handled by specific handler' });
+    return next(); // Let the specific handler take care of this
+  }
+  
+  // Don't handle static files - let Express's static middleware handle them
+  if (req.path.includes('/static/') || req.path.includes('/assets/')) {
+    return next();
   }
   
   // Handle SPA routing for inventory system with clear branding
