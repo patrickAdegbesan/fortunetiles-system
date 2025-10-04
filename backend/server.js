@@ -135,6 +135,25 @@ app.get('/sw.js', (req, res) => {
   res.status(204).send(); // No content - service worker not needed in local dev
 });
 
+// Root URL handler to prevent redirect loops
+app.get('/', (req, res) => {
+  const websiteIndexPath = path.join(__dirname, 'website-build', 'index.html');
+  
+  if (fs.existsSync(websiteIndexPath)) {
+    // Set headers to prevent caching issues
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('X-Application-Name', 'Fortune et Feveur');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    return res.sendFile(websiteIndexPath);
+  } else {
+    return res.status(503).send('Website maintenance in progress. Please try again shortly.');
+  }
+});
+
 // Redirect old /system URLs to /inventory for backward compatibility
 app.get('/system*', (req, res) => {
   const newPath = req.path.replace('/system', '/inventory');
@@ -149,16 +168,24 @@ app.get('/systems', (req, res) => {
 
 // API routes are already configured at /api
 
-// Provide direct access to inventory.html
+// Direct route for /inventory path - serve index.html directly instead of redirecting
 app.get('/inventory', (req, res) => {
-  // First try to serve the inventory.html redirect page
-  const inventoryRedirectPath = path.join(__dirname, 'public', 'inventory.html');
-  if (fs.existsSync(inventoryRedirectPath)) {
-    return res.sendFile(inventoryRedirectPath);
-  }
+  // Directly serve the index.html without redirection to prevent loops
+  const indexPath = path.join(__dirname, 'public', 'index.html');
   
-  // Fall back to index.html
-  res.redirect('/inventory/');
+  if (fs.existsSync(indexPath)) {
+    // Set headers to prevent caching issues
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('X-Application-Name', 'Fortune Tiles Inventory System');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    return res.sendFile(indexPath);
+  } else {
+    return res.status(404).send('Inventory system not available. Please contact support.');
+  }
 });
 
 // Clear SPA fallback routing with streamlined downloads
@@ -169,23 +196,28 @@ app.get('*', (req, res) => {
   
   // Handle SPA routing for inventory system with clear branding
   if (req.path.startsWith('/inventory')) {
+    // Skip exact /inventory match as it's handled by the specific route above
+    if (req.path === '/inventory') {
+      return next();
+    }
+    
     const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
     
-    // Set appropriate headers to improve download experience
+    // Set appropriate headers to improve download experience and prevent caching issues
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('X-Application-Name', 'Fortune Tiles Inventory System');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     
-    // Add special handling for the base inventory URL
-    if (req.path === '/inventory/') {
-      console.log('Serving inventory index page');
-    }
+    // Log the routing for debugging
+    console.log(`Serving SPA route for: ${req.path}`);
     
     if (fs.existsSync(inventoryIndexPath)) {
-      res.sendFile(inventoryIndexPath);
+      return res.sendFile(inventoryIndexPath);
     } else {
-      res.status(404).json({ 
+      return res.status(404).json({ 
         message: 'Inventory system not available. Please contact support.',
         system: 'Fortune Tiles Inventory'
       });

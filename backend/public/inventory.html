@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/inventory/assets/logo.png?v=2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Fortune et Feveur Inventory System" />
+    <link rel="apple-touch-icon" href="/inventory/assets/logo.png?v=2" />
+    <title>Fortune ET Feveur Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .loading-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .logo {
+            max-width: 120px;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1rem;
+            color: #666;
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 123, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #0069d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <img src="/inventory/assets/logo.png" alt="Fortune et Feveur Logo" class="logo" />
+        <h1>Fortune ET Feveur Inventory System</h1>
+        <p>The system is loading. Please wait...</p>
+        <div class="spinner"></div>
+        <a href="/inventory/index.html" class="button">Launch Inventory System</a>
+    </div>
+
+    <script>
+        // Simple solution - direct the user to the correct path
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a slight delay before redirecting to allow the page to render
+            setTimeout(function() {
+                window.location.href = '/inventory/index.html';
+            }, 1500);
+        });
+    </script>
+</body>
+</html>
