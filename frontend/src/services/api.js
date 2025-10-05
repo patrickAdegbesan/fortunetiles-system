@@ -425,12 +425,23 @@ export const updateCategory = async (id, categoryData) => {
   }
 };
 
-export const deleteCategory = async (id) => {
+export const deleteCategory = async (name, reassignTo = 'General') => {
   try {
-    const response = await API.delete(`/categories/${id}`);
+    const response = await API.delete('/categories', {
+      data: { name, reassignTo }
+    });
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to delete category' };
+  }
+};
+
+export const renameCategory = async (from, to) => {
+  try {
+    const response = await API.put('/categories/rename', { from, to });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to rename category' };
   }
 };
 

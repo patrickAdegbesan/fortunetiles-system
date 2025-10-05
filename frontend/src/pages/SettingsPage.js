@@ -15,7 +15,8 @@ import {
   fetchUserRoles,
   fetchCategories,
   createCategory,
-  deleteCategory
+  deleteCategory,
+  renameCategory
 } from '../services/api';
 import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
@@ -454,31 +455,19 @@ const SettingsPage = () => {
   
   const confirmDeleteCategory = async () => {
     if (!categoryToDelete) return;
-    
+
     try {
       setIsDeletingItem(true);
       const categoryName = typeof categoryToDelete === 'string' ? categoryToDelete : categoryToDelete.name;
-      
-      // Use the deleteCategory function from api.js
-      const response = await fetch('/api/categories', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name: categoryName, reassignTo: 'General' })
-      });
 
-      if (response.ok) {
-        setCategories(categories.filter(cat => 
-          typeof cat === 'string' ? cat !== categoryName : cat.name !== categoryName
-        ));
-        setSuccess('Category deleted successfully');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to delete category');
-      }
-      
+      // Use the deleteCategory function from api.js
+      await deleteCategory(categoryName, 'General');
+
+      setCategories(categories.filter(cat =>
+        typeof cat === 'string' ? cat !== categoryName : cat.name !== categoryName
+      ));
+      setSuccess('Category deleted successfully');
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       setError(error.message || 'Failed to delete category');
@@ -497,29 +486,15 @@ const SettingsPage = () => {
     try {
       if (renamingCategory) {
         // If we're editing, this is a rename operation
-        const data = await fetch('/api/categories/rename', {
-          method: 'PUT', // Backend expects PUT for rename
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: renamingCategory.name,
-            to: newCategory.trim()
-          })
-        });
-        
-        if (data.ok) {
-          // Update the local state by replacing the category name
-          setCategories(categories.map(cat => 
-            typeof cat === 'string' ? 
-              (cat === renamingCategory.name ? newCategory.trim() : cat) : 
-              (cat.name === renamingCategory.name ? {...cat, name: newCategory.trim()} : cat)
-          ));
-          setSuccess('Category renamed successfully');
-        } else {
-          setError('Failed to rename category');
-        }
+        await renameCategory(renamingCategory.name, newCategory.trim());
+
+        // Update the local state by replacing the category name
+        setCategories(categories.map(cat =>
+          typeof cat === 'string' ?
+            (cat === renamingCategory.name ? newCategory.trim() : cat) :
+            (cat.name === renamingCategory.name ? {...cat, name: newCategory.trim()} : cat)
+        ));
+        setSuccess('Category renamed successfully');
         setRenamingCategory(null);
       } else {
         // Regular create operation
