@@ -78,7 +78,7 @@ function MainLayout({ children }) {
 }
 
 function App() {
-  const basename = process.env.NODE_ENV === 'production' ? '/system/' : '/';
+  const basename = process.env.NODE_ENV === 'production' ? '/inventory/' : '/';
   return (
     <AuthProvider>
       <Router basename={basename}>

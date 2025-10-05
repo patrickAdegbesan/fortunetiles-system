@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune ET Feveur Systems</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .logo {
+            max-width: 120px;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1rem;
+            color: #666;
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+        }
+        .system-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .system-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .system-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .system-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #007bff;
+        }
+        .system-description {
+            color: #555;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        .system-link {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .system-link:hover {
+            background-color: #0069d9;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #333;
+            color: white;
+        }
+        .back-link {
+            color: #007bff;
+            text-decoration: none;
+            margin-top: 2rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/inventory/assets/logo.png" alt="Fortune et Feveur Logo" class="logo" />
+        <h1>Fortune ET Feveur Systems</h1>
+        <p>Access the business management systems using the links below.</p>
+        
+        <div class="systems-grid">
+            <div class="system-card">
+                <div class="system-icon">📊</div>
+                <h2 class="system-title">Inventory System</h2>
+                <p class="system-description">Manage products, inventory, sales, and reports for Fortune Tiles.</p>
+                <a href="/inventory" class="system-link">Launch System</a>
+            </div>
+            
+            <div class="system-card">
+                <div class="system-icon">🔍</div>
+                <h2 class="system-title">Camera Test</h2>
+                <p class="system-description">Test camera functionality for barcode scanning and photo uploads.</p>
+                <a href="/camera-test.html" class="system-link">Test Camera</a>
+            </div>
+        </div>
+        
+        <a href="/" class="back-link">Back to Website</a>
+    </div>
+    
+    <footer>
+        &copy; 2025 Fortune ET Feveur. All rights reserved.
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Systems page loaded');
+        });
+    </script>
+</body>
+</html>

@@ -1253,8 +1253,8 @@
   font-size: 0.75rem;
   font-weight: 500;
   z-index: 1;
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border: 1px solid hsla(0, 0%, 100%, 0.2);
 }
 

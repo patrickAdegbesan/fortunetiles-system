@@ -50,6 +50,9 @@
             animation: spin 1s linear infinite;
             margin-bottom: 2rem;
         }
+        .hidden {
+            display: none !important;
+        }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -70,10 +73,12 @@
         .button:hover {
             background-color: #0069d9;
         }
+        .refresh-button, .direct-link-button {
+            margin-top: 10px;
+        }
         .error-message {
             color: #dc3545;
             margin-top: 2rem;
-            display: none;
             padding: 1rem;
             border: 1px solid #dc3545;
             border-radius: 4px;
@@ -87,17 +92,17 @@
         <img src="/inventory/assets/logo.png" alt="Fortune et Feveur Logo" class="logo" />
         <h1>Fortune ET Feveur Inventory System</h1>
         <p>Click the button below to launch the inventory system.</p>
-        <div class="spinner" style="display: none;"></div>
+        <div class="spinner hidden"></div>
         <div id="root"></div>
         
         <!-- Launch buttons -->
         <button class="button" onclick="launchApp()">Launch Inventory System</button>
         <a href="/inventory/index.html" class="button">Direct Link to App</a>
         
-        <div id="error-message" class="error-message">
+        <div id="error-message" class="error-message hidden">
             <strong>Loading Issue:</strong> <span id="error-text">The app is taking longer than expected to load.</span><br>
-            <button onclick="window.location.reload()" class="button" style="margin-top: 10px;">Refresh Page</button>
-            <a href="/inventory/index.html" class="button" style="margin-top: 10px;">Try Direct Link</a>
+            <button onclick="window.location.reload()" class="button refresh-button">Refresh Page</button>
+            <a href="/inventory/index.html" class="button direct-link-button">Try Direct Link</a>
         </div>
     </div>
 
@@ -107,60 +112,94 @@
             
             // Hide buttons and show spinner
             const buttons = document.querySelectorAll('.button');
-            buttons.forEach(btn => btn.style.display = 'none');
-            document.querySelector('.spinner').style.display = 'block';
+            buttons.forEach(btn => {
+                btn.classList.add('hidden');
+            });
+            document.querySelector('.spinner').classList.remove('hidden');
             
             // Add debug information
             console.log('Current location:', window.location.href);
             console.log('Target URL: /inventory/index.html');
             
-            // Simple redirect after a short delay
-            setTimeout(() => {
-                console.log('Redirecting to inventory app...');
-                // Use replace instead of href to avoid back button issues
-                window.location.replace('/inventory/index.html');
-            }, 1000);
-            
-            // Show error message after 8 seconds if still on this page
-            setTimeout(() => {
-                if (window.location.pathname === '/inventory') {
-                    console.error('Redirect failed, showing error message');
-                    document.getElementById('error-message').style.display = 'block';
-                    document.querySelector('.spinner').style.display = 'none';
-                    // Restore buttons
-                    const allButtons = document.querySelectorAll('.button');
-                    allButtons.forEach(btn => btn.style.display = 'inline-block');
+            // First test if static files are accessible
+            testStaticFiles().then(filesAccessible => {
+                if (filesAccessible) {
+                    console.log('Static files are accessible, proceeding with redirect');
+                    
+                    // Simple redirect after a short delay
+                    setTimeout(() => {
+                        console.log('Redirecting to inventory app...');
+                        // Use replace instead of href to avoid back button issues
+                        window.location.replace('/inventory/index.html');
+                    }, 1000);
+                    
+                    // Show error message after 8 seconds if still on this page
+                    setTimeout(() => {
+                        if (window.location.pathname === '/inventory') {
+                            showError('The redirect to the inventory app failed. Please try the direct link.');
+                        }
+                    }, 8000);
+                } else {
+                    showError('Cannot access required files. The server may be experiencing issues.');
                 }
-            }, 8000);
+            });
+        }
+        
+        function showError(message) {
+            console.error('Error:', message);
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-message').classList.remove('hidden');
+            document.querySelector('.spinner').classList.add('hidden');
+            
+            // Restore buttons
+            const allButtons = document.querySelectorAll('.button');
+            allButtons.forEach(btn => {
+                btn.classList.remove('hidden');
+            });
         }
         
         // Function to test if the static files are accessible
         function testStaticFiles() {
             console.log('Testing static file access...');
             
-            // Test if CSS is accessible
-            fetch('/inventory/static/css/main.075fdb14.css')
+            const cssTest = fetch('/inventory/static/css/main.075fdb14.css')
                 .then(response => {
                     console.log('CSS file status:', response.status);
                     return response.ok;
                 })
-                .then(ok => console.log('CSS accessible:', ok))
-                .catch(error => console.error('CSS test failed:', error));
+                .catch(error => {
+                    console.error('CSS test failed:', error);
+                    return false;
+                });
             
-            // Test if JS is accessible
-            fetch('/inventory/static/js/main.6fbd7057.js')
+            const jsTest = fetch('/inventory/static/js/main.6fbd7057.js')
                 .then(response => {
                     console.log('JS file status:', response.status);
                     return response.ok;
                 })
-                .then(ok => console.log('JS accessible:', ok))
-                .catch(error => console.error('JS test failed:', error));
+                .catch(error => {
+                    console.error('JS test failed:', error);
+                    return false;
+                });
+            
+            // Return a promise that resolves when both tests are complete
+            return Promise.all([cssTest, jsTest])
+                .then(results => {
+                    const allFilesAccessible = results.every(result => result === true);
+                    console.log('All files accessible:', allFilesAccessible);
+                    return allFilesAccessible;
+                });
         }
         
-        // Auto-launch after page loads (optional)
+        // Run when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Inventory loading page ready');
             console.log('Page URL:', window.location.href);
+            
+            // Add hidden class programmatically
+            const style = document.createElement('style');
+            style.textContent = '.hidden { display: none !important; }';
+            document.head.appendChild(style);
             
             // Test static file accessibility
             testStaticFiles();
