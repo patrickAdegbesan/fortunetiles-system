@@ -110,27 +110,68 @@
             buttons.forEach(btn => btn.style.display = 'none');
             document.querySelector('.spinner').style.display = 'block';
             
+            // Add debug information
+            console.log('Current location:', window.location.href);
+            console.log('Target URL: /inventory/index.html');
+            
             // Simple redirect after a short delay
             setTimeout(() => {
                 console.log('Redirecting to inventory app...');
-                window.location.href = '/inventory/index.html';
-            }, 1500);
+                // Use replace instead of href to avoid back button issues
+                window.location.replace('/inventory/index.html');
+            }, 1000);
             
-            // Show error message after 10 seconds if still on this page
+            // Show error message after 8 seconds if still on this page
             setTimeout(() => {
                 if (window.location.pathname === '/inventory') {
+                    console.error('Redirect failed, showing error message');
                     document.getElementById('error-message').style.display = 'block';
                     document.querySelector('.spinner').style.display = 'none';
+                    // Restore buttons
+                    const allButtons = document.querySelectorAll('.button');
+                    allButtons.forEach(btn => btn.style.display = 'inline-block');
                 }
-            }, 10000);
+            }, 8000);
+        }
+        
+        // Function to test if the static files are accessible
+        function testStaticFiles() {
+            console.log('Testing static file access...');
+            
+            // Test if CSS is accessible
+            fetch('/inventory/static/css/main.075fdb14.css')
+                .then(response => {
+                    console.log('CSS file status:', response.status);
+                    return response.ok;
+                })
+                .then(ok => console.log('CSS accessible:', ok))
+                .catch(error => console.error('CSS test failed:', error));
+            
+            // Test if JS is accessible
+            fetch('/inventory/static/js/main.6fbd7057.js')
+                .then(response => {
+                    console.log('JS file status:', response.status);
+                    return response.ok;
+                })
+                .then(ok => console.log('JS accessible:', ok))
+                .catch(error => console.error('JS test failed:', error));
         }
         
         // Auto-launch after page loads (optional)
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Inventory loading page ready');
+            console.log('Page URL:', window.location.href);
             
-            // Optional: Auto-launch after 3 seconds
-            // setTimeout(launchApp, 3000);
+            // Test static file accessibility
+            testStaticFiles();
+            
+            // Auto-launch after 3 seconds if user doesn't click
+            setTimeout(() => {
+                if (window.location.pathname === '/inventory') {
+                    console.log('Auto-launching after 3 seconds...');
+                    launchApp();
+                }
+            }, 3000);
         });
     </script>
 </body>
