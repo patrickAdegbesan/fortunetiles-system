@@ -119,10 +119,10 @@ const staticOptions = {
   index: false        // Don't automatically serve index.html
 };
 
-// Special route for the exact /inventory path
+// Special route for the exact /inventory path - serve React app directly
 app.get('/inventory', (req, res) => {
-  const inventoryHtmlPath = path.join(__dirname, 'public', 'inventory.html');
-  
+  const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+
   // Set headers to prevent caching issues
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -130,12 +130,12 @@ app.get('/inventory', (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Content-Type', 'text/html');
-  
+
   // Log for debugging
-  console.log('Serving inventory.html for /inventory path');
-  
-  // Send the special inventory.html file that loads the app without redirects
-  return res.sendFile(inventoryHtmlPath);
+  console.log('Serving React app directly for /inventory path');
+
+  // Send the React app directly
+  return res.sendFile(inventoryIndexPath);
 });
 
 // Serve inventory system static files at /inventory/... with clear branding
