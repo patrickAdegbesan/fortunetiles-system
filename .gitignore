@@ -98,12 +98,7 @@ website/
 *.bat
 
 # Internal documentation (not needed for public repo)
-DEPLOYMENT-GUIDE.md
-MODERNIZATION_TODO.md
-OPTIMIZATION-COMPLETE.md
-PERFORMANCE-OPTIMIZATION.md
-RUN-INSTRUCTIONS.md
-setup-website-integration.md
+ADDITIONAL-OPTIMIZATIONS.md
 
 # Database and seed files (sensitive data)
 *.db

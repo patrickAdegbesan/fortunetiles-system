@@ -447,14 +447,19 @@ const SettingsPage = () => {
     document.querySelector('.create-form').scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleDeleteCategory = async (categoryName) => {
-    if (!window.confirm('Are you sure you want to delete this category? Products in this category will be moved to General.')) {
-      return;
-    }
-
+  const handleDeleteCategory = async (category) => {
+    setCategoryToDelete(category);
+    setShowCategoryDeleteModal(true);
+  };
+  
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    
     try {
-      setLoading(true);
-      // The backend API expects POST with a body, not a path parameter
+      setIsDeletingItem(true);
+      const categoryName = typeof categoryToDelete === 'string' ? categoryToDelete : categoryToDelete.name;
+      
+      // Use the deleteCategory function from api.js
       const response = await fetch('/api/categories', {
         method: 'DELETE',
         headers: {
@@ -473,12 +478,15 @@ const SettingsPage = () => {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to delete category');
       }
+      
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       setError(error.message || 'Failed to delete category');
       setTimeout(() => setError(''), 3000);
     } finally {
-      setLoading(false);
+      setIsDeletingItem(false);
+      setShowCategoryDeleteModal(false);
+      setCategoryToDelete(null);
     }
   };
 
@@ -1124,7 +1132,7 @@ const SettingsPage = () => {
                             </button>
                             <button 
                               className="action-btn delete"
-                              onClick={() => handleDeleteCategory(categoryName)}
+                              onClick={() => handleDeleteCategory({ name: categoryName })}
                             >
                               <MdDelete size={14} /> Delete
                             </button>
