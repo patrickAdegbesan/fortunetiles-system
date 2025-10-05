@@ -1,5 +1,5 @@
 const express = require('express');
-const { ProductType, Product, ReturnItem } = require('../models');
+const { ProductType, Product, ReturnItem, Op } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -161,7 +161,7 @@ router.delete('/:id', async (req, res) => {
 
       // Check if any of these products are referenced in return items
       const returnItemsCount = await ReturnItem.count({
-        where: { productId: productIds }
+        where: { productId: { [Op.in]: productIds } }
       });
 
       if (returnItemsCount > 0) {
