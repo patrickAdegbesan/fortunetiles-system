@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/inventory/assets/logo.png?v=2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Fortune et Feveur Inventory System" />
+    <link rel="apple-touch-icon" href="/inventory/assets/logo.png?v=2" />
+    <title>Fortune ET Feveur Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .loading-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+        .logo {
+            max-width: 120px;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1rem;
+            color: #666;
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 123, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            margin: 0.5rem;
+        }
+        .button:hover {
+            background-color: #0069d9;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 2rem;
+            display: none;
+            padding: 1rem;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            max-width: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <img src="/inventory/assets/logo.png" alt="Fortune et Feveur Logo" class="logo" />
+        <h1>Fortune ET Feveur Inventory System</h1>
+        <p>Click the button below to launch the inventory system.</p>
+        <div class="spinner" style="display: none;"></div>
+        <div id="root"></div>
+        
+        <!-- Launch buttons -->
+        <button class="button" onclick="launchApp()">Launch Inventory System</button>
+        <a href="/inventory/index.html" class="button">Direct Link to App</a>
+        
+        <div id="error-message" class="error-message">
+            <strong>Loading Issue:</strong> <span id="error-text">The app is taking longer than expected to load.</span><br>
+            <button onclick="window.location.reload()" class="button" style="margin-top: 10px;">Refresh Page</button>
+            <a href="/inventory/index.html" class="button" style="margin-top: 10px;">Try Direct Link</a>
+        </div>
+    </div>
+
+    <script>
+        function launchApp() {
+            console.log('Launching inventory app...');
+            
+            // Hide buttons and show spinner
+            const buttons = document.querySelectorAll('.button');
+            buttons.forEach(btn => btn.style.display = 'none');
+            document.querySelector('.spinner').style.display = 'block';
+            
+            // Add debug information
+            console.log('Current location:', window.location.href);
+            console.log('Target URL: /inventory/index.html');
+            
+            // Simple redirect after a short delay
+            setTimeout(() => {
+                console.log('Redirecting to inventory app...');
+                // Use replace instead of href to avoid back button issues
+                window.location.replace('/inventory/index.html');
+            }, 1000);
+            
+            // Show error message after 8 seconds if still on this page
+            setTimeout(() => {
+                if (window.location.pathname === '/inventory') {
+                    console.error('Redirect failed, showing error message');
+                    document.getElementById('error-message').style.display = 'block';
+                    document.querySelector('.spinner').style.display = 'none';
+                    // Restore buttons
+                    const allButtons = document.querySelectorAll('.button');
+                    allButtons.forEach(btn => btn.style.display = 'inline-block');
+                }
+            }, 8000);
+        }
+        
+        // Function to test if the static files are accessible
+        function testStaticFiles() {
+            console.log('Testing static file access...');
+            
+            // Test if CSS is accessible
+            fetch('/inventory/static/css/main.075fdb14.css')
+                .then(response => {
+                    console.log('CSS file status:', response.status);
+                    return response.ok;
+                })
+                .then(ok => console.log('CSS accessible:', ok))
+                .catch(error => console.error('CSS test failed:', error));
+            
+            // Test if JS is accessible
+            fetch('/inventory/static/js/main.6fbd7057.js')
+                .then(response => {
+                    console.log('JS file status:', response.status);
+                    return response.ok;
+                })
+                .then(ok => console.log('JS accessible:', ok))
+                .catch(error => console.error('JS test failed:', error));
+        }
+        
+        // Auto-launch after page loads (optional)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Inventory loading page ready');
+            console.log('Page URL:', window.location.href);
+            
+            // Test static file accessibility
+            testStaticFiles();
+            
+            // Auto-launch after 3 seconds if user doesn't click
+            setTimeout(() => {
+                if (window.location.pathname === '/inventory') {
+                    console.log('Auto-launching after 3 seconds...');
+                    launchApp();
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
