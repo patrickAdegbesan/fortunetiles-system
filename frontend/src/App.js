@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav_fixed';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
@@ -86,29 +87,29 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/sales" 
+            <Route
+              path="/sales"
               element={
                 <ProtectedRoute>
                   <SalePage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/products" 
+            <Route
+              path="/products"
               element={
                 <ProtectedRoute>
                   <ProductsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route
               path="/reports"
@@ -126,26 +127,27 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route 
-              path="/transactions" 
+            <Route
+              path="/transactions"
               element={
                 <ProtectedRoute>
                   <TransactionsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/inventory" 
+            <Route
+              path="/inventory"
               element={
                 <ProtectedRoute>
                   <ProductsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </MainLayout>
+        <PWAInstallPrompt />
       </Router>
     </AuthProvider>
   );

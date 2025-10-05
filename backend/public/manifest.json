@@ -1,32 +1,63 @@
 {
   "short_name": "Fortune Inventory",
-  "name": "Fortune ET Feveur Inventory",
-  "description": "Fortune ET Feveur Inventory System",
+  "name": "Fortune ET Feveur Inventory System",
+  "description": "Professional inventory management system for Fortune ET Feveur",
   "icons": [
     {
       "src": "assets/logo.png",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "assets/logo.png",
-      "type": "image/png",
+      "src": "assets/logo-circle.png",
       "sizes": "192x192",
-      "purpose": "maskable any"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "assets/logo.png",
-      "type": "image/png",
+      "src": "assets/logo-circle.png",
       "sizes": "512x512",
-      "purpose": "maskable any"
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/logo-full.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "start_url": "/inventory/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "theme_color": "#007bff",
   "background_color": "#ffffff",
-  "categories": ["business", "productivity", "utilities"],
+  "categories": ["business", "productivity", "utilities", "finance"],
   "lang": "en",
-  "scope": "/inventory/"
+  "scope": "/inventory/",
+  "screenshots": [
+    {
+      "src": "assets/logo-full.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Product",
+      "short_name": "Add Product",
+      "description": "Quickly add a new product",
+      "url": "/inventory/products?action=add",
+      "icons": [{ "src": "assets/logo-circle.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "New Sale",
+      "short_name": "New Sale",
+      "description": "Create a new sale transaction",
+      "url": "/inventory/sales",
+      "icons": [{ "src": "assets/logo-circle.png", "sizes": "192x192" }]
+    }
+  ]
 }
