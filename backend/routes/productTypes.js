@@ -151,13 +151,17 @@ router.delete('/:id', async (req, res) => {
     });
 
     if (productsUsingType > 0) {
-      // Also check if any of these products are referenced in return items
+      // Get all products with this product type
+      const products = await Product.findAll({
+        where: { productTypeId: id },
+        attributes: ['id']
+      });
+
+      const productIds = products.map(p => p.id);
+
+      // Check if any of these products are referenced in return items
       const returnItemsCount = await ReturnItem.count({
-        include: [{
-          model: Product,
-          where: { productTypeId: id },
-          required: true
-        }]
+        where: { productId: productIds }
       });
 
       if (returnItemsCount > 0) {
