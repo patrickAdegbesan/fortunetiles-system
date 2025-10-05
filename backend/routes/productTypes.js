@@ -1,5 +1,5 @@
 const express = require('express');
-const { ProductType, Product } = require('../models');
+const { ProductType, Product, ReturnItem } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -151,9 +151,24 @@ router.delete('/:id', async (req, res) => {
     });
 
     if (productsUsingType > 0) {
-      return res.status(400).json({ 
-        message: `Cannot delete product type. ${productsUsingType} product(s) are currently using this type. Please reassign or remove those products first.`
+      // Also check if any of these products are referenced in return items
+      const returnItemsCount = await ReturnItem.count({
+        include: [{
+          model: Product,
+          where: { productTypeId: id },
+          required: true
+        }]
       });
+
+      if (returnItemsCount > 0) {
+        return res.status(400).json({
+          message: `Cannot delete product type. ${productsUsingType} product(s) are currently using this type and ${returnItemsCount} return item(s) reference these products. Please reassign or remove those products first.`
+        });
+      } else {
+        return res.status(400).json({
+          message: `Cannot delete product type. ${productsUsingType} product(s) are currently using this type. Please reassign or remove those products first.`
+        });
+      }
     }
 
     await productType.destroy();
