@@ -171,10 +171,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Handle service worker file for local development
-// app.get('/sw.js', (req, res) => {
-//   res.status(204).send(); // No content - service worker not needed in local dev
-// });
+// Handle service worker file with correct MIME type
+app.get('/sw.js', (req, res) => {
+  const swPath = path.join(__dirname, 'public', 'sw.js');
+  if (fs.existsSync(swPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(swPath);
+  } else {
+    console.error('Service worker file not found at:', swPath);
+    res.status(404).send('// Service worker not available');
+  }
+});
 
 // Root URL handler to prevent redirect loops
 app.get('/', (req, res) => {

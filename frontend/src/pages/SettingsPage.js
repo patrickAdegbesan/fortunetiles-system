@@ -362,10 +362,16 @@ const SettingsPage = () => {
         setSuccess('Product type deleted successfully');
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Failed to delete product type');
+        // Check if error is related to products using this type
+        if (errorData.message && errorData.message.includes('Cannot delete product type')) {
+          setError(`${errorData.message} Please remove the products using this type first.`);
+        } else {
+          setError(errorData.message || 'Failed to delete product type');
+        }
+        console.error('Product type deletion error:', errorData);
       }
     } catch (error) {
-      setError('Failed to delete product type');
+      setError('Network error: Failed to delete product type. Please try again.');
       console.error('Delete product type error:', error);
     } finally {
       setIsDeletingItem(false);
@@ -486,15 +492,26 @@ const SettingsPage = () => {
     try {
       if (renamingCategory) {
         // If we're editing, this is a rename operation
-        await renameCategory(renamingCategory.name, newCategory.trim());
+        const fromName = renamingCategory.name;
+        const toName = newCategory.trim();
 
-        // Update the local state by replacing the category name
-        setCategories(categories.map(cat =>
-          typeof cat === 'string' ?
-            (cat === renamingCategory.name ? newCategory.trim() : cat) :
-            (cat.name === renamingCategory.name ? {...cat, name: newCategory.trim()} : cat)
-        ));
-        setSuccess('Category renamed successfully');
+        console.log(`Attempting to rename category from "${fromName}" to "${toName}"`);
+        
+        try {
+          await renameCategory(fromName, toName);
+          
+          // Update the local state by replacing the category name
+          setCategories(categories.map(cat =>
+            typeof cat === 'string' ?
+              (cat === fromName ? toName : cat) :
+              (cat.name === fromName ? {...cat, name: toName} : cat)
+          ));
+          setSuccess('Category renamed successfully');
+        } catch (renameError) {
+          console.error('Category rename error:', renameError);
+          setError(renameError.message || 'Failed to rename category');
+        }
+        
         setRenamingCategory(null);
       } else {
         // Regular create operation
@@ -505,6 +522,7 @@ const SettingsPage = () => {
       setNewCategory('');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
+      console.error('Category operation error:', error);
       setError(error.message || 'Failed to save category');
       setTimeout(() => setError(''), 3000);
     }

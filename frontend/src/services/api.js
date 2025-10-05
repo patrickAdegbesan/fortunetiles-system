@@ -3,7 +3,7 @@ import axios from 'axios';
 const API = axios.create({
   // Use relative path in production (served by the same domain)
   // and allow override via REACT_APP_API_BASE_URL for flexibility
-  baseURL: process.env.REACT_APP_API_BASE_URL || '/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL || '',
 });
 
 // Add request interceptor to include token in headers
@@ -438,9 +438,11 @@ export const deleteCategory = async (name, reassignTo = 'General') => {
 
 export const renameCategory = async (from, to) => {
   try {
-    const response = await API.put('/categories/rename', { from, to });
+    // Fixed path: adding /api prefix to match server-side route setup
+    const response = await API.put('/api/categories/rename', { from, to });
     return response.data;
   } catch (error) {
+    console.error('Rename category error:', error);
     throw error.response?.data || { message: 'Failed to rename category' };
   }
 };
