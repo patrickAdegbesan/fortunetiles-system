@@ -172,9 +172,9 @@ app.get('/health', (req, res) => {
 });
 
 // Handle service worker file for local development
-app.get('/sw.js', (req, res) => {
-  res.status(204).send(); // No content - service worker not needed in local dev
-});
+// app.get('/sw.js', (req, res) => {
+//   res.status(204).send(); // No content - service worker not needed in local dev
+// });
 
 // Root URL handler to prevent redirect loops
 app.get('/', (req, res) => {
