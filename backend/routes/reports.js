@@ -123,18 +123,26 @@ router.get('/inventory-valuation', authenticateToken, requireRole(['owner', 'man
 
     // Calculate valuation data
     const valuationData = inventoryData.map(item => {
-      const stockValue = parseFloat(item.quantitySqm) * parseFloat(item.product.price);
+      // Skip items with missing product data
+      if (!item.product || !item.location) {
+        return null;
+      }
+      
+      const price = parseFloat(item.product.price) || 0;
+      const quantity = parseFloat(item.quantitySqm) || 0;
+      const stockValue = quantity * price;
+      
       return {
         productId: item.product.id,
         productName: item.product.name,
         category: item.product.categories?.[0] || 'Uncategorized',
         location: item.location.name,
-        quantitySqm: parseFloat(item.quantitySqm),
-        pricePerSqm: parseFloat(item.product.price),
+        quantitySqm: quantity,
+        pricePerSqm: price,
         stockValue: stockValue,
         isActive: item.product.isActive
       };
-    });
+    }).filter(item => item !== null);
 
     // Calculate summary by category
     const categoryValuation = valuationData.reduce((acc, item) => {
