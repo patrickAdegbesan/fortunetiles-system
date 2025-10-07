@@ -1,5 +1,5 @@
 const express = require('express');
-const { Sale, SaleItem, Product, ProductType, Location, User, Inventory, InventoryLog } = require('../models');
+const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -180,14 +180,13 @@ router.post('/', authenticateToken, async (req, res) => {
     // Batch check inventory availability with locking
     const productIds = normalizedItems.map(item => item.productId);
     const inventoryRecords = await Inventory.findAll({
-      where: { 
-        productId: { [sequelize.Op.in]: productIds }, 
-        locationId 
+      where: {
+        productId: { [sequelize.Op.in]: productIds },
+        locationId
       },
-      include: [{ 
-        model: Product, 
-        as: 'product',
-        include: [{ model: ProductType, as: 'productType' }]
+      include: [{
+        model: Product,
+        as: 'product'
       }],
       transaction,
       lock: transaction.LOCK.UPDATE
@@ -252,7 +251,7 @@ router.post('/', authenticateToken, async (req, res) => {
         saleId: sale.id,
         productId: item.productId,
         quantity: item.quantity,
-        unit: product.productType.unitOfMeasure,
+        unit: product.unitOfMeasure,
         unitPrice: parseFloat(item.unitPrice),
         lineTotal
       });

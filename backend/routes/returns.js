@@ -7,7 +7,22 @@ const { Op } = require('sequelize');
 // Get all returns
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const { startDate, endDate, locationId } = req.query;
+    
+    // Build where clause for date and location filtering
+    const whereClause = {};
+    
+    // Add date range filtering
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+      const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+      whereClause.createdAt = {
+        [Op.between]: [startDateTime, endDateTime]
+      };
+    }
+    
     const returns = await Return.findAll({
+      where: whereClause,
       include: [
         {
           model: ReturnItem,

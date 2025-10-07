@@ -1,5 +1,6 @@
 const express = require('express');
-const { ProductType, Product, ReturnItem, Op } = require('../models');
+const { ProductType, Product, ReturnItem } = require('../models');
+const { Op } = require('sequelize');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -30,9 +31,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const productType = await ProductType.findByPk(id);
-    
+
     if (!productType) {
       return res.status(404).json({ message: 'Product type not found' });
     }
@@ -54,16 +55,16 @@ router.post('/', async (req, res) => {
     const { name, unitOfMeasure, attributes } = req.body;
 
     if (!name || !unitOfMeasure) {
-      return res.status(400).json({ 
-        message: 'Name and unit of measure are required' 
+      return res.status(400).json({
+        message: 'Name and unit of measure are required'
       });
     }
 
     // Check if product type with this name already exists
     const existingType = await ProductType.findOne({ where: { name } });
     if (existingType) {
-      return res.status(400).json({ 
-        message: 'Product type with this name already exists' 
+      return res.status(400).json({
+        message: 'Product type with this name already exists'
       });
     }
 
@@ -81,8 +82,8 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Create product type error:', error);
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ 
-        message: 'Product type with this name already exists' 
+      return res.status(400).json({
+        message: 'Product type with this name already exists'
       });
     }
     res.status(500).json({ message: 'Internal server error' });
@@ -96,7 +97,7 @@ router.put('/:id', async (req, res) => {
     const { name, unitOfMeasure, attributes, isActive } = req.body;
 
     const productType = await ProductType.findByPk(id);
-    
+
     if (!productType) {
       return res.status(404).json({ message: 'Product type not found' });
     }
@@ -105,8 +106,8 @@ router.put('/:id', async (req, res) => {
     if (name && name !== productType.name) {
       const existingType = await ProductType.findOne({ where: { name } });
       if (existingType) {
-        return res.status(400).json({ 
-          message: 'Product type with this name already exists' 
+        return res.status(400).json({
+          message: 'Product type with this name already exists'
         });
       }
     }
@@ -126,8 +127,8 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Update product type error:', error);
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ 
-        message: 'Product type with this name already exists' 
+      return res.status(400).json({
+        message: 'Product type with this name already exists'
       });
     }
     res.status(500).json({ message: 'Internal server error' });
@@ -138,9 +139,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const productType = await ProductType.findByPk(id);
-    
+
     if (!productType) {
       return res.status(404).json({ message: 'Product type not found' });
     }

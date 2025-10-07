@@ -187,6 +187,8 @@ const SalePage = () => {
   const [completedSale, setCompletedSale] = useState(null);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid or table
+  const [discountType, setDiscountType] = useState(''); // 'amount' or 'percentage'
+  const [discountValue, setDiscountValue] = useState('');
 
   const loadInventory = useCallback(async () => {
     try {
@@ -229,14 +231,21 @@ const SalePage = () => {
   const inventoryMap = useMemo(() => {
     const map = new Map();
     inventory.forEach(item => {
-      const qty = item.quantity ?? item.quantitySqm ?? item.quantity_sqm;
-      map.set(item.productId, Number(qty) || 0);
+      // Handle different quantity field names consistently
+      const qty = item.quantitySqm ?? item.quantity ?? item.quantity_sqm ?? 0;
+      const numericQty = Number(qty) || 0;
+      
+      // Only set if we have a positive quantity or if this is the first entry for this product
+      if (!map.has(item.productId) || numericQty > 0) {
+        map.set(item.productId, numericQty);
+      }
     });
     return map;
   }, [inventory]);
 
   const getAvailableQuantity = useCallback((productId) => {
-    return inventoryMap.get(productId) || 0;
+    const quantity = inventoryMap.get(productId) || 0;
+    return Math.max(0, quantity); // Ensure non-negative quantities
   }, [inventoryMap]);
 
   // Memoized filtered products for better performance
@@ -302,10 +311,28 @@ const SalePage = () => {
     setCart(prevCart => prevCart.filter(item => item.productId !== productId));
   }, []);
 
-  // Memoized total calculation
-  const totalAmount = useMemo(() => {
+  // Memoized subtotal and total calculation
+  const subtotalAmount = useMemo(() => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   }, [cart]);
+
+  const discountAmount = useMemo(() => {
+    if (!discountType || !discountValue || discountValue <= 0) return 0;
+
+    const value = parseFloat(discountValue);
+    if (isNaN(value)) return 0;
+
+    if (discountType === 'percentage') {
+      return (subtotalAmount * value) / 100;
+    } else if (discountType === 'amount') {
+      return Math.min(value, subtotalAmount); // Don't allow discount > subtotal
+    }
+    return 0;
+  }, [subtotalAmount, discountType, discountValue]);
+
+  const totalAmount = useMemo(() => {
+    return Math.max(0, subtotalAmount - discountAmount);
+  }, [subtotalAmount, discountAmount]);
 
   const handleCompleteSale = async () => {
     if (cart.length === 0) {
@@ -332,6 +359,9 @@ const SalePage = () => {
         customerName: customerName || 'Walk-in Customer',
         customerPhone: customerPhone || '',
         paymentMethod: selectedPaymentMethod,
+        discountType: discountType || null,
+        discountValue: discountValue ? parseFloat(discountValue) : 0,
+        subtotalAmount: subtotalAmount,
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -351,6 +381,8 @@ const SalePage = () => {
       setCustomerName('');
       setCustomerPhone('');
       setSelectedPaymentMethod('');
+      setDiscountType('');
+      setDiscountValue('');
       setSuccess('Sale completed successfully!');
       
       // Reload inventory
@@ -618,6 +650,16 @@ const SalePage = () => {
                   
                   <div className="cart-summary">
                     <div className="total-section">
+                      <div className="total-row subtotal">
+                        <span>Subtotal:</span>
+                        <span><MoneyValue amount={subtotalAmount} sensitive={false} /></span>
+                      </div>
+                      {discountAmount > 0 && (
+                        <div className="total-row discount">
+                          <span>Discount{discountType === 'percentage' ? ` (${discountValue}%)` : ''}:</span>
+                          <span>-<MoneyValue amount={discountAmount} sensitive={false} /></span>
+                        </div>
+                      )}
                       <div className="total-row final">
                         <span>Total:</span>
                         <span><MoneyValue amount={totalAmount} sensitive={false} /></span>
@@ -670,8 +712,45 @@ const SalePage = () => {
                           <option value="pos">📱 POS Terminal</option>
                         </select>
                       </div>
+
+                      <div className="form-group-enhanced">
+                        <label className="form-label-enhanced">
+                          <FaTags className="form-icon" />
+                          Discount (Optional)
+                        </label>
+                        <div className="discount-input-group">
+                          <select
+                            value={discountType}
+                            onChange={(e) => {
+                              setDiscountType(e.target.value);
+                              if (!e.target.value) setDiscountValue('');
+                            }}
+                            className="discount-type-select"
+                          >
+                            <option value="">No Discount</option>
+                            <option value="amount">Fixed Amount (₦)</option>
+                            <option value="percentage">Percentage (%)</option>
+                          </select>
+                          <input
+                            type="number"
+                            placeholder={discountType === 'amount' ? 'Enter amount...' : discountType === 'percentage' ? 'Enter percentage...' : 'Select discount type'}
+                            value={discountValue}
+                            onChange={(e) => setDiscountValue(e.target.value)}
+                            disabled={!discountType}
+                            className="discount-value-input"
+                            min="0"
+                            step={discountType === 'percentage' ? '0.01' : '0.01'}
+                          />
+                        </div>
+                        {discountAmount > 0 && (
+                          <div className="discount-preview">
+                            Discount: <MoneyValue amount={discountAmount} sensitive={false} />
+                            {discountType === 'percentage' && ` (${discountValue}%)`}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
+
                     <button
                       className="complete-sale-btn"
                       onClick={handleCompleteSale}

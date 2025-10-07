@@ -16,7 +16,7 @@ const Product = sequelize.define('Product', {
   },
   productTypeId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'product_types',
       key: 'id'
@@ -29,19 +29,25 @@ const Product = sequelize.define('Product', {
       min: 0,
     },
   },
-  customAttributes: {
+  attributes: {
     type: DataTypes.JSONB,
     allowNull: true,
     defaultValue: {},
   },
+  categories: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: ['General'],
+  },
+  unitOfMeasure: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'pcs',
+    field: 'unit_of_measure',
+  },
   supplierCode: {
     type: DataTypes.STRING,
     allowNull: true,
-  },
-  category: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'General',
   },
   imageUrl: {
     type: DataTypes.TEXT,

@@ -141,11 +141,21 @@ router.post('/log', async (req, res) => {
 // GET /api/inventory/logs - Get inventory change history
 router.get('/logs', async (req, res) => {
   try {
-    const { productId, locationId, limit = 50 } = req.query;
+    const { productId, locationId, startDate, endDate, limit = 50 } = req.query;
     
     const whereClause = {};
     if (productId) whereClause.productId = productId;
     if (locationId) whereClause.locationId = locationId;
+    
+    // Add date range filtering
+    if (startDate && endDate) {
+      const { Op } = require('sequelize');
+      const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+      const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+      whereClause.createdAt = {
+        [Op.between]: [startDateTime, endDateTime]
+      };
+    }
     
     const logs = await InventoryLog.findAll({
       where: whereClause,

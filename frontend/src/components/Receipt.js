@@ -62,12 +62,12 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
             @media print {
               @page {
                 size: A4;
-                margin: 15mm;
+                margin: 10mm;
               }
-              
+
               body {
                 margin: 0 !important;
-                padding: 10mm !important;
+                padding: 5mm !important;
                 background: white !important;
               }
               
@@ -137,12 +137,26 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const customerName = receiptData.customerName;
   const customerPhone = receiptData.customerPhone;
   const totalAmount = receiptData.totalAmount || receiptData.total;
+  const subtotalAmount = receiptData.subtotalAmount;
+  const discountType = receiptData.discountType;
+  const discountValue = receiptData.discountValue;
   const createdAt = receiptData.createdAt || receiptData.saleDate;
   const paymentMethod = receiptData.paymentMethod;
   const items = receiptData.items || [];
   const cashier = receiptData.user || receiptData.cashier;
   const location = receiptData.location;
   const returns = receiptData.returns || [];
+
+  // Calculate discount amount for display
+  const discountAmount = (() => {
+    if (!discountType || !discountValue || !subtotalAmount) return 0;
+    if (discountType === 'percentage') {
+      return (subtotalAmount * discountValue) / 100;
+    } else if (discountType === 'amount') {
+      return Math.min(discountValue, subtotalAmount);
+    }
+    return 0;
+  })();
 
   return (
     <div className="receipt-overlay">
@@ -158,8 +172,8 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
         <div className="receipt" id="receipt-content">
           {/* Watermark behind receipt content */}
           <img
-            src="/assets/logo-circle.png"
-            alt="" 
+            src="/inventory/assets/logo.png"
+            alt=""
             className="receipt-watermark"
           />
 
@@ -167,11 +181,11 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
           <div className="company-header">
             {/* Full logo for receipt header */}
             <img
-              src="/assets/logo-full.png"
+              src="/inventory/assets/logo.png"
               alt="Fortune Tiles"
               className="receipt-logo-full"
             />
-            <h2>Premium Tile Importers & Distributors</h2>
+            <h2>Fortune et Feveur</h2>
             <div className="company-details">
               <div className="detail">
                 <span className="icon">📍</span>
@@ -183,11 +197,11 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               </div>
               <div className="detail">
                 <span className="icon">📧</span>
-                <span>info@fortunetiles.com</span>
+                <span>Fortuneetfeveur@gmail.com</span>
               </div>
               <div className="detail">
                 <span className="icon">🌐</span>
-                <span>www.fortunetiles.com</span>
+                <span>www.fortuneetfeveur.com</span>
               </div>
             </div>
           </div>
@@ -275,16 +289,14 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
           <div className="totals-section">
             <div className="total-row subtotal">
               <span>Subtotal:</span>
-              <span>₦{parseFloat(totalAmount).toLocaleString()}</span>
+              <span>₦{parseFloat(subtotalAmount || totalAmount).toLocaleString()}</span>
             </div>
-            <div className="total-row discount">
-              <span>Discount:</span>
-              <span>₦0.00</span>
-            </div>
-            <div className="total-row vat">
-              <span>VAT (0%):</span>
-              <span>₦0.00</span>
-            </div>
+            {discountAmount > 0 && (
+              <div className="total-row discount">
+                <span>Discount{discountType === 'percentage' ? ` (${discountValue}%)` : ''}:</span>
+                <span>-₦{parseFloat(discountAmount).toLocaleString()}</span>
+              </div>
+            )}
             <div className="total-row grand-total">
               <span>TOTAL AMOUNT:</span>
               <span>₦{parseFloat(totalAmount).toLocaleString()}</span>

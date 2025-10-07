@@ -249,6 +249,67 @@
   border: 1px solid hsl(220, 13%, 91%);
 }
 
+/* Load Report Button */
+.load-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  background: hsl(225, 60%, 25%);
+  color: hsl(0, 0%, 100%);
+  box-shadow: 0 2px 4px hsla(225, 60%, 25%, 0.3);
+}
+
+.load-report-btn:hover {
+  background: hsl(225, 50%, 20%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px hsla(225, 60%, 25%, 0.4);
+}
+
+.load-report-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Report Placeholder */
+.report-placeholder {
+  text-align: center;
+  padding: 80px 40px;
+  background: hsl(220, 40%, 98%);
+  border-radius: 12px;
+  border: 2px dashed hsl(220, 13%, 91%);
+  margin: 2rem 0;
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  color: hsl(225, 40%, 60%);
+  margin-bottom: 1.5rem;
+  opacity: 0.7;
+}
+
+.report-placeholder h3 {
+  color: hsl(225, 60%, 25%);
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.report-placeholder p {
+  color: hsl(225, 40%, 50%);
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
 /* Report Content */
 .report-content {
   background: hsl(0, 0%, 100%);

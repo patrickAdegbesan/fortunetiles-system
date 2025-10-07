@@ -1,76 +1,49 @@
 const express = require('express');
-const { Product, ProductType, Inventory, InventoryLog } = require('../models');
+const { Product, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 
 const router = express.Router();
 
-// Validation middleware for product attributes
-const validateProductAttributes = async (req, res, next) => {
-  try {
-    const { productTypeId, customAttributes } = req.body;
-    
-    if (!productTypeId) {
-      return res.status(400).json({ message: 'Product type is required' });
-    }
-
-    const productType = await ProductType.findByPk(productTypeId);
-    if (!productType) {
-      return res.status(400).json({ message: 'Invalid product type' });
-    }
-
-    // Validate required fields
-    const requiredFields = productType.attributes.requiredFields || [];
-    const missingFields = requiredFields.filter(field => !customAttributes || !customAttributes[field]);
-    
-    if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        message: `Missing required fields for ${productType.name}: ${missingFields.join(', ')}` 
-      });
-    }
-
-    // Add product type to request for later use
-    req.productType = productType;
-    next();
-  } catch (error) {
-    console.error('Product validation error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
 // GET /api/products/categories - Get product categories (MUST be before /:id route)
 router.get('/categories', async (req, res) => {
   try {
-    const categories = await Product.findAll({
-      attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'name']],
-      where: { 
+    const products = await Product.findAll({
+      attributes: ['categories'],
+      where: {
         isActive: true,
-        category: {
-          [Op.ne]: null,
-          [Op.ne]: ''
+        categories: {
+          [Op.ne]: null
         }
       },
-      order: [[sequelize.col('category'), 'ASC']],
       raw: true
     });
 
-    // Filter out empty strings and format response
-    const formattedCategories = categories
-      .filter(cat => cat.name && cat.name.trim() !== '')
-      .map(cat => cat.name);
+    // Extract all unique categories from the arrays
+    const allCategories = new Set();
+    products.forEach(product => {
+      if (Array.isArray(product.categories)) {
+        product.categories.forEach(cat => {
+          if (cat && cat.trim()) {
+            allCategories.add(cat.trim());
+          }
+        });
+      }
+    });
+
+    // Convert to sorted array
+    const categoriesArray = Array.from(allCategories).sort();
 
     // If no categories exist in products, provide default categories
     const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
-    const allCategories = formattedCategories.length > 0 
-      ? [...new Set([...formattedCategories, 'General'])] 
-      : defaultCategories;
+    const finalCategories = categoriesArray.length > 0 ? categoriesArray : defaultCategories;
 
-    console.log('Products/categories - Categories found in DB:', formattedCategories.length);
-    console.log('Products/categories - Returning categories:', allCategories);
+    console.log('Products/categories - Categories found in DB:', categoriesArray.length);
+    console.log('Products/categories - Returning categories:', finalCategories);
 
     res.json({
       message: 'Categories retrieved successfully',
-      categories: allCategories
+      categories: finalCategories
     });
 
   } catch (error) {
@@ -79,42 +52,33 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// GET /api/products/types - Get all product types
-router.get('/types', async (req, res) => {
-  try {
-    const types = await ProductType.findAll({
-      where: { isActive: true }
-    });
-
-    res.json({
-      message: 'Product types retrieved successfully',
-      types
-    });
-  } catch (error) {
-    console.error('Get product types error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
 
 // GET /api/products - Get all products with optimized queries and caching
 router.get('/', async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 50, 
-      category, 
-      productTypeId, 
+    const {
+      page = 1,
+      limit = 50,
+      category,
       locationId,
       search,
-      isActive = true 
+      isActive = true
     } = req.query;
 
     const offset = (page - 1) * limit;
     const whereClause = { isActive };
-    
+
     // Build optimized where clause
-    if (category) whereClause.category = category;
-    if (productTypeId) whereClause.productTypeId = productTypeId;
+    if (category) {
+      // For category filtering, check if the category exists in the categories array
+      whereClause[Op.and] = whereClause[Op.and] || [];
+      whereClause[Op.and].push(
+        sequelize.where(
+          sequelize.fn('array_position', sequelize.col('categories'), category),
+          { [Op.ne]: null }
+        )
+      );
+    }
     if (search) {
       whereClause[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
@@ -123,13 +87,7 @@ router.get('/', async (req, res) => {
     }
 
     // Optimized includes - only fetch needed attributes
-    const includeClause = [
-      {
-        model: ProductType,
-        as: 'productType',
-        attributes: ['id', 'name', 'unitOfMeasure'] // Reduced attributes
-      }
-    ];
+    const includeClause = [];
 
     // Include inventory with optimized query
     if (locationId) {
@@ -146,8 +104,8 @@ router.get('/', async (req, res) => {
       where: whereClause,
       include: includeClause,
       attributes: [
-        'id', 'name', 'description', 'category', 'price', 
-        'isActive', 'productTypeId', 'customAttributes', 'createdAt', 'updatedAt'
+        'id', 'name', 'description', 'categories', 'price',
+        'isActive', 'attributes', 'unitOfMeasure', 'createdAt', 'updatedAt'
       ], // Only fetch needed product attributes
       order: [['name', 'ASC']],
       limit: parseInt(limit),
@@ -171,7 +129,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -201,20 +159,20 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products - Create new product
-router.post('/', validateProductAttributes, async (req, res) => {
+router.post('/', async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
     console.log('Received request body:', req.body);
-    const { 
-      name, 
-      productTypeId,
-      price, 
-      customAttributes,
-      supplierCode, 
-      category, 
-      imageUrl, 
-      description, 
+    const {
+      name,
+      price,
+      attributes,
+      supplierCode,
+      categories,
+      unitOfMeasure,
+      imageUrl,
+      description,
       isActive,
       // Initial inventory fields
       initialLocation,
@@ -224,27 +182,30 @@ router.post('/', validateProductAttributes, async (req, res) => {
     // Basic validation
     if (!name || !price) {
       await transaction.rollback();
-      return res.status(400).json({ 
-        message: 'Name and price are required' 
+      return res.status(400).json({
+        message: 'Name and price are required'
       });
     }
 
     // Initial inventory validation
     if (!initialLocation || !initialQuantity || parseFloat(initialQuantity) <= 0) {
       await transaction.rollback();
-      return res.status(400).json({ 
-        message: 'Initial location and quantity are required' 
+      return res.status(400).json({
+        message: 'Initial location and quantity are required'
       });
     }
+
+    // Ensure categories is an array
+    const productCategories = Array.isArray(categories) ? categories : ['General'];
 
     // Create product
     const newProduct = await Product.create({
       name,
-      productTypeId,
       price,
-      customAttributes,
+      attributes: attributes || {},
       supplierCode,
-      category: category || 'General',
+      categories: productCategories,
+      unitOfMeasure: unitOfMeasure || 'pcs',
       imageUrl,
       description,
       isActive: isActive !== undefined ? isActive : true
@@ -284,34 +245,39 @@ router.post('/', validateProductAttributes, async (req, res) => {
 });
 
 // PUT /api/products/:id - Update product
-router.put('/:id', validateProductAttributes, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, 
-      productTypeId,
-      price, 
-      customAttributes,
-      supplierCode, 
-      category, 
-      imageUrl, 
-      description, 
-      isActive 
+    const {
+      name,
+      price,
+      attributes,
+      supplierCode,
+      categories,
+      unitOfMeasure,
+      imageUrl,
+      description,
+      isActive
     } = req.body;
 
     const product = await Product.findByPk(id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Ensure categories is an array if provided
+    const productCategories = categories !== undefined
+      ? (Array.isArray(categories) ? categories : [categories])
+      : product.categories;
+
     await product.update({
       name: name || product.name,
-      productTypeId: productTypeId || product.productTypeId,
       price: price || product.price,
-      customAttributes: customAttributes || product.customAttributes,
+      attributes: attributes !== undefined ? attributes : product.attributes,
       supplierCode: supplierCode || product.supplierCode,
-      category: category || product.category,
+      categories: productCategories,
+      unitOfMeasure: unitOfMeasure || product.unitOfMeasure,
       imageUrl: imageUrl !== undefined ? imageUrl : product.imageUrl,
       description: description !== undefined ? description : product.description,
       isActive: isActive !== undefined ? isActive : product.isActive

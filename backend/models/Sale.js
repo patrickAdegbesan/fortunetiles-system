@@ -49,6 +49,26 @@ const Sale = sequelize.define('Sale', {
       isIn: [['cash', 'bank_transfer', 'pos', 'card']]
     }
   },
+  discountType: {
+    type: DataTypes.ENUM('amount', 'percentage'),
+    allowNull: true,
+    defaultValue: null,
+  },
+  discountValue: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0,
+    validate: {
+      min: 0,
+    },
+  },
+  subtotalAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+    validate: {
+      min: 0,
+    },
+  },
 }, {
   tableName: 'sales',
   timestamps: true,

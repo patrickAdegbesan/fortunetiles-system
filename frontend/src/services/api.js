@@ -1,9 +1,16 @@
 import axios from 'axios';
 
+const resolveBaseUrl = () => {
+  const envBase = process.env.REACT_APP_API_BASE_URL;
+  if (envBase && typeof envBase === 'string') {
+    return envBase.replace(/\/$/, '');
+  }
+  return '/api';
+};
+
 const API = axios.create({
-  // Use relative path in production (served by the same domain)
-  // and allow override via REACT_APP_API_BASE_URL for flexibility
-  baseURL: process.env.REACT_APP_API_BASE_URL || '',
+  // Default to the backend prefix and allow override via REACT_APP_API_BASE_URL when needed
+  baseURL: resolveBaseUrl(),
 });
 
 // Add request interceptor to include token in headers
@@ -70,30 +77,19 @@ export const registerUser = async (userData) => {
 // Products API calls
 export const fetchProducts = async (params = {}) => {
   try {
-    // Include product type when fetching products and add any filter parameters
     // Set limit to 1000 to ensure all products are fetched for the sales page
     const queryParams = {
-      include: 'productType',
       limit: 1000, // Increase limit to get all products
       ...params
     };
-    
+
     const response = await API.get('/products', {
       params: queryParams
     });
-    console.log('Fetched products with types:', response.data);
+    console.log('Fetched products:', response.data);
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch products' };
-  }
-};
-
-export const fetchProductTypes = async () => {
-  try {
-    const response = await API.get('/products/types');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch product types' };
   }
 };
 
@@ -125,14 +121,82 @@ export const deleteProduct = async (id) => {
   }
 };
 
-export const fetchProductCategories = async () => {
+// Categories API calls
+export const fetchCategories = async () => {
   try {
-    const response = await API.get('/products/categories');
+    const response = await API.get('/categories');
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch categories' };
   }
 };
+
+export const createCategory = async (name) => {
+  try {
+    const response = await API.post('/categories', { name });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create category' };
+  }
+};
+
+export const deleteCategory = async (name, reassignTo = 'General') => {
+  try {
+    const response = await API.delete('/categories', {
+      data: { name, reassignTo },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete category' };
+  }
+};
+
+export const renameCategory = async (from, to) => {
+  try {
+    const response = await API.put('/categories/rename', { from, to });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to rename category' };
+  }
+};
+
+// Product types API calls
+export const fetchProductTypes = async () => {
+  try {
+    const response = await API.get('/product-types');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch product types' };
+  }
+};
+
+export const createProductType = async (payload) => {
+  try {
+    const response = await API.post('/product-types', payload);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create product type' };
+  }
+};
+
+export const updateProductType = async (id, payload) => {
+  try {
+    const response = await API.put(`/product-types/${id}`, payload);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update product type' };
+  }
+};
+
+export const deleteProductType = async (id) => {
+  try {
+    const response = await API.delete(`/product-types/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete product type' };
+  }
+};
+
 
 // User API calls
 export const fetchUsers = async (params = {}) => {
@@ -314,11 +378,13 @@ export const deleteLocation = async (id) => {
 };
 
 // Dashboard API calls
-export const fetchDashboardData = async (locationId = null, category = null) => {
+export const fetchDashboardData = async (locationId = null, category = null, startDate = null, endDate = null) => {
   try {
     const params = {};
     if (locationId) params.locationId = locationId;
     if (category && category !== 'all') params.category = category;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
     
     const response = await API.get('/dashboard', { params });
     return response.data;
@@ -342,6 +408,36 @@ export const fetchLowStockItems = async (threshold = 100) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch low stock items' };
+  }
+};
+
+// Global attributes API calls
+export const fetchGlobalAttributes = async () => {
+  try {
+    const response = await API.get('/global-attributes');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch global attributes' };
+  }
+};
+
+export const createGlobalAttribute = async (name) => {
+  try {
+    const response = await API.post('/global-attributes', { name });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create global attribute' };
+  }
+};
+
+export const deleteGlobalAttribute = async (name) => {
+  try {
+    const response = await API.delete('/global-attributes', {
+      data: { name },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete global attribute' };
   }
 };
 
@@ -397,55 +493,6 @@ export const fetchSaleById = async (saleId) => {
   }
 };
 
-// Categories API
-export const fetchCategories = async () => {
-  try {
-    const response = await API.get('/categories');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch categories' };
-  }
-};
-
-export const createCategory = async (categoryData) => {
-  try {
-    const response = await API.post('/categories', categoryData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to create category' };
-  }
-};
-
-export const updateCategory = async (id, categoryData) => {
-  try {
-    const response = await API.put(`/categories/${id}`, categoryData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to update category' };
-  }
-};
-
-export const deleteCategory = async (name, reassignTo = 'General') => {
-  try {
-    const response = await API.delete('/categories', {
-      data: { name, reassignTo }
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to delete category' };
-  }
-};
-
-export const renameCategory = async (from, to) => {
-  try {
-    // Fixed path: adding /api prefix to match server-side route setup
-    const response = await API.put('/api/categories/rename', { from, to });
-    return response.data;
-  } catch (error) {
-    console.error('Rename category error:', error);
-    throw error.response?.data || { message: 'Failed to rename category' };
-  }
-};
 
 // Returns API
 export const createReturn = async (returnData) => {

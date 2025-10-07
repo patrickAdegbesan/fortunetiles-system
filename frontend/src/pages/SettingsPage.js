@@ -16,7 +16,9 @@ import {
   fetchCategories,
   createCategory,
   deleteCategory,
-  renameCategory
+  fetchGlobalAttributes,
+  createGlobalAttribute,
+  deleteGlobalAttribute
 } from '../services/api';
 import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
@@ -40,6 +42,37 @@ import {
 } from 'react-icons/md';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import '../styles/SettingsPage.css';
+
+const createEmptyAttrState = () => ({
+  required: [],
+  optional: [],
+  reqInput: '',
+  optInput: '',
+  reqBulk: '',
+  optBulk: ''
+});
+
+const extractAttrState = (attributes) => ({
+  required: Array.isArray(attributes?.requiredFields) ? [...attributes.requiredFields] : [],
+  optional: Array.isArray(attributes?.optionalFields) ? [...attributes.optionalFields] : [],
+  reqInput: '',
+  optInput: '',
+  reqBulk: '',
+  optBulk: ''
+});
+
+const areAttributeListsEqual = (attributes, attrState) => {
+  const safeAttrState = attrState || createEmptyAttrState();
+  const requiredFields = Array.isArray(attributes?.requiredFields) ? attributes.requiredFields : [];
+  const optionalFields = Array.isArray(attributes?.optionalFields) ? attributes.optionalFields : [];
+
+  const requiredEqual = requiredFields.length === safeAttrState.required.length &&
+    requiredFields.every((value, index) => value === safeAttrState.required[index]);
+  const optionalEqual = optionalFields.length === safeAttrState.optional.length &&
+    optionalFields.every((value, index) => value === safeAttrState.optional[index]);
+
+  return requiredEqual && optionalEqual;
+};
 
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
@@ -74,24 +107,32 @@ const SettingsPage = () => {
   // Admin Settings state
   const [productTypes, setProductTypes] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [globalAttributes, setGlobalAttributes] = useState([]);
   const [newProductType, setNewProductType] = useState({
     name: '',
     unitOfMeasure: ''
   });
-  const [newAttr, setNewAttr] = useState({ required: [], optional: [], reqInput: '', optInput: '', reqBulk: '', optBulk: '' });
+  const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [newGlobalAttribute, setNewGlobalAttribute] = useState('');
+  const [editingGlobalAttribute, setEditingGlobalAttribute] = useState(null);
+  const [newAttr, setNewAttr] = useState(createEmptyAttrState);
   const [editingProductType, setEditingProductType] = useState(null);
   const [attrInputs, setAttrInputs] = useState({});
-  const [newCategory, setNewCategory] = useState('');
-  const [renamingCategory, setRenamingCategory] = useState(null);
-  const [renameForm, setRenameForm] = useState({ from: '', to: '' });
-  const [deletingCategory, setDeletingCategory] = useState(null);
-  const [deleteForm, setDeleteForm] = useState({ name: '', reassignTo: 'General' });
+
+  const getCategoryName = (category) => {
+    if (typeof category === 'string') return category;
+    if (category && typeof category === 'object') return category.name || '';
+    return '';
+  };
 
   // Modal states
   const [showProductTypeDeleteModal, setShowProductTypeDeleteModal] = useState(false);
-  const [showCategoryDeleteModal, setShowCategoryDeleteModal] = useState(false);
   const [productTypeToDelete, setProductTypeToDelete] = useState(null);
+  const [showCategoryDeleteModal, setShowCategoryDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [showGlobalAttributeDeleteModal, setShowGlobalAttributeDeleteModal] = useState(false);
+  const [globalAttributeToDelete, setGlobalAttributeToDelete] = useState(null);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
 
   // Check permissions
@@ -153,14 +194,16 @@ const SettingsPage = () => {
   const loadLocations = useCallback(async () => {
     try {
       const response = await fetchLocations();
-      setLocations(response.locations);
-      
+      const locationsData = response.locations || [];
+      setLocations(locationsData);
+
       // Fetch inventory for all locations
-      for (const location of response.locations) {
+      for (const location of locationsData) {
         loadInventoryForLocation(location.id);
       }
     } catch (error) {
       console.error('Load locations error:', error);
+      setLocations([]); // Set empty array on error
     }
   }, [loadInventoryForLocation]);
 
@@ -294,7 +337,11 @@ const SettingsPage = () => {
   // Admin Settings Methods
   const loadAdminData = async () => {
     try {
-      await Promise.all([loadProductTypesData(), loadCategoriesData()]);
+      await Promise.all([
+        loadProductTypesData(),
+        loadCategoriesData(),
+        loadGlobalAttributesData()
+      ]);
     } catch (error) {
       console.error('Failed to load admin data:', error);
     }
@@ -309,7 +356,7 @@ const SettingsPage = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setProductTypes(data.productTypes || []);
@@ -322,11 +369,46 @@ const SettingsPage = () => {
   const loadCategoriesData = async () => {
     try {
       const data = await fetchCategories();
-      setCategories(data.categories || []);
+      const categoryList = Array.isArray(data.categories)
+        ? data.categories
+            .map((category) => ({
+              id: category?.id ?? null,
+              name: typeof category?.name === 'string' ? category.name.trim() : '',
+            }))
+            .filter((category) => category.name)
+        : [];
+
+  setCategories(categoryList.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error) {
       console.error('Load categories error:', error);
+      setError('Failed to load categories');
+      setTimeout(() => setError(''), 3000);
     }
   };
+
+  const loadGlobalAttributesData = async () => {
+    try {
+      const data = await fetchGlobalAttributes();
+      const attributeList = Array.isArray(data.attributes)
+        ? data.attributes
+            .map((attribute) =>
+              typeof attribute === 'string'
+                ? attribute.trim()
+                : typeof attribute?.name === 'string'
+                  ? attribute.name.trim()
+                  : ''
+            )
+            .filter(Boolean)
+        : [];
+
+      setGlobalAttributes(attributeList.sort((a, b) => a.localeCompare(b)));
+    } catch (error) {
+      console.error('Load global attributes error:', error);
+      setError('Failed to load global attributes');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
 
   const handleEditProductType = (productType) => {
     setEditingProductType(productType);
@@ -334,8 +416,12 @@ const SettingsPage = () => {
       name: productType.name,
       unitOfMeasure: productType.unitOfMeasure
     });
+    setNewAttr(extractAttrState(productType.attributes));
     // Scroll to the form
-    document.querySelector('.create-form').scrollIntoView({ behavior: 'smooth' });
+    const formElement = document.querySelector('.create-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const handleDeleteProductType = async (productType) => {
@@ -382,54 +468,59 @@ const SettingsPage = () => {
 
   const handleCreateProductType = async (e) => {
     e.preventDefault();
-    if (!newProductType.name || !newProductType.unitOfMeasure) return;
+    const trimmedName = newProductType.name.trim();
+    if (!trimmedName || !newProductType.unitOfMeasure) return;
 
     try {
       const token = localStorage.getItem('token');
-      const attributes = {
+      const attributesPayload = {
         requiredFields: newAttr.required,
         optionalFields: newAttr.optional
       };
-      
+
       let url = '/api/product-types';
       let method = 'POST';
-      
+      const payload = {
+        name: trimmedName,
+        unitOfMeasure: newProductType.unitOfMeasure
+      };
+
       if (editingProductType) {
-        // Check if we're updating an existing product type
         url = `/api/product-types/${editingProductType.id}`;
         method = 'PUT';
+
+        const hasAttributeChanges = !areAttributeListsEqual(editingProductType.attributes, newAttr);
+        if (hasAttributeChanges) {
+          payload.attributes = attributesPayload;
+        }
+      } else if (newAttr.required.length || newAttr.optional.length) {
+        payload.attributes = attributesPayload;
       }
-        
+
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...newProductType,
-          attributes
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         const data = await response.json();
-        
+
         if (editingProductType) {
-          // Update existing product type in the list
-          setProductTypes(productTypes.map(pt => 
-            pt.id === editingProductType.id ? {...pt, ...data.productType} : pt
+          setProductTypes(prevProductTypes => prevProductTypes.map(pt =>
+            pt.id === editingProductType.id ? { ...pt, ...data.productType } : pt
           ));
           setSuccess('Product type updated successfully');
         } else {
-          // Add new product type to the list
-          setProductTypes([...productTypes, data.productType]);
+          setProductTypes(prevProductTypes => [...prevProductTypes, data.productType]);
           setSuccess('Product type created successfully');
         }
-        
-        // Reset form
+
         setNewProductType({ name: '', unitOfMeasure: '' });
-        setNewAttr({ required: [], optional: [], reqInput: '', optInput: '', reqBulk: '', optBulk: '' });
+        setNewAttr(createEmptyAttrState());
         setEditingProductType(null);
         setTimeout(() => setSuccess(''), 3000);
       } else {
@@ -438,45 +529,62 @@ const SettingsPage = () => {
         setTimeout(() => setError(''), 3000);
       }
     } catch (error) {
-      setError('Failed to create product type');
+      setError(`Failed to ${editingProductType ? 'update' : 'create'} product type`);
       setTimeout(() => setError(''), 3000);
     }
   };
 
-  const handleEditCategory = (category) => {
-    setRenamingCategory(category);
-    setRenameForm({
-      from: category.name,
-      to: category.name
-    });
-    setNewCategory(category.name); // Set in the input field
-    // Scroll to the form
-    document.querySelector('.create-form').scrollIntoView({ behavior: 'smooth' });
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    const trimmedCategory = newCategory.trim();
+    if (!trimmedCategory) return;
+
+    try {
+      const data = await createCategory(trimmedCategory);
+      const createdCategory = {
+        id: data.category?.id ?? null,
+        name: typeof data.category?.name === 'string' ? data.category.name.trim() : trimmedCategory,
+      };
+
+      setCategories((prev) => {
+        const existingNames = new Set(
+          prev.map((cat) => getCategoryName(cat).toLowerCase()).filter(Boolean)
+        );
+        if (existingNames.has(createdCategory.name.toLowerCase())) {
+          return prev;
+        }
+        return [...prev, createdCategory].sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      setNewCategory('');
+      setSuccess('Category created successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to create category';
+      setError(message);
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
-  const handleDeleteCategory = async (category) => {
+  const handleDeleteCategory = (category) => {
     setCategoryToDelete(category);
     setShowCategoryDeleteModal(true);
   };
-  
+
   const confirmDeleteCategory = async () => {
     if (!categoryToDelete) return;
 
+    const categoryName = getCategoryName(categoryToDelete);
+
     try {
       setIsDeletingItem(true);
-      const categoryName = typeof categoryToDelete === 'string' ? categoryToDelete : categoryToDelete.name;
-
-      // Use the deleteCategory function from api.js
-      await deleteCategory(categoryName, 'General');
-
-      setCategories(categories.filter(cat =>
-        typeof cat === 'string' ? cat !== categoryName : cat.name !== categoryName
-      ));
+      await deleteCategory(categoryName);
+      setCategories((prev) => prev.filter((cat) => getCategoryName(cat) !== categoryName));
       setSuccess('Category deleted successfully');
-
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError(error.message || 'Failed to delete category');
+      const message = error?.response?.data?.message || error?.message || 'Failed to delete category';
+      setError(message);
       setTimeout(() => setError(''), 3000);
     } finally {
       setIsDeletingItem(false);
@@ -485,48 +593,123 @@ const SettingsPage = () => {
     }
   };
 
-  const handleCreateCategory = async (e) => {
+  const handleAddGlobalAttribute = async (e) => {
     e.preventDefault();
-    if (!newCategory.trim()) return;
+    const trimmedAttribute = newGlobalAttribute.trim();
+    if (!trimmedAttribute) return;
 
     try {
-      if (renamingCategory) {
-        // If we're editing, this is a rename operation
-        const fromName = renamingCategory.name;
-        const toName = newCategory.trim();
+      const data = await createGlobalAttribute(trimmedAttribute);
+      const createdName = typeof data.attribute?.name === 'string'
+        ? data.attribute.name.trim()
+        : trimmedAttribute;
 
-        console.log(`Attempting to rename category from "${fromName}" to "${toName}"`);
-        
-        try {
-          await renameCategory(fromName, toName);
-          
-          // Update the local state by replacing the category name
-          setCategories(categories.map(cat =>
-            typeof cat === 'string' ?
-              (cat === fromName ? toName : cat) :
-              (cat.name === fromName ? {...cat, name: toName} : cat)
-          ));
-          setSuccess('Category renamed successfully');
-        } catch (renameError) {
-          console.error('Category rename error:', renameError);
-          setError(renameError.message || 'Failed to rename category');
+      setGlobalAttributes((prev) => {
+        if (prev.some((attr) => attr.toLowerCase() === createdName.toLowerCase())) {
+          return prev;
         }
-        
-        setRenamingCategory(null);
-      } else {
-        // Regular create operation
-        const data = await createCategory({ name: newCategory.trim() });
-        setCategories([...categories, data.category]);
-        setSuccess('Category created successfully');
-      }
-      setNewCategory('');
+        return [...prev, createdName].sort((a, b) => a.localeCompare(b));
+      });
+
+      setNewGlobalAttribute('');
+      setSuccess('Global attribute added successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Category operation error:', error);
-      setError(error.message || 'Failed to save category');
+      const message = error?.response?.data?.message || error?.message || 'Failed to create global attribute';
+      setError(message);
       setTimeout(() => setError(''), 3000);
     }
   };
+
+  const handleDeleteGlobalAttribute = (attribute) => {
+    setGlobalAttributeToDelete(attribute);
+    setShowGlobalAttributeDeleteModal(true);
+  };
+
+  const confirmDeleteGlobalAttribute = async () => {
+    if (!globalAttributeToDelete) return;
+
+    try {
+      setIsDeletingItem(true);
+      await deleteGlobalAttribute(globalAttributeToDelete);
+      setGlobalAttributes((prev) => prev.filter((attr) => attr !== globalAttributeToDelete));
+      setSuccess('Global attribute removed successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to delete global attribute';
+      setError(message);
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setIsDeletingItem(false);
+      setShowGlobalAttributeDeleteModal(false);
+      setGlobalAttributeToDelete(null);
+    }
+  };
+
+  const handleEditCategory = (category) => {
+    const categoryName = getCategoryName(category);
+    setEditingCategory(category);
+    setNewCategory(categoryName);
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    const trimmedCategory = newCategory.trim();
+    if (!trimmedCategory || !editingCategory) return;
+
+    try {
+      // For categories, we need to delete the old one and create a new one
+      const oldCategoryName = getCategoryName(editingCategory);
+      if (oldCategoryName !== trimmedCategory) {
+        await deleteCategory(oldCategoryName);
+        await createCategory(trimmedCategory);
+        setCategories((prev) => {
+          const filtered = prev.filter((cat) => getCategoryName(cat) !== oldCategoryName);
+          return [...filtered, { name: trimmedCategory }].sort((a, b) => a.name.localeCompare(b.name));
+        });
+        setSuccess('Category updated successfully');
+      }
+      setNewCategory('');
+      setEditingCategory(null);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to update category';
+      setError(message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleEditGlobalAttribute = (attribute) => {
+    setEditingGlobalAttribute(attribute);
+    setNewGlobalAttribute(attribute);
+  };
+
+  const handleUpdateGlobalAttribute = async (e) => {
+    e.preventDefault();
+    const trimmedAttribute = newGlobalAttribute.trim();
+    if (!trimmedAttribute || !editingGlobalAttribute) return;
+
+    try {
+      // For global attributes, we need to delete the old one and create a new one
+      if (editingGlobalAttribute !== trimmedAttribute) {
+        await deleteGlobalAttribute(editingGlobalAttribute);
+        await createGlobalAttribute(trimmedAttribute);
+        setGlobalAttributes((prev) => {
+          const filtered = prev.filter((attr) => attr !== editingGlobalAttribute);
+          return [...filtered, trimmedAttribute].sort((a, b) => a.localeCompare(b));
+        });
+        setSuccess('Global attribute updated successfully');
+      }
+      setNewGlobalAttribute('');
+      setEditingGlobalAttribute(null);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to update global attribute';
+      setError(message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
 
   // Helper functions
   const getRoleBadgeClass = (role) => {
@@ -671,8 +854,12 @@ const SettingsPage = () => {
                         <span className="stat-value">{categories.length}</span>
                         <span className="stat-label">Categories</span>
                       </div>
+                      <div className="stat">
+                        <span className="stat-value">{globalAttributes.length}</span>
+                        <span className="stat-label">Global Attributes</span>
+                      </div>
                     </div>
-                    <button 
+                    <button
                       className="card-action"
                       onClick={() => setActiveTab('admin')}
                     >
@@ -712,22 +899,13 @@ const SettingsPage = () => {
                   )}
                   
                   {isAdmin && (
-                    <>
-                      <button 
-                        className="quick-action-btn"
-                        onClick={() => setActiveTab('admin')}
-                      >
-                        <MdSettings />
-                        <span>Add Product Type</span>
-                      </button>
-                      <button 
-                        className="quick-action-btn"
-                        onClick={() => setActiveTab('admin')}
-                      >
-                        <MdSettings />
-                        <span>Add Category</span>
-                      </button>
-                    </>
+                    <button
+                      className="quick-action-btn"
+                      onClick={() => setActiveTab('admin')}
+                    >
+                      <MdSettings />
+                      <span>Add Product Type</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -1004,7 +1182,8 @@ const SettingsPage = () => {
                 {/* Product Types Section */}
                 <div className="admin-section">
                   <h2>Product Types</h2>
-                  
+                  <p className="section-description">Create and manage product types for organizational purposes</p>
+
                   <div className="create-form">
                     <form onSubmit={handleCreateProductType}>
                       <div className="form-row">
@@ -1037,12 +1216,13 @@ const SettingsPage = () => {
                           {editingProductType ? 'Update Type' : 'Add Type'}
                         </button>
                         {editingProductType && (
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             className="secondary-button"
                             onClick={() => {
                               setEditingProductType(null);
                               setNewProductType({ name: '', unitOfMeasure: '' });
+                              setNewAttr(createEmptyAttrState());
                             }}
                           >
                             Cancel
@@ -1059,13 +1239,13 @@ const SettingsPage = () => {
                         <p>Unit: {productType.unitOfMeasure}</p>
                         <p>Status: {productType.isActive ? 'Active' : 'Inactive'}</p>
                         <div className="admin-item-actions">
-                          <button 
+                          <button
                             className="action-btn edit"
                             onClick={() => handleEditProductType(productType)}
                           >
                             <MdEdit size={14} /> Edit
                           </button>
-                          <button 
+                          <button
                             className="action-btn delete"
                             onClick={() => handleDeleteProductType(productType)}
                           >
@@ -1079,10 +1259,11 @@ const SettingsPage = () => {
 
                 {/* Categories Section */}
                 <div className="admin-section">
-                  <h2>Categories</h2>
-                  
+                  <h2>Global Categories</h2>
+                  <p className="section-description">Manage common categories that can be reused across products</p>
+
                   <div className="create-form">
-                    <form onSubmit={handleCreateCategory}>
+                    <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}>
                       <div className="form-row">
                         <input
                           type="text"
@@ -1092,14 +1273,14 @@ const SettingsPage = () => {
                           required
                         />
                         <button type="submit" className="primary-button">
-                          {renamingCategory ? 'Update Category' : 'Add Category'}
+                          {editingCategory ? 'Update Category' : 'Add Category'}
                         </button>
-                        {renamingCategory && (
-                          <button 
-                            type="button" 
+                        {editingCategory && (
+                          <button
+                            type="button"
                             className="secondary-button"
                             onClick={() => {
-                              setRenamingCategory(null);
+                              setEditingCategory(null);
                               setNewCategory('');
                             }}
                           >
@@ -1111,21 +1292,25 @@ const SettingsPage = () => {
                   </div>
 
                   <div className="items-grid">
-                    {categories.map(category => {
-                      const categoryName = typeof category === 'string' ? category : category.name;
+                    {categories.map((category, index) => {
+                      const categoryName = typeof category === 'string' ? category : category?.name || `category-${index}`;
+                      const key = typeof category === 'object' && category?.id != null
+                        ? `category-${category.id}`
+                        : `category-${categoryName}-${index}`;
+
                       return (
-                        <div key={categoryName} className="admin-item-card">
+                        <div key={key} className="admin-item-card">
                           <h4>{categoryName}</h4>
                           <div className="admin-item-actions">
-                            <button 
+                            <button
                               className="action-btn edit"
-                              onClick={() => handleEditCategory({ name: categoryName })}
+                              onClick={() => handleEditCategory(category)}
                             >
                               <MdEdit size={14} /> Edit
                             </button>
-                            <button 
+                            <button
                               className="action-btn delete"
-                              onClick={() => handleDeleteCategory({ name: categoryName })}
+                              onClick={() => handleDeleteCategory(categoryName)}
                             >
                               <MdDelete size={14} /> Delete
                             </button>
@@ -1135,6 +1320,64 @@ const SettingsPage = () => {
                     })}
                   </div>
                 </div>
+
+                {/* Global Attributes Section */}
+                <div className="admin-section">
+                  <h2>Global Attributes</h2>
+                  <p className="section-description">Manage common attribute names that can be reused across products</p>
+
+                  <div className="create-form">
+                    <form onSubmit={editingGlobalAttribute ? handleUpdateGlobalAttribute : handleAddGlobalAttribute}>
+                      <div className="form-row">
+                        <input
+                          type="text"
+                          placeholder="Attribute Name (e.g., dimensions, material, finish)"
+                          value={newGlobalAttribute}
+                          onChange={(e) => setNewGlobalAttribute(e.target.value)}
+                          required
+                        />
+                        <button type="submit" className="primary-button">
+                          {editingGlobalAttribute ? 'Update Attribute' : 'Add Attribute'}
+                        </button>
+                        {editingGlobalAttribute && (
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => {
+                              setEditingGlobalAttribute(null);
+                              setNewGlobalAttribute('');
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  <div className="items-grid">
+                    {globalAttributes.map(attribute => (
+                      <div key={attribute} className="admin-item-card">
+                        <h4>{attribute}</h4>
+                        <div className="admin-item-actions">
+                          <button
+                            className="action-btn edit"
+                            onClick={() => handleEditGlobalAttribute(attribute)}
+                          >
+                            <MdEdit size={14} /> Edit
+                          </button>
+                          <button
+                            className="action-btn delete"
+                            onClick={() => handleDeleteGlobalAttribute(attribute)}
+                          >
+                            <MdDelete size={14} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
           )}
@@ -1152,7 +1395,7 @@ const SettingsPage = () => {
           isDeleting={isDeletingItem}
         />
       )}
-      
+
       {showCategoryDeleteModal && (
         <AdminDeleteModal
           isOpen={showCategoryDeleteModal}
@@ -1163,6 +1406,18 @@ const SettingsPage = () => {
           isDeleting={isDeletingItem}
         />
       )}
+
+      {showGlobalAttributeDeleteModal && (
+        <AdminDeleteModal
+          isOpen={showGlobalAttributeDeleteModal}
+          onConfirm={confirmDeleteGlobalAttribute}
+          onCancel={() => setShowGlobalAttributeDeleteModal(false)}
+          itemToDelete={globalAttributeToDelete}
+          itemType="Global Attribute"
+          isDeleting={isDeletingItem}
+        />
+      )}
+      
     </div>
   );
 };

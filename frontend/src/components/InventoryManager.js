@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchLocations, logInventoryChange, fetchInventory } from '../services/api';
 import '../styles/InventoryManager.css';
@@ -121,9 +121,71 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
     return nameMatch || attrMatch;
   });
 
+  const aggregatedInventoryMap = useMemo(() => {
+    const map = new Map();
+    inventory.filter(Boolean).forEach(item => {
+      const productId = item.productId;
+      const quantityRaw = item.quantitySqm ?? item.quantity ?? item.quantity_sqm ?? 0;
+      const quantity = Number(quantityRaw) || 0;
+
+      if (!map.has(productId)) {
+        map.set(productId, {
+          productId,
+          product: item.product || null,
+          totalQuantity: 0,
+          unitOfMeasure: item.product?.unitOfMeasure || 'units',
+          breakdown: []
+        });
+      }
+
+      const entry = map.get(productId);
+      entry.totalQuantity += quantity;
+      entry.unitOfMeasure = item.product?.unitOfMeasure || entry.unitOfMeasure;
+      entry.breakdown.push({
+        locationId: item.locationId,
+        locationName: item.location?.name || `Location ${item.locationId}`,
+        quantity
+      });
+    });
+    return map;
+  }, [inventory]);
+
+  const aggregatedInventory = useMemo(() => {
+    // Create a complete list including all products, even those with no inventory records
+    const productMap = new Map();
+    
+    // First, add all products with zero inventory
+    products.forEach(product => {
+      if (product && product.id) {
+        productMap.set(product.id, {
+          productId: product.id,
+          product: product,
+          totalQuantity: 0,
+          unitOfMeasure: product.unitOfMeasure || 'units',
+          breakdown: []
+        });
+      }
+    });
+    
+    // Then, update with actual inventory data
+    aggregatedInventoryMap.forEach((inventoryItem, productId) => {
+      productMap.set(productId, inventoryItem);
+    });
+    
+    return Array.from(productMap.values());
+  }, [aggregatedInventoryMap, products]);
+
+  const formatQuantity = (value) => {
+    const number = Number(value) || 0;
+    return number.toLocaleString(undefined, {
+      minimumFractionDigits: number % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2
+    });
+  };
+
   const getProductCurrentStock = (productId) => {
-    const inventoryItem = inventory.find(item => item.productId === parseInt(productId));
-    return inventoryItem ? inventoryItem.quantitySqm : 0;
+    const entry = aggregatedInventoryMap.get(parseInt(productId));
+    return entry ? entry.totalQuantity : 0;
   };
 
   const getSelectedProductUnit = () => {
@@ -242,21 +304,18 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
               {(() => {
                 // Filter inventory by category if dashboard category filter is applied
                 const filteredInventory = dashboardSelectedCategory 
-                  ? inventory.filter(item => item.product?.category === dashboardSelectedCategory)
-                  : inventory;
+                  ? aggregatedInventory.filter(item => item.product?.category === dashboardSelectedCategory)
+                  : aggregatedInventory;
 
                 return filteredInventory.length > 0 ? (
                   filteredInventory.map(item => {
-                    if (!item) return null; // Skip null/undefined items
-                    
-                    // Handle cases where product might be missing
                     const product = item.product || {};
                     const productName = product.name || `Product ID: ${item.productId}`;
                     const customAttributes = product.customAttributes || {};
-                    const unitOfMeasure = product.unitOfMeasure || 'units';
-                    
+                    const unitOfMeasure = item.unitOfMeasure || product.unitOfMeasure || 'units';
+
                     return (
-                      <div key={item.id || `inv-${item.productId}-${item.locationId}`} className="inventory-item">
+                      <div key={`inv-product-${item.productId}`} className="inventory-item">
                         <div className="item-info">
                           <h4>{productName}</h4>
                           <div className="attributes">
@@ -278,9 +337,18 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
                           </div>
                         </div>
                         <div className="item-quantity">
-                          <span className="quantity">{item.quantitySqm || 0}</span>
+                          <span className="quantity">{formatQuantity(item.totalQuantity)}</span>
                           <span className="unit">{unitOfMeasure}</span>
                         </div>
+                        {item.breakdown.length > 1 && (
+                          <div className="inventory-breakdown">
+                            {item.breakdown.map((entry) => (
+                              <span key={`${item.productId}-${entry.locationId}`} className="breakdown-pill">
+                                {entry.locationName}: {formatQuantity(entry.quantity)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })

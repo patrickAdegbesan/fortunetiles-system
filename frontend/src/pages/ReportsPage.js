@@ -22,7 +22,7 @@ const ReportsPage = () => {
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
 
@@ -231,7 +231,7 @@ const ReportsPage = () => {
               endDate={dateRange.endDate}
               onChange={handleDateRangeChange}
             />
-            
+
             <select
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
@@ -260,11 +260,15 @@ const ReportsPage = () => {
             {activeReport === 'sales-daily' && salesDailyData && (
               <div className="report-section">
                 <h2><i className="fas fa-chart-bar"></i> Daily Sales Report</h2>
-                
+
                 <div className="summary-cards">
                   <div className="summary-card">
                     <h3><i className="fas fa-coins"></i> Total Revenue</h3>
                     <p className="metric-value">{formatCurrency(salesDailyData.summary.totalRevenue)}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h3><i className="fas fa-tags"></i> Total Discounts</h3>
+                    <p className="metric-value">{formatCurrency(salesDailyData.summary.totalDiscount || 0)}</p>
                   </div>
                   <div className="summary-card">
                     <h3><i className="fas fa-shopping-cart"></i> Total Transactions</h3>
@@ -296,6 +300,7 @@ const ReportsPage = () => {
                         <th>Date</th>
                         <th>Sales Count</th>
                         <th>Revenue</th>
+                        <th>Discounts</th>
                         <th>Avg Order Value</th>
                       </tr>
                     </thead>
@@ -305,6 +310,7 @@ const ReportsPage = () => {
                           <td>{new Date(day.date).toLocaleDateString()}</td>
                           <td>{day.totalSales}</td>
                           <td>{formatCurrency(day.totalRevenue)}</td>
+                          <td>{formatCurrency(day.totalDiscount || 0)}</td>
                           <td>{formatCurrency(day.averageOrderValue)}</td>
                         </tr>
                       ))}
@@ -381,6 +387,10 @@ const ReportsPage = () => {
                   <div className="summary-card">
                     <h3>Total Revenue</h3>
                     <p className="metric-value">{formatCurrency(profitMarginData.summary.totalRevenue)}</p>
+                  </div>
+                  <div className="summary-card">
+                    <h3>Total Discounts</h3>
+                    <p className="metric-value">{formatCurrency(profitMarginData.summary.totalDiscount || 0)}</p>
                   </div>
                   <div className="summary-card">
                     <h3>Total Profit</h3>

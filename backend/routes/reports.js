@@ -33,6 +33,7 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
         [sequelize.fn('DATE', sequelize.col('Sale.createdAt')), 'date'],
         [sequelize.fn('COUNT', sequelize.col('Sale.id')), 'totalSales'],
         [sequelize.fn('SUM', sequelize.col('Sale.totalAmount')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('Sale.subtotalAmount')), 'totalSubtotal'],
         [sequelize.fn('AVG', sequelize.col('Sale.totalAmount')), 'averageOrderValue']
       ],
       where: whereClause,
@@ -46,6 +47,7 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
       attributes: [
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalTransactions'],
         [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('subtotalAmount')), 'totalSubtotal'],
         [sequelize.fn('AVG', sequelize.col('totalAmount')), 'averageOrderValue'],
         [sequelize.fn('MIN', sequelize.col('totalAmount')), 'minOrderValue'],
         [sequelize.fn('MAX', sequelize.col('totalAmount')), 'maxOrderValue']
@@ -54,18 +56,26 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
       raw: true
     });
 
+    // Calculate total discounts
+    const totalDiscount = (summary.totalSubtotal || 0) - (summary.totalRevenue || 0);
+
     res.json({
       message: 'Daily sales report retrieved successfully',
       data: {
-        dailySales: dailySales.map(day => ({
-          date: day.date,
-          totalSales: parseInt(day.totalSales),
-          totalRevenue: parseFloat(day.totalRevenue || 0),
-          averageOrderValue: parseFloat(day.averageOrderValue || 0)
-        })),
+        dailySales: dailySales.map(day => {
+          const dailyDiscount = (day.totalSubtotal || 0) - (day.totalRevenue || 0);
+          return {
+            date: day.date,
+            totalSales: parseInt(day.totalSales),
+            totalRevenue: parseFloat(day.totalRevenue || 0),
+            totalDiscount: parseFloat(dailyDiscount || 0),
+            averageOrderValue: parseFloat(day.averageOrderValue || 0)
+          };
+        }),
         summary: {
           totalTransactions: parseInt(summary.totalTransactions || 0),
           totalRevenue: parseFloat(summary.totalRevenue || 0),
+          totalDiscount: parseFloat(totalDiscount || 0),
           averageOrderValue: parseFloat(summary.averageOrderValue || 0),
           minOrderValue: parseFloat(summary.minOrderValue || 0),
           maxOrderValue: parseFloat(summary.maxOrderValue || 0)
@@ -100,7 +110,7 @@ router.get('/inventory-valuation', authenticateToken, requireRole(['owner', 'man
         {
           model: Product,
           as: 'product',
-          attributes: ['id', 'name', 'category', 'price', 'isActive']
+          attributes: ['id', 'name', 'categories', 'price', 'isActive']
         },
         {
           model: Location,
@@ -117,7 +127,7 @@ router.get('/inventory-valuation', authenticateToken, requireRole(['owner', 'man
       return {
         productId: item.product.id,
         productName: item.product.name,
-        category: item.product.category,
+        category: item.product.categories?.[0] || 'Uncategorized',
         location: item.location.name,
         quantitySqm: parseFloat(item.quantitySqm),
         pricePerSqm: parseFloat(item.product.price),
@@ -193,6 +203,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
     // Get sales with items and product details
     let salesData = await Sale.findAll({
       where: whereClause,
+      attributes: ['id', 'customerName', 'customerPhone', 'totalAmount', 'subtotalAmount', 'discountType', 'discountValue', 'locationId', 'userId', 'paymentMethod', 'createdAt'],
       include: [
         {
           model: SaleItem,
@@ -201,7 +212,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
             {
               model: Product,
               as: 'product',
-              attributes: ['id', 'name', 'category', 'price']
+              attributes: ['id', 'name', 'categories', 'price']
             }
           ]
         },
@@ -215,10 +226,11 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
 
     // Calculate profit margins (assuming 70% of sale price is cost for simplification)
     const COST_RATIO = 0.7; // This should ideally come from product cost data
-    
+
     const profitabilityData = [];
     let totalRevenue = 0;
     let totalCost = 0;
+    let totalDiscount = 0;
 
     // Filter out any sales with null data
     salesData = salesData.filter(sale => 
@@ -229,6 +241,16 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
     );
     
     salesData.forEach(sale => {
+      const discountAmount = (() => {
+        if (!sale.discountType || !sale.discountValue || !sale.subtotalAmount) return 0;
+        if (sale.discountType === 'percentage') {
+          return (sale.subtotalAmount * sale.discountValue) / 100;
+        } else if (sale.discountType === 'amount') {
+          return Math.min(sale.discountValue, sale.subtotalAmount);
+        }
+        return 0;
+      })();
+
       sale.items.forEach(item => {
         if (!item.product) return; // Skip items without product data
         const revenue = parseFloat(item.lineTotal);
@@ -238,12 +260,13 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
 
         totalRevenue += revenue;
         totalCost += estimatedCost;
+        totalDiscount += discountAmount;
 
         profitabilityData.push({
           saleId: sale.id,
           productId: item.product?.id || 0,
           productName: item.product?.name || 'Unknown Product',
-          category: item.product?.category || 'Uncategorized',
+          category: item.product?.categories?.[0] || 'Uncategorized',
           location: sale.location?.name || 'Unknown Location',
           quantitySqm: parseFloat(item.quantity || 0),
           unitPrice: parseFloat(item.unitPrice),
@@ -292,6 +315,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
         summary: {
           totalRevenue: totalRevenue,
           totalCost: totalCost,
+          totalDiscount: totalDiscount,
           totalProfit: totalProfit,
           overallProfitMargin: overallProfitMargin,
           totalTransactions: salesData.length,
@@ -342,7 +366,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         {
           model: Product,
           as: 'product',
-          attributes: ['id', 'name', 'category', 'price']
+          attributes: ['id', 'name', 'categories', 'price']
         },
         {
           model: Sale,
@@ -373,7 +397,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         {
           model: Product,
           as: 'product',
-          attributes: ['id', 'name', 'category', 'price']
+          attributes: ['id', 'name', 'categories', 'price']
         },
         {
           model: Sale,
@@ -393,13 +417,13 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       return products.map(item => ({
         productId: item.product?.id || 0,
         productName: item.product?.name || 'Unknown Product',
-        category: item.product?.category || 'Uncategorized',
+        category: item.product?.categories?.[0] || 'Uncategorized',
         currentPrice: parseFloat(item.product?.price || 0),
         totalQuantitySold: parseFloat(item.dataValues.totalQuantitySold || 0),
         totalRevenue: parseFloat(item.dataValues.totalRevenue || 0),
         totalTransactions: parseInt(item.dataValues.totalTransactions || 0),
         averagePrice: parseFloat(item.dataValues.averagePrice || 0),
-        averageQuantityPerTransaction: item.dataValues.totalTransactions > 0 ? 
+        averageQuantityPerTransaction: item.dataValues.totalTransactions > 0 ?
           parseFloat(item.dataValues.totalQuantitySold) / parseInt(item.dataValues.totalTransactions) : 0
       }));
     };
@@ -415,7 +439,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         {
           model: Product,
           as: 'product',
-          attributes: ['category']
+          attributes: ['categories']
         },
         {
           model: Sale,
@@ -424,7 +448,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
           where: whereClause
         }
       ],
-      group: ['product.category'],
+      group: ['product.categories'],
       order: [[sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'DESC']],
       raw: true
     });
@@ -438,7 +462,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         topProductsByQuantity: formatProductData(topProductsByQuantity),
         topProductsByRevenue: formatProductData(topProductsByRevenue),
         categoryPerformance: categoryPerformance.map(cat => ({
-          category: cat['product.category'] || 'Uncategorized',
+          category: cat['product.categories']?.[0] || 'Uncategorized',
           totalQuantitySold: parseFloat(cat.totalQuantitySold || 0),
           totalRevenue: parseFloat(cat.totalRevenue || 0),
           totalTransactions: parseInt(cat.totalTransactions || 0)

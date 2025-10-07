@@ -1,195 +1,255 @@
 const express = require('express');
-const { Product, sequelize } = require('../models');
-const { authenticateToken, requireRole } = require('../middleware/auth');
 const { Op } = require('sequelize');
+const { Category, Product, sequelize } = require('../models');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+
+const DEFAULT_CATEGORIES = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
+
+const normalizeName = (value = '') => value.trim();
+
+const ensureCategoriesExist = async (names, transaction) => {
+  const filtered = (names || [])
+    .map(normalizeName)
+    .filter(Boolean);
+
+  await Promise.all(filtered.map((name) =>
+    Category.findOrCreate({
+      where: { name },
+      defaults: { name },
+      transaction,
+    })
+  ));
+};
+
+const bootstrapCategories = async () => {
+  const transaction = await sequelize.transaction();
+  try {
+    await ensureCategoriesExist(DEFAULT_CATEGORIES, transaction);
+
+    const products = await Product.findAll({
+      attributes: ['categories'],
+      where: {
+        categories: {
+          [Op.ne]: null,
+        },
+      },
+      raw: true,
+      transaction,
+    });
+
+    const productCategoryNames = new Set();
+    products.forEach((product) => {
+      if (Array.isArray(product.categories)) {
+        product.categories.forEach((category) => {
+          const name = normalizeName(category);
+          if (name) {
+            productCategoryNames.add(name);
+          }
+        });
+      }
+    });
+
+    await ensureCategoriesExist(Array.from(productCategoryNames), transaction);
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
+const updateProductCategories = async (fromName, toName, transaction) => {
+  const normalizedFrom = normalizeName(fromName);
+  const normalizedTo = normalizeName(toName) || null;
+
+  const products = await Product.findAll({
+    attributes: ['id', 'categories'],
+    where: {
+      categories: {
+        [Op.contains]: [normalizedFrom],
+      },
+    },
+    transaction,
+  });
+
+  let updatedCount = 0;
+
+  for (const product of products) {
+    const categories = Array.isArray(product.categories) ? product.categories.slice() : [];
+
+    const filtered = categories.filter((category) => normalizeName(category) !== normalizedFrom);
+    if (normalizedTo) {
+      if (!filtered.some((category) => normalizeName(category) === normalizedTo)) {
+        filtered.push(normalizedTo);
+      }
+    }
+
+    if (filtered.length === 0) {
+      filtered.push('General');
+    }
+
+    await Product.update(
+      { categories: filtered },
+      { where: { id: product.id }, transaction }
+    );
+
+    updatedCount += 1;
+  }
+
+  return updatedCount;
+};
 
 // Apply authentication to all routes
 router.use(authenticateToken);
 
-// GET /api/categories - Get all distinct categories from products (available to all users)
+// GET /api/categories - Retrieve all categories
 router.get('/', async (req, res) => {
   try {
-    const categories = await Product.findAll({
-      attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'name']],
-      where: {
-        category: {
-          [Op.ne]: null,
-          [Op.ne]: ''
-        }
-      },
-      order: [[sequelize.col('category'), 'ASC']],
-      raw: true
+    await bootstrapCategories();
+
+    const categories = await Category.findAll({
+      order: [['name', 'ASC']],
     });
-
-    // Filter out empty strings and format response
-    const formattedCategories = categories
-      .filter(cat => cat.name && cat.name.trim() !== '')
-      .map(cat => ({ name: cat.name }));
-
-    // If no categories exist in products, provide default categories
-    const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
-    const finalCategories = formattedCategories.length > 0 
-      ? formattedCategories 
-      : defaultCategories.map(name => ({ name }));
-
-    console.log('Categories found in DB:', formattedCategories.length);
-    console.log('Returning categories:', finalCategories.map(c => c.name));
 
     res.json({
       message: 'Categories retrieved successfully',
-      categories: finalCategories
+      categories: categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+      })),
     });
-
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// Apply admin role requirement to modification routes only
+// Admin routes
 router.use(requireRole(['admin', 'owner']));
 
-// POST /api/categories - Add a new category (creates placeholder)
+// POST /api/categories - Create a new category
 router.post('/', async (req, res) => {
   try {
     const { name } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ 
-        message: 'Category name is required' 
-      });
+    const normalizedName = normalizeName(name);
+    if (!normalizedName) {
+      return res.status(400).json({ message: 'Category name is required' });
     }
 
-    const trimmedName = name.trim();
-
-    // Check if category already exists
-    const existingCategory = await Product.findOne({
-      where: { category: trimmedName }
+    const [category, created] = await Category.findOrCreate({
+      where: { name: normalizedName },
+      defaults: { name: normalizedName },
     });
 
-    if (existingCategory) {
-      return res.status(400).json({ 
-        message: 'Category already exists' 
-      });
+    if (!created) {
+      return res.status(400).json({ message: 'Category already exists' });
     }
 
-    // Return the category name (it will become persistent when assigned to a product)
     res.status(201).json({
       message: 'Category created successfully',
-      category: { name: trimmedName }
+      category: {
+        id: category.id,
+        name: category.name,
+      },
     });
-
   } catch (error) {
     console.error('Create category error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// PUT /api/categories/rename - Rename a category across all products
+// PUT /api/categories/rename - Rename a category
 router.put('/rename', async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { from, to } = req.body;
 
-    if (!from || !to || !from.trim() || !to.trim()) {
-      return res.status(400).json({ 
-        message: 'Both "from" and "to" category names are required' 
-      });
+    const fromName = normalizeName(from);
+    const toName = normalizeName(to);
+
+    if (!fromName || !toName) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Both "from" and "to" category names are required' });
     }
 
-    const trimmedFrom = from.trim();
-    const trimmedTo = to.trim();
-
-    if (trimmedFrom === trimmedTo) {
-      return res.status(400).json({ 
-        message: 'Source and target category names cannot be the same' 
-      });
+    if (fromName === toName) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Source and target category names cannot be the same' });
     }
 
-    // Check if source category exists
-    const sourceExists = await Product.findOne({
-      where: { category: trimmedFrom }
-    });
-
-    if (!sourceExists) {
-      return res.status(404).json({ 
-        message: 'Source category not found' 
-      });
+    const category = await Category.findOne({ where: { name: fromName }, transaction });
+    if (!category) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Source category not found' });
     }
 
-    // Check if target category already exists
-    const targetExists = await Product.findOne({
-      where: { category: trimmedTo }
-    });
-
-    if (targetExists) {
-      return res.status(400).json({ 
-        message: 'Target category already exists. Use delete with reassignment instead.' 
-      });
+    const existingTarget = await Category.findOne({ where: { name: toName }, transaction });
+    if (existingTarget) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Target category already exists' });
     }
 
-    // Update all products with the old category name
-    const [updatedCount] = await Product.update(
-      { category: trimmedTo },
-      { where: { category: trimmedFrom } }
-    );
+    await category.update({ name: toName }, { transaction });
+    await ensureCategoriesExist([toName], transaction);
+    const updatedCount = await updateProductCategories(fromName, toName, transaction);
+
+    await transaction.commit();
 
     res.json({
       message: `Category renamed successfully. ${updatedCount} product(s) updated.`,
-      updatedCount
+      updatedCount,
     });
-
   } catch (error) {
+    await transaction.rollback();
     console.error('Rename category error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// DELETE /api/categories - Delete a category (with optional reassignment)
+// DELETE /api/categories - Delete a category and optionally reassign
 router.delete('/', async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { name, reassignTo } = req.body;
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ 
-        message: 'Category name is required' 
-      });
+    const categoryName = normalizeName(name);
+    if (!categoryName) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Category name is required' });
     }
 
-    const trimmedName = name.trim();
-    const defaultReassignment = 'General';
-    const finalReassignTo = reassignTo && reassignTo.trim() ? reassignTo.trim() : defaultReassignment;
-
-    // Check if category exists
-    const categoryExists = await Product.findOne({
-      where: { category: trimmedName }
-    });
-
-    if (!categoryExists) {
-      return res.status(404).json({ 
-        message: 'Category not found' 
-      });
+    if (categoryName === 'General') {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'The "General" category cannot be deleted' });
     }
 
-    // Count products using this category
-    const productCount = await Product.count({
-      where: { category: trimmedName }
-    });
+    const category = await Category.findOne({ where: { name: categoryName }, transaction });
+    if (!category) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Category not found' });
+    }
 
-    // Update all products with this category
-    const [updatedCount] = await Product.update(
-      { category: finalReassignTo },
-      { where: { category: trimmedName } }
-    );
+    const fallbackName = normalizeName(reassignTo) || 'General';
+    await ensureCategoriesExist([fallbackName], transaction);
+
+    const updatedCount = await updateProductCategories(categoryName, fallbackName, transaction);
+
+    await Category.destroy({ where: { id: category.id }, transaction });
+
+    await transaction.commit();
 
     res.json({
-      message: `Category deleted successfully. ${updatedCount} product(s) reassigned to "${finalReassignTo}".`,
+      message: `Category deleted successfully. ${updatedCount} product(s) updated.`,
       updatedCount,
-      reassignedTo: finalReassignTo
+      reassignedTo: fallbackName,
     });
-
   } catch (error) {
+    await transaction.rollback();
     console.error('Delete category error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }

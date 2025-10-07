@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchCategories, fetchInventory, fetchLocations } from '../services/api';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, fetchInventory, fetchLocations, fetchCategories } from '../services/api';
 import SidebarNav from '../components/SidebarNav_fixed';
 import PageHeader from '../components/PageHeader';
 import ProductEditor from '../components/ProductEditor';
@@ -152,10 +152,10 @@ const ProductCard = memo(({
         {product.name}
       </h4>
 
-      {product.category && (
+      {product.categories && product.categories.length > 0 && (
         <div className="product-category">
           <FaTags size={10} />
-          {product.category}
+          {product.categories.join(', ')}
         </div>
       )}
 
@@ -233,12 +233,12 @@ const ProductTableRow = memo(({
     <td>
       <div className="table-product-info">
         <strong>{product.name}</strong>
-        <small><FaTags size={8} /> {product.category || 'Uncategorized'}</small>
+        <small><FaTags size={8} /> {(product.categories && product.categories.length > 0) ? product.categories.join(', ') : 'Uncategorized'}</small>
       </div>
     </td>
     <td>
       <div className="table-attributes">
-        {Object.entries(product.customAttributes || {}).slice(0, 3).map(([key, value]) => (
+        {Object.entries(product.attributes || {}).slice(0, 3).map(([key, value]) => (
           <div key={key} className="table-attribute">
             <span className="attribute-label">{key}:</span>
             <span className="attribute-value">{String(value).substring(0, 10)}</span>
@@ -295,7 +295,7 @@ const ProductsPage = () => {
   
   // Inventory context
   const [locations, setLocations] = useState([]);
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('all');
   const [inventory, setInventory] = useState([]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [viewingProduct, setViewingProduct] = useState(null);
@@ -343,15 +343,51 @@ const ProductsPage = () => {
       setLoading(true);
       const [productsData, categoriesData] = await Promise.all([
         fetchProducts(),
-        fetchCategories()
+        fetchCategories().catch((error) => {
+          console.error('Load categories error:', error);
+          return null;
+        }),
       ]);
-      setProducts(productsData.products || []);
-      // Handle both string array and object array formats
-      const categoryList = categoriesData.categories || [];
-      const processedCategories = categoryList.map(cat => 
-        typeof cat === 'string' ? cat : cat.name
+
+      const productList = productsData.products || [];
+      setProducts(productList);
+
+      const derivedCategorySet = new Set(
+        productList
+          .flatMap((product) => Array.isArray(product?.categories) ? product.categories : [])
+          .map((name) => (typeof name === 'string' ? name.trim() : ''))
+          .filter(Boolean)
       );
-      setCategories(processedCategories);
+
+      if (categoriesData && Array.isArray(categoriesData.categories)) {
+        categoriesData.categories.forEach((category) => {
+          const normalized = typeof category === 'string'
+            ? category.trim()
+            : typeof category?.name === 'string'
+              ? category.name.trim()
+              : '';
+          if (normalized) {
+            derivedCategorySet.add(normalized);
+          }
+        });
+      }
+
+      // Ensure the default "General" category is always present
+      derivedCategorySet.add('General');
+
+      const orderedCategories = Array.from(derivedCategorySet)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+
+      const generalIndex = orderedCategories.findIndex(
+        (name) => name.toLowerCase() === 'general'
+      );
+      if (generalIndex > 0) {
+        const [general] = orderedCategories.splice(generalIndex, 1);
+        orderedCategories.unshift(general);
+      }
+
+      setCategories(orderedCategories);
     } catch (error) {
       setError('Failed to load products');
       console.error('Load products error:', error);
@@ -366,26 +402,29 @@ const ProductsPage = () => {
 
   // Load locations on mount
   useEffect(() => {
-    const loadLocs = async () => {
+    const loadLocations = async () => {
       try {
-        const data = await fetchLocations();
-        setLocations(data.locations || []);
-      } catch (e) {
-        console.error('Load locations error:', e);
+        const locationsData = await fetchLocations();
+        setLocations(locationsData.locations || []);
+      } catch (error) {
+        console.error('Load locations error:', error);
       }
     };
-    loadLocs();
+    loadLocations();
   }, []);
 
-  // Load inventory whenever selectedLocation changes
+  // Load inventory when location changes
   useEffect(() => {
     const loadInv = async () => {
-      if (!selectedLocation) { setInventory([]); return; }
       try {
-        const data = await fetchInventory({ locationId: selectedLocation });
+        const params = !selectedLocation || selectedLocation === 'all'
+          ? {}
+          : { locationId: selectedLocation };
+        const data = await fetchInventory(params);
         setInventory(data.inventory || []);
       } catch (e) {
         console.error('Load inventory error:', e);
+        setInventory([]);
       }
     };
     loadInv();
@@ -396,7 +435,9 @@ const ProductsPage = () => {
     const map = new Map();
     inventory.forEach(inv => {
       const qty = inv.quantity ?? inv.quantitySqm ?? inv.quantity_sqm;
-      map.set(inv.productId, Number(qty) || 0);
+      const amount = Number(qty) || 0;
+      const existing = map.get(inv.productId) || 0;
+      map.set(inv.productId, existing + amount);
     });
     return map;
   }, [inventory]);
@@ -409,13 +450,13 @@ const ProductsPage = () => {
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           Object.values(product.customAttributes || {}).some(value => 
+                           Object.values(product.attributes || {}).some(value =>
                              value.toString().toLowerCase().includes(searchTerm.toLowerCase())
                            ) ||
                            product.supplierCode?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCategory = !selectedCategory || product.category === selectedCategory;
-      const matchesStock = !inStockOnly || !selectedLocation || getAvailableQuantity(product.id) > 0;
+      const matchesCategory = !selectedCategory || (product.categories && product.categories.includes(selectedCategory));
+  const matchesStock = !inStockOnly || getAvailableQuantity(product.id) > 0;
 
       return matchesSearch && matchesCategory && matchesStock;
     });
@@ -434,8 +475,8 @@ const ProductsPage = () => {
           bValue = parseFloat(b.price) || 0;
           break;
         case 'category':
-          aValue = a.category || '';
-          bValue = b.category || '';
+          aValue = (a.categories || []).join(', ');
+          bValue = (b.categories || []).join(', ');
           break;
         case 'stock':
           aValue = getAvailableQuantity(a.id);
@@ -454,17 +495,22 @@ const ProductsPage = () => {
   }, [products, searchTerm, selectedCategory, inStockOnly, selectedLocation, getAvailableQuantity, sortBy, sortOrder]);
 
   // Statistics for the header
-  const productStats = useMemo(() => ({
-    total: products.length,
-    filtered: filteredAndSortedProducts.length,
-    categories: new Set(products.map(p => p.category).filter(Boolean)).size,
-    inStock: selectedLocation ? products.filter(p => getAvailableQuantity(p.id) > 0).length : 0,
-    lowStock: selectedLocation ? products.filter(p => {
-      const qty = getAvailableQuantity(p.id);
-      return qty > 0 && qty <= 10;
-    }).length : 0,
-    outOfStock: selectedLocation ? products.filter(p => getAvailableQuantity(p.id) === 0).length : 0
-  }), [products, filteredAndSortedProducts.length, selectedLocation, getAvailableQuantity]);
+  const productStats = useMemo(() => {
+    const hasInventoryData = inventory.length > 0;
+    return {
+      total: products.length,
+      filtered: filteredAndSortedProducts.length,
+      categories: new Set(products.map(p => p.categories || []).flat()).size,
+      inStock: hasInventoryData ? products.filter(p => getAvailableQuantity(p.id) > 0).length : 0,
+      lowStock: hasInventoryData ? products.filter(p => {
+        const qty = getAvailableQuantity(p.id);
+        return qty > 0 && qty <= 10;
+      }).length : 0,
+      outOfStock: hasInventoryData ? products.filter(p => getAvailableQuantity(p.id) === 0).length : 0
+    };
+  }, [products, filteredAndSortedProducts.length, inventory, getAvailableQuantity]);
+
+  const hasInventoryData = inventory.length > 0;
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -583,19 +629,19 @@ const ProductsPage = () => {
     // Get all unique attribute keys from all products
     const attributeKeys = [...new Set(
       filteredAndSortedProducts.flatMap(product =>
-        Object.keys(product.customAttributes || {})
+        Object.keys(product.attributes || {})
       )
     )].sort();
 
     const csvContent = [
-      ['Name', 'Category', 'Price', 'Unit of Measure', 'Supplier Code', ...attributeKeys],
+      ['Name', 'Categories', 'Price', 'Unit of Measure', 'Supplier Code', ...attributeKeys],
       ...filteredAndSortedProducts.map(product => [
         product.name,
-        product.category || 'General',
+        (product.categories && product.categories.length > 0) ? product.categories.join('; ') : 'General',
         product.price,
         product.unitOfMeasure || '',
         product.supplierCode || '',
-        ...attributeKeys.map(key => (product.customAttributes || {})[key] || '')
+        ...attributeKeys.map(key => (product.attributes || {})[key] || '')
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -712,7 +758,7 @@ const ProductsPage = () => {
       </td>
       <td>
         <div className="table-attributes">
-          {Object.entries(product.customAttributes || {}).map(([key, value]) => (
+          {Object.entries(product.attributes || {}).map(([key, value]) => (
             <div key={key} className="table-attribute">
               <span className="attribute-label">{key}:</span>
               <span className="attribute-value">{value}</span>
@@ -723,24 +769,24 @@ const ProductsPage = () => {
       <td>{product.category || 'General'}</td>
       <td>₦{parseFloat(product.price).toLocaleString()}{product.unitOfMeasure ? `/${product.unitOfMeasure}` : ''}</td>
       <td>
-        {selectedLocation ? (
+        {hasInventoryData ? (
           (() => {
             const qty = getAvailableQuantity(product.id);
             if (qty > 0) {
               return (
                 <span className="stock-pill" >
-                  {qty} {product.unitOfMeasure || 'pc'}
+                  {qty} {product.unitOfMeasure || 'pc'}{selectedLocation === 'all' ? ' total' : ''}
                 </span>
               );
             }
             return (
               <span className="stock-pill" style={{ background: '#f8d7da', color: '#721c24', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                No stock at this location
+                {selectedLocation === 'all' ? 'No stock recorded' : 'No stock at this location'}
               </span>
             );
           })()
         ) : (
-          <span>Select a location</span>
+          <span>Loading inventory…</span>
         )}
       </td>
       <td>
@@ -790,7 +836,7 @@ const ProductsPage = () => {
                   <span className="stat-value">{productStats.categories}</span>
                   <span className="stat-label">Categories</span>
               </div>
-              {selectedLocation && (
+              {hasInventoryData && (
                 <>
                   <div className="stat-card">
                     <FaCheckCircle className="stat-icon in-stock" />
@@ -841,9 +887,9 @@ const ProductsPage = () => {
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="enhanced-location-select"
               >
-                <option value="">Select Location</option>
+                <option value="all">All Locations</option>
                 {locations.map(loc => (
-                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  <option key={loc.id} value={String(loc.id)}>{loc.name}</option>
                 ))}
               </select>
               
@@ -885,7 +931,7 @@ const ProductsPage = () => {
                   <option value="name">Sort by Name</option>
                   <option value="price">Sort by Price</option>
                   <option value="category">Sort by Category</option>
-                  {selectedLocation && <option value="stock">Sort by Stock</option>}
+                  {hasInventoryData && <option value="stock">Sort by Stock</option>}
                 </select>
                 <button
                   className="sort-order-btn"
@@ -942,7 +988,7 @@ const ProductsPage = () => {
             <span className="compact-stat">
               <FaCube className="compact-icon" /> {productStats.filtered} of {productStats.total} Products
             </span>
-            {selectedLocation && (
+            {hasInventoryData && (
               <>
                 <span className="compact-stat in-stock">
                   <FaCheckCircle className="compact-icon" /> {productStats.inStock} In Stock
@@ -1008,7 +1054,7 @@ const ProductsPage = () => {
                           <th>Product Info</th>
                           <th>Attributes</th>
                           <th className="center">Price</th>
-                          {selectedLocation && <th className="center">Stock</th>}
+                          {hasInventoryData && <th className="center">Stock</th>}
                           <th className="center">Actions</th>
                         </tr>
                       </thead>

@@ -6,7 +6,7 @@ const fs = require('fs');
 const compression = require('compression');
 
 const { sequelize, testConnection } = require('./config/database');
-const { User, Location } = require('./models');
+const { User, Location, Category, GlobalAttribute } = require('./models');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -15,6 +15,7 @@ const productRoutes = require('./routes/products');
 const contactRoutes = require('./routes/contact');
 const productTypesRoutes = require('./routes/productTypes');
 const categoriesRoutes = require('./routes/categories');
+const globalAttributesRoutes = require('./routes/globalAttributes');
 const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const dashboardRoutes = require('./routes/dashboard');
@@ -80,6 +81,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/product-types', productTypesRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/global-attributes', globalAttributesRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -323,6 +325,15 @@ const initializeDatabase = async () => {
       });
       console.log('✅ Default admin user created.');
     }
+
+    // Ensure default categories exist
+    if (Category) {
+      const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
+      await Promise.all(defaultCategories.map(async (name) => {
+        await Category.findOrCreate({ where: { name }, defaults: { name } });
+      }));
+      console.log('✅ Default categories ensured.');
+    }
     
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
@@ -346,10 +357,29 @@ const PORT = process.env.PORT || 5000;
 // Start server
 const startServer = async () => {
   await initializeDatabase();
-  
-  app.listen(PORT, () => {
+
+  const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use. The backend could not start.`);
+      console.error('➡️  Free the port or set the PORT environment variable to a different value before retrying.');
+      if (process.platform === 'win32') {
+        console.error('   Suggested commands (PowerShell):');
+        console.error(`     netstat -ano | findstr :${PORT}`);
+        console.error('     taskkill /PID <PID_FROM_ABOVE> /F');
+      } else {
+        console.error('   Suggested commands:');
+        console.error(`     lsof -i :${PORT}`);
+        console.error('     kill -9 <PID_FROM_ABOVE>');
+      }
+    } else {
+      console.error('❌ Failed to start the server due to an unexpected error:', error);
+    }
+    process.exit(1);
   });
 };
 

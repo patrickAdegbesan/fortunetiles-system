@@ -1,5 +1,5 @@
 const express = require('express');
-const { Sale, SaleItem, Product, ProductType, Location, User, Inventory, InventoryLog } = require('../models');
+const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -112,7 +112,7 @@ router.post('/', authenticateToken, async (req, res) => {
     console.log('Raw body:', req.body);
     console.log('Received sale request:', JSON.stringify(req.body, null, 2));
     
-    const { customerName, customerPhone } = req.body;
+    const { customerName, customerPhone, discountType, discountValue, subtotalAmount } = req.body;
     // Accept string or number for locationId, coerce to number if possible
     const locationIdRaw = req.body.locationId;
     const locationId = Number.isFinite(locationIdRaw) ? locationIdRaw : parseInt(locationIdRaw, 10);
@@ -148,10 +148,10 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Validate items and calculate total amount
-    let totalAmount = 0;
+    // Validate items and calculate subtotal amount
+    let calculatedSubtotal = 0;
     const itemErrors = [];
-    
+
     // Normalize items to ensure unitPrice is present (fallback to price)
     const normalizedItems = itemsInput.map(it => ({
       ...it,
@@ -161,7 +161,7 @@ router.post('/', authenticateToken, async (req, res) => {
     for (let i = 0; i < normalizedItems.length; i++) {
       const item = normalizedItems[i];
       console.log(`Validating item ${i}:`, JSON.stringify(item, null, 2));
-      
+
       // Validate required fields
       if (!item.productId) {
         itemErrors.push({ field: `items[${i}].productId`, message: 'Product ID is required' });
@@ -174,9 +174,26 @@ router.post('/', authenticateToken, async (req, res) => {
       }
 
       if (item.productId && item.quantity && item.unitPrice) {
-        totalAmount += parseFloat(item.quantity) * parseFloat(item.unitPrice);
+        calculatedSubtotal += parseFloat(item.quantity) * parseFloat(item.unitPrice);
       }
     }
+
+    // Use provided subtotalAmount or calculated one
+    const subtotal = subtotalAmount ? parseFloat(subtotalAmount) : calculatedSubtotal;
+
+    // Calculate discount amount
+    let discountAmount = 0;
+    if (discountType && discountValue) {
+      const value = parseFloat(discountValue);
+      if (discountType === 'percentage') {
+        discountAmount = (subtotal * value) / 100;
+      } else if (discountType === 'amount') {
+        discountAmount = Math.min(value, subtotal); // Don't allow discount > subtotal
+      }
+    }
+
+    // Calculate final total amount
+    const totalAmount = subtotal - discountAmount;
 
     if (itemErrors.length > 0) {
       await transaction.rollback();
@@ -196,6 +213,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const sale = await Sale.create({
       customerName,
       customerPhone,
+      subtotalAmount: subtotal,
+      discountType: discountType || null,
+      discountValue: discountValue ? parseFloat(discountValue) : 0,
       totalAmount,
       locationId,
       userId,
@@ -207,14 +227,12 @@ router.post('/', authenticateToken, async (req, res) => {
     for (const item of normalizedItems) {
       console.log('Processing item:', item);
       
-      // Get product and its type to verify the unit
+      // Get product to verify the unit
       const product = await Product.findByPk(item.productId, {
-        include: [{ model: ProductType, as: 'productType' }],
         transaction
       });
-      
+
       console.log('Found product:', product?.toJSON());
-      console.log('Product type:', product?.productType?.toJSON());
 
       if (!product) {
         await transaction.rollback();
@@ -271,7 +289,7 @@ router.post('/', authenticateToken, async (req, res) => {
           saleId: sale.id,
           productId: item.productId,
           quantity: requestedQty,
-          unit: product.productType.unitOfMeasure,
+          unit: product.unitOfMeasure,
           unitPrice: unitPrice,
           lineTotal
         }, { transaction });

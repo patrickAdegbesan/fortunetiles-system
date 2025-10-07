@@ -8,9 +8,9 @@ const router = express.Router();
 // GET /api/dashboard - Get dashboard summary data
 router.get('/', async (req, res) => {
   try {
-    const { locationId, category } = req.query;
-    
-    console.log('Dashboard query parameters:', { locationId, category });
+    const { locationId, category, startDate, endDate } = req.query;
+
+    console.log('Dashboard query parameters:', { locationId, category, startDate, endDate });
     
     // Build where clauses for location filtering - handle "all" case
     const saleWhereClause = {};
@@ -28,6 +28,19 @@ router.get('/', async (req, res) => {
       logWhereClause.locationId = parseInt(locationId);
     }
 
+    // Add date range filtering
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+      const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+      
+      saleWhereClause.createdAt = {
+        [Op.between]: [startDateTime, endDateTime]
+      };
+      logWhereClause.createdAt = {
+        [Op.between]: [startDateTime, endDateTime]
+      };
+    }
+
     // Build product filter for category
     const productWhereClause = category && category !== 'all' ? { category } : {};
     console.log('Product where clause:', productWhereClause);
@@ -36,6 +49,7 @@ router.get('/', async (req, res) => {
     // Initialize variables for sales calculations
     let totalSales = 0;
     let totalRevenue = 0;
+    let totalDiscount = 0;
 
     // Get total sales count and amount with category filtering
     if (category && category !== 'all') {
@@ -63,13 +77,16 @@ router.get('/', async (req, res) => {
       const uniqueSaleIds = [...new Set(salesData.map(sale => sale.id))];
       totalSales = uniqueSaleIds.length;
       
-      // Calculate total revenue for unique sales
+      // Calculate total revenue and discounts for unique sales
       totalRevenue = 0;
+      totalDiscount = 0;
       const processedSales = new Set();
-      
+
       for (const sale of salesData) {
         if (!processedSales.has(sale.id)) {
           totalRevenue += parseFloat(sale.totalAmount || 0);
+          const discount = Math.abs((sale.subtotalAmount || sale.totalAmount || 0) - (sale.totalAmount || 0));
+          totalDiscount += parseFloat(discount || 0);
           processedSales.add(sale.id);
         }
       }
@@ -81,36 +98,47 @@ router.get('/', async (req, res) => {
         where: saleWhereClause,
         attributes: [
           [sequelize.fn('COUNT', sequelize.col('id')), 'totalSales'],
-          [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalRevenue']
+          [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalRevenue'],
+          [sequelize.fn('SUM', sequelize.col('subtotalAmount')), 'totalSubtotal']
         ],
         raw: true
       });
-      
+
       totalSales = parseInt(rawSalesData[0]?.totalSales || 0);
       totalRevenue = parseFloat(rawSalesData[0]?.totalRevenue || 0);
+      totalDiscount = Math.abs(parseFloat((rawSalesData[0]?.totalSubtotal || 0) - (rawSalesData[0]?.totalRevenue || 0)));
     }
 
-    // Get total stock value with category filtering
+    // Get total stock value with proper aggregation by product
     const inventoryWhereFilter = { ...inventoryWhereClause };
-    const inventoryInclude = [{ 
-      model: Product, 
-      as: 'product',
-      where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
-      required: Object.keys(productWhereClause).length > 0
-    }];
-
+    
     console.log('Inventory filtering:', { inventoryWhereFilter, productFilter: productWhereClause });
 
-    const inventoryWithProducts = await Inventory.findAll({
+    // Aggregate inventory quantities by product
+    const aggregatedInventory = await Inventory.findAll({
+      attributes: [
+        'productId',
+        [sequelize.fn('SUM', sequelize.col('quantitySqm')), 'totalQuantity']
+      ],
       where: inventoryWhereFilter,
-      include: inventoryInclude
+      include: [{ 
+        model: Product, 
+        as: 'product',
+        where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
+        required: Object.keys(productWhereClause).length > 0 ? true : false,
+        attributes: ['id', 'name', 'price']
+      }],
+      group: ['productId', 'product.id'],
+      raw: false
     });
 
-    console.log(`Found ${inventoryWithProducts.length} inventory items with filters`);
+    console.log(`Found ${aggregatedInventory.length} unique products with aggregated inventory`);
 
-    const totalStockValue = inventoryWithProducts.reduce((total, item) => {
-      const itemValue = parseFloat(item.quantitySqm) * parseFloat(item.product?.price || 0);
-      console.log(`Item ${item.id}: ${item.quantitySqm} * ${item.product?.price} = ${itemValue}`);
+    const totalStockValue = aggregatedInventory.reduce((total, item) => {
+      const totalQty = parseFloat(item.dataValues.totalQuantity || 0);
+      const price = parseFloat(item.product?.price || 0);
+      const itemValue = totalQty * price;
+      console.log(`Product ${item.product?.name}: ${totalQty} units * $${price} = $${itemValue}`);
       return total + itemValue;
     }, 0);
 
@@ -118,22 +146,88 @@ router.get('/', async (req, res) => {
 
     const stockValue = [{ totalStockValue }];
 
-    // Get low stock items (less than 10 sqm) with category filtering
-    const lowStockItems = await Inventory.findAll({
-      where: {
-        ...inventoryWhereClause,
-        quantitySqm: { [Op.lt]: 10 }
-      },
+    // Get ALL products first, then check their inventory levels
+    const allProducts = await Product.findAll({
+      where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
+      attributes: ['id', 'name', 'price', 'attributes']
+    });
+
+    // Get inventory data for products that have it
+    const rawLowStock = await Inventory.findAll({
+      attributes: [
+        'id',
+        'productId',
+        [sequelize.fn('SUM', sequelize.col('quantitySqm')), 'totalQuantity']
+      ],
+      where: inventoryWhereFilter,
       include: [
-        { 
-          model: Product, 
+        {
+          model: Product,
           as: 'product',
           where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
-          required: Object.keys(productWhereClause).length > 0
-        },
-        { model: Location, as: 'location' }
+          required: true,
+          attributes: ['id', 'name', 'price', 'attributes']
+        }
       ],
-      order: [['quantitySqm', 'ASC']]
+      group: ['Inventory.productId', 'Inventory.id', 'product.id'],
+      raw: false
+    });
+
+    // Create a map of products with inventory data
+    const inventoryMap = rawLowStock.reduce((acc, item) => {
+      const key = item.productId;
+      if (!acc[key]) {
+        acc[key] = {
+          productId: item.productId,
+          totalQuantity: 0,
+          product: item.product
+        };
+      }
+      acc[key].totalQuantity += parseFloat(item.dataValues.totalQuantity || 0);
+      return acc;
+    }, {});
+
+    // Create complete low stock list including products with no inventory records
+    const completeProductList = allProducts.map(product => {
+      const inventoryData = inventoryMap[product.id];
+      return {
+        productId: product.id,
+        totalQuantity: inventoryData ? inventoryData.totalQuantity : 0,
+        product: product
+      };
+    });
+
+    // Filter for low stock (≤ 10) and sort
+    const aggregatedLowStock = completeProductList
+      .filter(item => item.totalQuantity <= 10)
+      .sort((a, b) => a.totalQuantity - b.totalQuantity);
+
+    // Calculate sales volume and prioritize
+    const prioritizedLowStockItems = aggregatedLowStock.map(item => {
+      const totalQuantity = parseFloat(item.totalQuantity || 0);
+      const totalSalesVolume = 0; // TODO: Calculate sales volume separately
+      
+      const stockStatus = totalQuantity <= 0 ? 'OUT_OF_STOCK' : 
+                         totalQuantity <= 3 ? 'CRITICAL' : 'LOW';
+      
+      return {
+        id: item.productId,
+        productId: item.productId,
+        quantitySqm: totalQuantity,
+        productName: item.product?.name || 'Unknown Product',
+        customAttributes: item.product?.attributes || {},
+        location: { name: 'All Locations' }, // Since we're aggregating across locations
+        totalSalesVolume,
+        stockStatus,
+        priority: stockStatus === 'OUT_OF_STOCK' ? 3 :
+                  stockStatus === 'CRITICAL' ? 2 : 1
+      };
+    }).sort((a, b) => {
+      // First sort by priority (out of stock first), then by sales volume
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      return b.totalSalesVolume - a.totalSalesVolume;
     });
 
     // Get recent activity (inventory changes and returns) with category filtering
@@ -155,7 +249,15 @@ router.get('/', async (req, res) => {
     });
 
     // Get recent returns activity
+    const returnWhereClause = {};
+    if (startDate && endDate) {
+      returnWhereClause.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate + ' 23:59:59')]
+      };
+    }
+
     const returnActivity = await Return.findAll({
+      where: returnWhereClause,
       include: [
         {
           model: ReturnItem,
@@ -200,7 +302,18 @@ router.get('/', async (req, res) => {
     // Get sales by location (if no specific location filter)
     let salesByLocation = [];
     if (!locationId) {
+      const salesByLocationWhereClause = {};
+      // Apply date range filtering to sales by location
+      if (startDate && endDate) {
+        const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+        const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+        salesByLocationWhereClause.createdAt = {
+          [Op.between]: [startDateTime, endDateTime]
+        };
+      }
+      
       salesByLocation = await Sale.findAll({
+        where: salesByLocationWhereClause,
         include: [{ model: Location, as: 'location' }],
         attributes: [
           'locationId',
@@ -225,24 +338,47 @@ router.get('/', async (req, res) => {
       raw: false
     });
 
+    // Calculate correct inventory counts
+    const productsWithStock = aggregatedInventory.filter(item => {
+      const totalQty = parseFloat(item.dataValues.totalQuantity || 0);
+      return totalQty > 0;
+    }).length;
+
+    const productsWithInventoryRecords = aggregatedInventory.length;
+    const productsOutOfStock = prioritizedLowStockItems.filter(item => item.stockStatus === 'OUT_OF_STOCK').length;
+
+    console.log(`📊 Inventory Summary:
+      - Products with stock > 0: ${productsWithStock}
+      - Products with inventory records: ${productsWithInventoryRecords}
+      - Products out of stock: ${productsOutOfStock}
+    `);
+
     res.json({
       message: 'Dashboard data retrieved successfully',
       totalSales: totalSales,
       totalRevenue: totalRevenue,
+      totalDiscount: totalDiscount,
       totalStockValue: parseFloat(stockValue[0]?.totalStockValue || 0),
       recentActivity,
       summary: {
         totalSales: totalSales,
         totalRevenue: totalRevenue,
+        totalDiscount: totalDiscount,
         totalStockValue: parseFloat(stockValue[0]?.totalStockValue || 0),
-        lowStockCount: lowStockItems.length
+        lowStockCount: prioritizedLowStockItems.length,
+        outOfStockCount: prioritizedLowStockItems.filter(item => item.stockStatus === 'OUT_OF_STOCK').length,
+        criticalStockCount: prioritizedLowStockItems.filter(item => item.stockStatus === 'CRITICAL').length,
+        productsInStock: productsWithStock, // Products with quantity > 0
+        totalProductsWithInventoryRecords: productsWithInventoryRecords // Products with any inventory record
       },
-      lowStockItems,
+      lowStockItems: prioritizedLowStockItems,
       salesByLocation,
       inventoryByLocation,
       appliedFilters: {
         locationId: locationId || 'all',
-        category: category || 'all'
+        category: category || 'all',
+        startDate: startDate || null,
+        endDate: endDate || null
       }
     });
 

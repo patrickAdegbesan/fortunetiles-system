@@ -113,7 +113,7 @@ const ResetPassword = () => {
         <div className="login-card">
           <div className="login-header">
             <img
-              src="/assets/logo-circle.png"
+              src={`${process.env.PUBLIC_URL}/assets/logo.png`}
               alt="Fortune Tiles"
               className="login-logo"
             />
@@ -140,7 +140,7 @@ const ResetPassword = () => {
       <div className="login-card">
         <div className="login-header">
           <img
-            src="/assets/logo-circle.png"
+            src={`${process.env.PUBLIC_URL}/assets/logo.png`}
             alt="Fortune Tiles"
             className="login-logo"
           />

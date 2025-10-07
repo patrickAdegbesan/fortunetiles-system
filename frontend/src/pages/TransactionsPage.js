@@ -26,8 +26,36 @@ const TransactionsPage = () => {
   const [returns, setReturns] = useState([]);
 
   useEffect(() => {
-    fetchTransactions();
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'returns' && returns.length === 0) {
+      fetchTransactions();
+    } else if (activeTab === 'orders') {
+      fetchTransactions();
+    }
   }, [activeTab]);
+
+  const fetchInitialData = async () => {
+    try {
+      setLoading(true);
+      // Fetch both orders and returns count for header stats
+      const [ordersResponse, returnsResponse] = await Promise.all([
+        api.get('/orders'),
+        api.get('/returns')
+      ]);
+      
+      setTransactions(ordersResponse.data);
+      setReturns(returnsResponse.data.returns || returnsResponse.data);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching initial data:', err);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -37,7 +65,7 @@ const TransactionsPage = () => {
         setTransactions(response.data);
       } else {
         const response = await api.get('/returns');
-        setReturns(response.data);
+        setReturns(response.data.returns || response.data);
       }
       setError('');
     } catch (err) {
@@ -248,6 +276,8 @@ const TransactionsPage = () => {
                 <th>ID</th>
                 <th>Customer</th>
                 <th>Items</th>
+                <th>Subtotal</th>
+                <th>Discount</th>
                 <th>Total Amount</th>
                 <th>Payment</th>
                 <th>Date & Time</th>
@@ -258,7 +288,7 @@ const TransactionsPage = () => {
             <tbody>
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="no-transactions">
+                  <td colSpan="10" className="no-transactions">
                     {searchTerm || filterStatus !== 'all' ? 'No transactions found matching your criteria' : 'No transactions found'}
                   </td>
                 </tr>
@@ -289,6 +319,14 @@ const TransactionsPage = () => {
                           <span>No items</span>
                         )}
                       </div>
+                    </td>
+                    <td className="transaction-subtotal">
+                      <MoneyValue amount={transaction.subtotalAmount || transaction.total || 0} sensitive={false} />
+                    </td>
+                    <td className="transaction-discount">
+                      <span className="discount-amount">
+                        {formatCurrency((transaction.subtotalAmount || transaction.total || 0) - (transaction.total || 0))}
+                      </span>
                     </td>
                     <td className="transaction-total">
                       <strong className="amount">

@@ -1,12 +1,33 @@
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 const { Sale, SaleItem, Product, User, Location, Return } = require('../models');
 const auth = require('../middleware/auth');
 
 // Get all orders/sales with customer details
 router.get('/', async (req, res) => {
   try {
+    const { startDate, endDate, locationId } = req.query;
+    
+    // Build where clause for date and location filtering
+    const whereClause = {};
+    
+    // Add date range filtering
+    if (startDate && endDate) {
+      const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+      const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+      whereClause.createdAt = {
+        [Op.between]: [startDateTime, endDateTime]
+      };
+    }
+    
+    // Add location filtering
+    if (locationId && locationId !== 'all') {
+      whereClause.locationId = parseInt(locationId);
+    }
+    
     const sales = await Sale.findAll({
+      where: whereClause,
       include: [
         {
           model: SaleItem,
@@ -15,7 +36,7 @@ router.get('/', async (req, res) => {
             {
               model: Product,
               as: 'product',
-              attributes: ['id', 'name', 'category', 'description', 'price']
+              attributes: ['id', 'name', 'categories', 'description', 'price']
             }
           ]
         },
@@ -50,7 +71,7 @@ router.get('/', async (req, res) => {
         id: item.id,
         productId: item.productId,
         productName: item.product?.name || 'Unknown Product',
-        category: item.product?.category || '',
+        categories: item.product?.categories || [],
         description: item.product?.description || '',
         quantity: item.quantity,
         unit: item.unit || 'sqm',
@@ -63,7 +84,10 @@ router.get('/', async (req, res) => {
         customerName: saleData.customerName || null,
         customerPhone: saleData.customerPhone || null,
         customerEmail: saleData.customerEmail || null,
+        subtotalAmount: parseFloat(saleData.subtotalAmount || saleData.totalAmount),
         total: parseFloat(saleData.totalAmount),
+        discountType: saleData.discountType,
+        discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
         status: saleData.returns && saleData.returns.length > 0 ? 'partially_returned' : 'completed',
         createdAt: saleData.createdAt,
@@ -104,7 +128,7 @@ router.get('/:id', async (req, res) => {
             {
               model: Product,
               as: 'product',
-              attributes: ['id', 'name', 'category', 'description', 'price']
+              attributes: ['id', 'name', 'categories', 'description', 'price']
             }
           ]
         },
@@ -127,7 +151,7 @@ router.get('/:id', async (req, res) => {
       id: item.id,
       productId: item.productId,
       productName: item.product?.name || 'Unknown Product',
-      category: item.product?.category || '',
+      categories: item.product?.categories || [],
       description: item.product?.description || '',
       quantity: item.quantity,
       unit: item.unit || 'sqm',
@@ -140,7 +164,10 @@ router.get('/:id', async (req, res) => {
       customerName: saleData.customerName || null,
       customerPhone: saleData.customerPhone || null,
       customerEmail: saleData.customerEmail || null,
+      subtotalAmount: parseFloat(saleData.subtotalAmount || saleData.totalAmount),
       total: parseFloat(saleData.totalAmount),
+      discountType: saleData.discountType,
+      discountValue: saleData.discountValue,
       paymentMethod: saleData.paymentMethod || 'cash',
       status: saleData.status || 'completed',
       createdAt: saleData.createdAt,
@@ -188,7 +215,7 @@ router.get('/search/:term', async (req, res) => {
             {
               model: Product,
               as: 'product',
-              attributes: ['id', 'name', 'category', 'description']
+              attributes: ['id', 'name', 'categories', 'description']
             }
           ]
         },
@@ -209,7 +236,7 @@ router.get('/search/:term', async (req, res) => {
         id: item.id,
         productId: item.productId,
         productName: item.product?.name || 'Unknown Product',
-        category: item.product?.category || '',
+        category: item.product?.categories?.[0] || '',
         description: item.product?.description || '',
         quantity: item.quantity,
         unit: item.unit || 'sqm',
@@ -222,7 +249,10 @@ router.get('/search/:term', async (req, res) => {
         customerName: saleData.customerName || null,
         customerPhone: saleData.customerPhone || null,
         customerEmail: saleData.customerEmail || null,
+        subtotalAmount: parseFloat(saleData.subtotalAmount || saleData.totalAmount),
         total: parseFloat(saleData.totalAmount),
+        discountType: saleData.discountType,
+        discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
         status: saleData.status || 'completed',
         createdAt: saleData.createdAt,

@@ -89,34 +89,45 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
         </div>
       </div>
 
-      {/* Low Stock Alert Section */}
+      {/* Enhanced Low Stock Alert Section */}
       {Array.isArray(lowStockItems) && lowStockItems.length > 0 && (
         <div className="low-stock-section">
-          <h4><FontAwesomeIcon icon={faBell} /> Low Stock Alerts</h4>
+          <h4>
+            <FontAwesomeIcon icon={faBell} /> 
+            Low Stock Alerts 
+            <span className="alert-summary">
+              ({dashboardData.summary?.outOfStockCount || 0} out of stock, {dashboardData.summary?.criticalStockCount || 0} critical)
+            </span>
+          </h4>
           <div className="low-stock-grid">
-            {lowStockItems.slice(0, 6).filter(item => item && item.id).map(item => (
-              <div key={item.id} className="low-stock-item">
-                <div className="item-details">
-                  <strong>{item.productName || item.Product?.name}</strong>
-                  <span className="item-specs">
-                    {Object.entries(item.customAttributes || item.Product?.customAttributes || {})
-                      .map(([key, value]) => `${value}`).join(' - ')}
-                  </span>
-                  <span className="item-location">
-                    <FontAwesomeIcon icon={faLocationDot} />
-                    {typeof item.location === 'string' ? item.location : item.location?.name || 'Unknown Location'}
-                  </span>
+            {lowStockItems.slice(0, 12).filter(item => item && item.id).map(item => {
+              const stockStatus = item.stockStatus || (item.quantitySqm <= 0 ? 'OUT_OF_STOCK' : 
+                                 item.quantitySqm <= 3 ? 'CRITICAL' : 'LOW');
+              const quantity = parseFloat(item.quantitySqm || 0);
+              
+              return (
+                <div key={item.id} className={`low-stock-item-compact ${stockStatus.toLowerCase().replace('_', '-')}`}>
+                  <div className="item-info">
+                    <div className="product-name">
+                      {item.productName || item.product?.name || item.Product?.name || `Product ${item.productId}` || 'Unknown Product'}
+                    </div>
+                    <div className="stock-info">
+                      <span className={`quantity-compact ${stockStatus.toLowerCase().replace('_', '-')}`}>
+                        {quantity.toFixed(quantity % 1 === 0 ? 0 : 1)}
+                      </span>
+                      <span className="stock-status">
+                        {stockStatus === 'OUT_OF_STOCK' ? '� Out' : 
+                         stockStatus === 'CRITICAL' ? '⚠️ Critical' : '📉 Low'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="quantity-alert">
-                  <span className="quantity">{item.quantitySqm}</span>
-                  <span className="unit">units left</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {lowStockItems.length > 6 && (
+          {lowStockItems.length > 12 && (
             <p className="more-items">
-              +{lowStockItems.length - 6} more items need attention
+              +{lowStockItems.length - 12} more items need attention
             </p>
           )}
         </div>

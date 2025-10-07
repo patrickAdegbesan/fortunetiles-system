@@ -151,6 +151,8 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .item-info h4 {
@@ -183,6 +185,25 @@
   display: flex;
   align-items: baseline;
   gap: 5px;
+}
+
+.inventory-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.breakdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #2d3748;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .quantity {
