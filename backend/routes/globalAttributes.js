@@ -6,10 +6,7 @@ const router = express.Router();
 
 const normalizeName = (value = '') => value.trim();
 
-// All routes require authentication
-router.use(authenticateToken);
-
-// GET /api/global-attributes - Retrieve all global attributes
+// GET /api/global-attributes - Retrieve all global attributes (public)
 router.get('/', async (req, res) => {
   try {
     const attributes = await GlobalAttribute.findAll({
@@ -29,7 +26,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Admin-specific routes
+// All other routes require authentication and admin role
+router.use(authenticateToken);
 router.use(requireRole(['admin', 'owner']));
 
 // POST /api/global-attributes - Create a new global attribute
