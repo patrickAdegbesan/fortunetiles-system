@@ -26,6 +26,7 @@ const ordersRoutes = require('./routes/orders');
 const healthRoutes = require('./routes/health');
 const performanceRoutes = require('./routes/performance');
 const HerokuKeepAlive = require('./services/keepAlive');
+const WebSocketService = require('./services/WebSocketService');
 
 const app = express();
 
@@ -370,14 +371,26 @@ const startServer = async () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
     
+    // Initialize WebSocket service
+    const wsService = new WebSocketService(server);
+    
+    // Make WebSocket service available globally for notifications
+    global.wsService = wsService;
+    
     // Start keep-alive service for production
     if (process.env.NODE_ENV === 'production') {
       const keepAlive = new HerokuKeepAlive(process.env.HEROKU_APP_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com');
       keepAlive.start();
       
       // Graceful shutdown
-      process.on('SIGTERM', () => keepAlive.stop());
-      process.on('SIGINT', () => keepAlive.stop());
+      process.on('SIGTERM', () => {
+        keepAlive.stop();
+        wsService?.wss?.close();
+      });
+      process.on('SIGINT', () => {
+        keepAlive.stop();
+        wsService?.wss?.close();
+      });
     }
   });
 
