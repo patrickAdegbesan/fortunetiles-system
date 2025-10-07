@@ -5,11 +5,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Apply authentication and admin role requirement to all routes
-router.use(authenticateToken);
-router.use(requireRole(['admin', 'owner']));
-
-// GET /api/product-types - Get all product types
+// GET /api/product-types - Get all product types (Public endpoint)
 router.get('/', async (req, res) => {
   try {
     const productTypes = await ProductType.findAll({
@@ -48,6 +44,10 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+// Apply authentication and admin role requirement to modification routes
+router.use(authenticateToken);
+router.use(requireRole(['admin', 'owner']));
 
 // POST /api/product-types - Create new product type
 router.post('/', async (req, res) => {

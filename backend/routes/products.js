@@ -1,5 +1,5 @@
 const express = require('express');
-const { Product, Inventory, InventoryLog } = require('../models');
+const { Product, Inventory, InventoryLog, ProductType } = require('../models');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 
@@ -52,6 +52,23 @@ router.get('/categories', async (req, res) => {
   }
 });
 
+// GET /api/products/types - Get all product types (alias for /api/product-types)
+router.get('/types', async (req, res) => {
+  try {
+    const productTypes = await ProductType.findAll({
+      order: [['name', 'ASC']]
+    });
+
+    res.json({
+      message: 'Product types retrieved successfully',
+      productTypes
+    });
+
+  } catch (error) {
+    console.error('Get product types error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 // GET /api/products - Get all products with optimized queries and caching
 router.get('/', async (req, res) => {
