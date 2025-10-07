@@ -14,13 +14,15 @@ module.exports = {
           primaryKey: true,
           autoIncrement: true,
         },
-        firstName: {
+        first_name: {
           type: Sequelize.STRING,
           allowNull: false,
+          field: 'firstName',
         },
-        lastName: {
+        last_name: {
           type: Sequelize.STRING,
           allowNull: false,
+          field: 'lastName',
         },
         email: {
           type: Sequelize.STRING,
@@ -36,35 +38,40 @@ module.exports = {
           allowNull: false,
           defaultValue: 'staff',
         },
-        locationId: {
+        location_id: {
           type: Sequelize.INTEGER,
           allowNull: true,
+          field: 'locationId',
           references: {
             model: 'locations',
             key: 'id',
           },
         },
-        isActive: {
+        is_active: {
           type: Sequelize.BOOLEAN,
           defaultValue: true,
+          field: 'isActive',
         },
-        lastLoginAt: {
+        last_login_at: {
           type: Sequelize.DATE,
           allowNull: true,
+          field: 'lastLoginAt',
         },
-        resetToken: {
+        reset_token: {
           type: Sequelize.STRING,
           allowNull: true,
+          field: 'resetToken',
         },
-        resetTokenExpiry: {
+        reset_token_expiry: {
           type: Sequelize.DATE,
           allowNull: true,
+          field: 'resetTokenExpiry',
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        updatedAt: {
+        updated_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
@@ -87,11 +94,11 @@ module.exports = {
           type: Sequelize.TEXT,
           allowNull: false,
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        updatedAt: {
+        updated_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
@@ -111,11 +118,11 @@ module.exports = {
           allowNull: false,
           unique: true,
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        updatedAt: {
+        updated_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
@@ -130,54 +137,63 @@ module.exports = {
           primaryKey: true,
           autoIncrement: true,
         },
-        customerName: {
+        customer_name: {
           type: Sequelize.STRING,
           allowNull: false,
+          field: 'customerName',
         },
-        customerPhone: {
+        customer_phone: {
           type: Sequelize.STRING,
           allowNull: true,
+          field: 'customerPhone',
         },
-        totalAmount: {
+        total_amount: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: false,
+          field: 'totalAmount',
         },
-        locationId: {
+        location_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          field: 'locationId',
           references: {
             model: 'locations',
             key: 'id',
           },
         },
-        userId: {
+        user_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          field: 'userId',
           references: {
             model: 'users',
             key: 'id',
           },
         },
-        paymentMethod: {
+        payment_method: {
           type: Sequelize.STRING,
           allowNull: false,
           defaultValue: 'cash',
+          field: 'paymentMethod',
         },
-        discountType: {
+        discount_type: {
           type: Sequelize.ENUM('amount', 'percentage'),
           allowNull: true,
           defaultValue: null,
+          field: 'discountType',
         },
-        discountValue: {
+        discount_value: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: true,
           defaultValue: 0,
+          field: 'discountValue',
         },
-        subtotalAmount: {
+        subtotal_amount: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: false,
+          field: 'subtotalAmount',
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
@@ -192,51 +208,58 @@ module.exports = {
           primaryKey: true,
           autoIncrement: true,
         },
-        productId: {
+        product_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          field: 'productId',
           references: {
             model: 'products',
             key: 'id',
           },
         },
-        locationId: {
+        location_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          field: 'locationId',
           references: {
             model: 'locations',
             key: 'id',
           },
         },
-        changeType: {
+        change_type: {
           type: Sequelize.ENUM('sale', 'broken', 'received', 'adjusted', 'initial'),
           allowNull: false,
+          field: 'changeType',
         },
-        changeAmount: {
+        change_amount: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: false,
+          field: 'changeAmount',
         },
-        previousQuantity: {
+        previous_quantity: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: false,
+          field: 'previousQuantity',
         },
-        newQuantity: {
+        new_quantity: {
           type: Sequelize.DECIMAL(10, 2),
           allowNull: false,
+          field: 'newQuantity',
         },
         notes: {
           type: Sequelize.TEXT,
           allowNull: true,
         },
-        userId: {
+        user_id: {
           type: Sequelize.INTEGER,
           allowNull: true,
+          field: 'userId',
           references: {
             model: 'users',
             key: 'id',
           },
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
@@ -251,9 +274,10 @@ module.exports = {
           primaryKey: true,
           autoIncrement: true,
         },
-        userId: {
+        user_id: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          field: 'userId',
           references: {
             model: 'users',
             key: 'id',
@@ -267,36 +291,39 @@ module.exports = {
           type: Sequelize.STRING,
           allowNull: true,
         },
-        resourceId: {
+        resource_id: {
           type: Sequelize.INTEGER,
           allowNull: true,
+          field: 'resourceId',
         },
         details: {
           type: Sequelize.TEXT,
           allowNull: true,
         },
-        ipAddress: {
+        ip_address: {
           type: Sequelize.STRING,
           allowNull: true,
+          field: 'ipAddress',
         },
-        userAgent: {
+        user_agent: {
           type: Sequelize.TEXT,
           allowNull: true,
+          field: 'userAgent',
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        updatedAt: {
+        updated_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
       });
 
       // Add indexes for user_activities
-      await queryInterface.addIndex('user_activities', ['userId']);
+      await queryInterface.addIndex('user_activities', ['user_id']);
       await queryInterface.addIndex('user_activities', ['action']);
-      await queryInterface.addIndex('user_activities', ['createdAt']);
+      await queryInterface.addIndex('user_activities', ['created_at']);
     }
 
     // Create global_attributes table if it doesn't exist
@@ -312,11 +339,11 @@ module.exports = {
           allowNull: false,
           unique: true,
         },
-        createdAt: {
+        created_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        updatedAt: {
+        updated_at: {
           type: Sequelize.DATE,
           allowNull: false,
         },
