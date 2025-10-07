@@ -23,12 +23,24 @@ const locationRoutes = require('./routes/locations');
 const userRoutes = require('./routes/users');
 const returnsRoutes = require('./routes/returns');
 const ordersRoutes = require('./routes/orders');
+const healthRoutes = require('./routes/health');
+const performanceRoutes = require('./routes/performance');
+const HerokuKeepAlive = require('./services/keepAlive');
 
 const app = express();
 
 // Middleware
-// Enable compression for all responses
-app.use(compression({ level: 6, threshold: 0 }));
+// Enable aggressive compression for all responses
+app.use(compression({ 
+  level: 9,        // Maximum compression
+  threshold: 1024, // Compress responses > 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) return false;
+    // Compress everything else
+    return compression.filter(req, res);
+  }
+}));
 
 // Set cache headers for static assets
 const setCache = function (req, res, next) {
@@ -74,6 +86,8 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/api', healthRoutes); // Health check routes
+app.use('/api', performanceRoutes); // Performance monitoring routes
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', passwordResetRoutes);
 app.use('/api/users', userRoutes);
@@ -355,6 +369,16 @@ const startServer = async () => {
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Start keep-alive service for production
+    if (process.env.NODE_ENV === 'production') {
+      const keepAlive = new HerokuKeepAlive(process.env.HEROKU_APP_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com');
+      keepAlive.start();
+      
+      // Graceful shutdown
+      process.on('SIGTERM', () => keepAlive.stop());
+      process.on('SIGINT', () => keepAlive.stop());
+    }
   });
 
   server.on('error', (error) => {

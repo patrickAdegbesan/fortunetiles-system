@@ -1,13 +1,17 @@
 const express = require('express');
 const { Location, User, Inventory, Product } = require('../models');
-const cache = require('../middleware/cache');
+const cache = require('../middleware/enhancedCache');
 
 const router = express.Router();
 
-// GET /api/locations - Get all locations (cached)
+// GET /api/locations - Get all locations (smart cached)
 router.get('/', async (req, res) => {
   try {
-    const locations = await cache.getOrSet('locations:all', async () => {
+    // Set cache headers for client-side caching
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes client cache
+    res.set('ETag', `"locations-v1"`);
+    
+    const locations = await cache.getOrSetSmart('locations:all', async () => {
       return await Location.findAll({
         attributes: ['id', 'name', 'createdAt'], // Only select needed fields
         include: [
@@ -19,11 +23,13 @@ router.get('/', async (req, res) => {
         ],
         order: [['createdAt', 'ASC']]
       });
-    }, 300000); // Cache for 5 minutes
+    }, 600000); // Base 10 minutes (enhanced cache will extend to 20 minutes)
 
     res.json({
       message: 'Locations retrieved successfully',
-      locations
+      locations,
+      cached: true,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {

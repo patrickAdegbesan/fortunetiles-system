@@ -20,10 +20,21 @@ if (process.env.DATABASE_URL) {
       },
     } : {},
     pool: {
-      max: 20,      // Increase max connections for higher concurrency
-      min: 5,       // Keep minimum 5 connections ready
-      acquire: 30000,
-      idle: 10000,
+      max: 25,        // Increase max connections for higher concurrency
+      min: 8,         // Keep more connections ready (reduces cold connection time)
+      acquire: 60000, // Increase acquire timeout (60s)
+      idle: 20000,    // Increase idle time (20s)
+      evict: 30000,   // Connection eviction time
+    },
+    retry: {
+      max: 3,         // Retry failed connections
+      match: [        // Retry on specific errors
+        /ETIMEDOUT/,
+        /EHOSTUNREACH/,
+        /ECONNRESET/,
+        /ECONNREFUSED/,
+        /TIMEOUT/,
+      ]
     },
   });
 } else {
