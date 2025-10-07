@@ -131,46 +131,24 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Location not found' });
     }
 
-    // Check if location has inventory
-    if (location.inventory && location.inventory.length > 0) {
+    // Check if location has inventory with actual products (quantity > 0)
+    const hasActualInventory = location.inventory && location.inventory.some(item => 
+      parseFloat(item.quantitySqm) > 0
+    );
+
+    if (hasActualInventory) {
       return res.status(400).json({ 
         message: 'Cannot delete location that contains products. Please move or remove all products first.'
       });
     }
 
-    await location.destroy();
-    res.json({ message: 'Location deleted successfully' });
-
-  } catch (error) {
-    console.error('Delete location error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-module.exports = router;
-
-// DELETE /api/locations/:id - Delete location
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const location = await Location.findByPk(id, {
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory'
-        }
-      ]
-    });
-    
-    if (!location) {
-      return res.status(404).json({ message: 'Location not found' });
-    }
-
-    // Check if location has any inventory
+    // If there are empty inventory records (quantity = 0), delete them first
     if (location.inventory && location.inventory.length > 0) {
-      return res.status(400).json({ 
-        message: 'Cannot delete location that contains products. Please move or remove all products first.' 
+      await Inventory.destroy({
+        where: {
+          locationId: id,
+          quantitySqm: 0
+        }
       });
     }
 
