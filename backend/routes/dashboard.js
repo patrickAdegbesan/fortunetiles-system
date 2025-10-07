@@ -42,7 +42,12 @@ router.get('/', async (req, res) => {
     }
 
     // Build product filter for category
-    const productWhereClause = category && category !== 'all' ? { category } : {};
+    const productWhereClause = {};
+    if (category && category !== 'all') {
+      // Since categories is a JSONB array, we need to check if the category exists in the array
+      const { Op } = require('sequelize');
+      productWhereClause.categories = { [Op.contains]: [category] };
+    }
     console.log('Product where clause:', productWhereClause);
     console.log('Will filter by category:', category && category !== 'all' ? 'YES' : 'NO');
 

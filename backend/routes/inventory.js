@@ -16,7 +16,12 @@ router.get('/', async (req, res) => {
     }
     
     // Build product include with category filtering
-    const productWhereClause = category && category !== 'all' ? { category } : {};
+    const productWhereClause = {};
+    if (category && category !== 'all') {
+      // Since categories is a JSONB array, we need to check if the category exists in the array
+      const { Op } = require('sequelize');
+      productWhereClause.categories = { [Op.contains]: [category] };
+    }
     
     const inventory = await Inventory.findAll({
       where: whereClause,
@@ -190,10 +195,10 @@ router.get('/low-stock', async (req, res) => {
     const lowStockItems = await Inventory.findAll({
       where: whereClause,
       include: [
-        { 
-          model: Product, 
-          as: 'product', 
-          attributes: ['name', 'customAttributes', 'productTypeId']
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['name', 'attributes', 'productTypeId']
         },
         { model: Location, as: 'location' }
       ],
@@ -203,7 +208,7 @@ router.get('/low-stock', async (req, res) => {
     const formattedItems = lowStockItems.map(item => ({
       id: item.id,
       productName: item.product?.name || '(unknown)',
-      customAttributes: (item.product && item.product.customAttributes) ? item.product.customAttributes : {},
+      attributes: (item.product && item.product.attributes) ? item.product.attributes : {},
       productTypeId: item.product?.productTypeId || null,
       quantitySqm: item.quantitySqm,
       location: item.location?.name || '(unknown)',
@@ -211,7 +216,7 @@ router.get('/low-stock', async (req, res) => {
       locationId: item.locationId,
       Product: item.product ? {
         name: item.product.name,
-        customAttributes: item.product.customAttributes || {},
+        attributes: item.product.attributes || {},
         productTypeId: item.product.productTypeId
       } : undefined
     }));
