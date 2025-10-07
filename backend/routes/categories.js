@@ -101,10 +101,7 @@ const updateProductCategories = async (fromName, toName, transaction) => {
   return updatedCount;
 };
 
-// Apply authentication to all routes
-router.use(authenticateToken);
-
-// GET /api/categories - Retrieve all categories
+// GET /api/categories - Retrieve all categories (public)
 router.get('/', async (req, res) => {
   try {
     await bootstrapCategories();
@@ -126,7 +123,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Admin routes
+// All other routes require authentication and admin role
+router.use(authenticateToken);
 router.use(requireRole(['admin', 'owner']));
 
 // POST /api/categories - Create a new category
