@@ -541,10 +541,22 @@ const SettingsPage = () => {
     if (!trimmedCategory) return;
 
     try {
-      await createCategory(trimmedCategory);
-      
-      // Refresh categories from server to ensure consistency
-      await loadCategoriesData();
+      const data = await createCategory(trimmedCategory);
+      const createdCategory = {
+        id: data.category?.id ?? null,
+        name: typeof data.category?.name === 'string' ? data.category.name.trim() : trimmedCategory,
+      };
+
+      setCategories((prev) => {
+        const existingNames = new Set(
+          prev.map((cat) => getCategoryName(cat).toLowerCase()).filter(Boolean)
+        );
+        if (existingNames.has(createdCategory.name.toLowerCase())) {
+          return prev;
+        }
+        return [...prev, createdCategory].sort((a, b) => getCategoryName(a).localeCompare(getCategoryName(b)));
+      });
+
       setNewCategory('');
       setSuccess('Category created successfully');
       setTimeout(() => setSuccess(''), 3000);
@@ -568,13 +580,11 @@ const SettingsPage = () => {
     try {
       setIsDeletingItem(true);
       await deleteCategory(categoryName, 'General'); // Pass reassignTo parameter
-      
-      // Refresh categories from server to ensure consistency
-      await loadCategoriesData();
-      setSuccess('Category deleted successfully');
+      setCategories((prev) => prev.filter((cat) => getCategoryName(cat) !== categoryName));
+      setSuccess('Category removed successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      const message = error?.response?.data?.message || error?.message || 'Failed to delete category';
+      const message = error?.response?.data?.message || error?.message || 'Failed to remove category';
       setError(message);
       setTimeout(() => setError(''), 3000);
     } finally {
@@ -651,11 +661,14 @@ const SettingsPage = () => {
     try {
       const oldCategoryName = getCategoryName(editingCategory);
       if (oldCategoryName !== trimmedCategory) {
-        // Use the proper rename API instead of delete+create
-        await renameCategory(oldCategoryName, trimmedCategory);
-        
-        // Refresh categories from server to ensure consistency
-        await loadCategoriesData();
+        // For categories, we need to delete the old one and create a new one (like global attributes)
+        await deleteCategory(oldCategoryName, 'General');
+        await createCategory(trimmedCategory);
+        setCategories((prev) => {
+          const filtered = prev.filter((cat) => getCategoryName(cat) !== oldCategoryName);
+          const newCategory = { name: trimmedCategory };
+          return [...filtered, newCategory].sort((a, b) => getCategoryName(a).localeCompare(getCategoryName(b)));
+        });
         setSuccess('Category updated successfully');
       }
       setNewCategory('');
@@ -1301,7 +1314,7 @@ const SettingsPage = () => {
                               className="action-btn delete"
                               onClick={() => handleDeleteCategory(categoryName)}
                             >
-                              <MdDelete size={14} /> Delete
+                              <MdDelete size={14} /> Remove
                             </button>
                           </div>
                         </div>
