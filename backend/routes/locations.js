@@ -1,21 +1,25 @@
 const express = require('express');
 const { Location, User, Inventory, Product } = require('../models');
+const cache = require('../middleware/cache');
 
 const router = express.Router();
 
-// GET /api/locations - Get all locations
+// GET /api/locations - Get all locations (cached)
 router.get('/', async (req, res) => {
   try {
-    const locations = await Location.findAll({
-      include: [
-        { 
-          model: User, 
-          as: 'users', 
-          attributes: ['id', 'firstName', 'lastName', 'email', 'role'] 
-        }
-      ],
-      order: [['createdAt', 'ASC']]
-    });
+    const locations = await cache.getOrSet('locations:all', async () => {
+      return await Location.findAll({
+        attributes: ['id', 'name', 'createdAt'], // Only select needed fields
+        include: [
+          { 
+            model: User, 
+            as: 'users', 
+            attributes: ['id', 'firstName', 'lastName', 'email', 'role'] 
+          }
+        ],
+        order: [['createdAt', 'ASC']]
+      });
+    }, 300000); // Cache for 5 minutes
 
     res.json({
       message: 'Locations retrieved successfully',

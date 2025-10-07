@@ -2,44 +2,46 @@ const express = require('express');
 const { Product, Inventory, InventoryLog, ProductType } = require('../models');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
+const cache = require('../middleware/cache');
 
 const router = express.Router();
 
-// GET /api/products/categories - Get product categories (MUST be before /:id route)
+// GET /api/products/categories - Get product categories (MUST be before /:id route) (cached)
 router.get('/categories', async (req, res) => {
   try {
-    const products = await Product.findAll({
-      attributes: ['categories'],
-      where: {
-        isActive: true,
-        categories: {
-          [Op.ne]: null
-        }
-      },
-      raw: true
-    });
-
-    // Extract all unique categories from the arrays
-    const allCategories = new Set();
-    products.forEach(product => {
-      if (Array.isArray(product.categories)) {
-        product.categories.forEach(cat => {
-          if (cat && cat.trim()) {
-            allCategories.add(cat.trim());
+    const finalCategories = await cache.getOrSet('products:categories', async () => {
+      const products = await Product.findAll({
+        attributes: ['categories'],
+        where: {
+          isActive: true,
+          categories: {
+            [Op.ne]: null
           }
-        });
-      }
-    });
+        },
+        raw: true
+      });
 
-    // Convert to sorted array
-    const categoriesArray = Array.from(allCategories).sort();
+      // Extract all unique categories from the arrays
+      const allCategories = new Set();
+      products.forEach(product => {
+        if (Array.isArray(product.categories)) {
+          product.categories.forEach(cat => {
+            if (cat && cat.trim()) {
+              allCategories.add(cat.trim());
+            }
+          });
+        }
+      });
 
-    // If no categories exist in products, provide default categories
-    const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
-    const finalCategories = categoriesArray.length > 0 ? categoriesArray : defaultCategories;
+      // Convert to sorted array
+      const categoriesArray = Array.from(allCategories).sort();
 
-    console.log('Products/categories - Categories found in DB:', categoriesArray.length);
-    console.log('Products/categories - Returning categories:', finalCategories);
+      // If no categories exist in products, provide default categories
+      const defaultCategories = ['General', 'Luxury', 'Premium', 'Marble', 'Granite', 'Ceramic', 'Porcelain', 'Travertine'];
+      return categoriesArray.length > 0 ? categoriesArray : defaultCategories;
+    }, 300000); // Cache for 5 minutes
+
+    console.log('Products/categories - Returning cached categories:', finalCategories.length);
 
     res.json({
       message: 'Categories retrieved successfully',

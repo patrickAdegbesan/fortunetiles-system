@@ -2,15 +2,19 @@ const express = require('express');
 const { ProductType, Product, ReturnItem } = require('../models');
 const { Op } = require('sequelize');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const cache = require('../middleware/cache');
 
 const router = express.Router();
 
-// GET /api/product-types - Get all product types (Public endpoint)
+// GET /api/product-types - Get all product types (Public endpoint, cached)
 router.get('/', async (req, res) => {
   try {
-    const productTypes = await ProductType.findAll({
-      order: [['name', 'ASC']]
-    });
+    const productTypes = await cache.getOrSet('product-types:all', async () => {
+      return await ProductType.findAll({
+        attributes: ['id', 'name', 'createdAt', 'updatedAt'], // Only select needed fields
+        order: [['name', 'ASC']]
+      });
+    }, 300000); // Cache for 5 minutes
 
     res.json({
       message: 'Product types retrieved successfully',

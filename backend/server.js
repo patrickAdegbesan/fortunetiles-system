@@ -294,14 +294,8 @@ const initializeDatabase = async () => {
     // Test database connection
     await testConnection();
     
-    // Sync database in development, or if explicitly requested in production via INIT_DB=true
-    const shouldSync = process.env.NODE_ENV !== 'production' || process.env.INIT_DB === 'true';
-    if (shouldSync) {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Database synchronized successfully with schema updates.');
-    } else {
-      console.log('ℹ️ Skipping sequelize.sync in production; relying on migrations.');
-    }
+    // Temporarily disable sync to avoid timestamp schema conflicts - using migrations instead
+    console.log('ℹ️ Skipping sequelize.sync; relying on existing database schema and migrations.');
     
     // Create default location if none exists
     const locationCount = await Location.count();

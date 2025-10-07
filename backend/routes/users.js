@@ -3,15 +3,18 @@ const router = express.Router();
 const { User, Location } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { activityLogger } = require('../middleware/activityLogger');
+const cache = require('../middleware/cache');
 
-// GET /api/users/roles - Get available roles (MUST be before /:id route)
+// GET /api/users/roles - Get available roles (MUST be before /:id route) (cached)
 router.get('/roles', authenticateToken, async (req, res) => {
   try {
-    const roles = [
-      { value: 'owner', label: 'Owner', description: 'Full system access' },
-      { value: 'manager', label: 'Manager', description: 'Manage inventory and sales' },
-      { value: 'staff', label: 'Staff', description: 'Process sales and view inventory' }
-    ];
+    const roles = await cache.getOrSet('users:roles', async () => {
+      return [
+        { value: 'owner', label: 'Owner', description: 'Full system access' },
+        { value: 'manager', label: 'Manager', description: 'Manage inventory and sales' },
+        { value: 'staff', label: 'Staff', description: 'Process sales and view inventory' }
+      ];
+    }, 600000); // Cache for 10 minutes (roles don't change often)
 
     res.json({
       message: 'Roles retrieved successfully',

@@ -8,9 +8,9 @@ const STATIC_CACHE_URLS = [
   '/inventory/static/js/main.296c8bbc.js',
   '/inventory/static/css/main.de755aeb.css',
   '/inventory/manifest.json',
-  '/inventory/assets/logo.png',
+  '/inventory/assets/logo.webp',
   '/inventory/assets/logo-circle.png',
-  '/inventory/assets/logo-full.png'
+  '/inventory/assets/logo.webp'
 ];
 
 // API endpoints that should be cached (read-only operations)

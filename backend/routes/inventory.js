@@ -4,10 +4,15 @@ const { sequelize } = require('../config/database');
 
 const router = express.Router();
 
-// GET /api/inventory - Get all inventory levels
+// GET /api/inventory - Get all inventory levels with pagination
 router.get('/', async (req, res) => {
   try {
-    const { locationId, category } = req.query;
+    const { locationId, category, page = 1, limit = 50 } = req.query;
+    
+    // Parse pagination params
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Cap at 100 items
+    const offset = (pageNum - 1) * limitNum;
     
     // Build where clause for location filtering - handle "all" case
     const whereClause = {};
@@ -23,35 +28,49 @@ router.get('/', async (req, res) => {
       productWhereClause.categories = { [Op.contains]: [category] };
     }
     
-    const inventory = await Inventory.findAll({
+    const { count, rows: inventory } = await Inventory.findAndCountAll({
       where: whereClause,
       include: [
         { 
           model: Product, 
           as: 'product',
+          attributes: ['id', 'name', 'categories', 'productTypeId'], // Only select needed fields
           where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
           required: Object.keys(productWhereClause).length > 0 // Required if filtering by category
         },
         { 
           model: Location, 
           as: 'location',
+          attributes: ['id', 'name'], // Only select needed fields
           required: false
         }
       ],
-      order: [['updatedAt', 'DESC']]
+      order: [['updatedAt', 'DESC']],
+      limit: limitNum,
+      offset: offset,
+      distinct: true // Ensure accurate count with joins
     });
 
     // Filter out any null entries and add some debugging info
     const validInventory = inventory.filter(item => item && item.id);
+    const totalPages = Math.ceil(count / limitNum);
     
-    console.log(`Inventory query result: ${inventory.length} total, ${validInventory.length} valid items`);
+    console.log(`Inventory query result: ${inventory.length} items on page ${pageNum}, ${count} total, ${validInventory.length} valid items`);
     if (validInventory.length !== inventory.length) {
       console.log('Some inventory items were filtered out due to null values');
     }
 
     res.json({
       message: 'Inventory retrieved successfully',
-      inventory: validInventory
+      inventory: validInventory,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count,
+        pages: totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1
+      }
     });
 
   } catch (error) {
