@@ -578,7 +578,7 @@ const SettingsPage = () => {
 
     try {
       setIsDeletingItem(true);
-      await deleteCategory(categoryName);
+      await deleteCategory(categoryName, 'General'); // Pass reassignTo parameter
       setCategories((prev) => prev.filter((cat) => getCategoryName(cat) !== categoryName));
       setSuccess('Category deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
@@ -661,7 +661,7 @@ const SettingsPage = () => {
       // For categories, we need to delete the old one and create a new one
       const oldCategoryName = getCategoryName(editingCategory);
       if (oldCategoryName !== trimmedCategory) {
-        await deleteCategory(oldCategoryName);
+        await deleteCategory(oldCategoryName, 'General'); // Pass reassignTo parameter
         await createCategory(trimmedCategory);
         setCategories((prev) => {
           const filtered = prev.filter((cat) => getCategoryName(cat) !== oldCategoryName);
