@@ -16,6 +16,7 @@ import {
   fetchCategories,
   createCategory,
   deleteCategory,
+  renameCategory,
   fetchGlobalAttributes,
   createGlobalAttribute,
   deleteGlobalAttribute
@@ -540,22 +541,10 @@ const SettingsPage = () => {
     if (!trimmedCategory) return;
 
     try {
-      const data = await createCategory(trimmedCategory);
-      const createdCategory = {
-        id: data.category?.id ?? null,
-        name: typeof data.category?.name === 'string' ? data.category.name.trim() : trimmedCategory,
-      };
-
-      setCategories((prev) => {
-        const existingNames = new Set(
-          prev.map((cat) => getCategoryName(cat).toLowerCase()).filter(Boolean)
-        );
-        if (existingNames.has(createdCategory.name.toLowerCase())) {
-          return prev;
-        }
-        return [...prev, createdCategory].sort((a, b) => a.name.localeCompare(b.name));
-      });
-
+      await createCategory(trimmedCategory);
+      
+      // Refresh categories from server to ensure consistency
+      await loadCategoriesData();
       setNewCategory('');
       setSuccess('Category created successfully');
       setTimeout(() => setSuccess(''), 3000);
@@ -579,7 +568,9 @@ const SettingsPage = () => {
     try {
       setIsDeletingItem(true);
       await deleteCategory(categoryName, 'General'); // Pass reassignTo parameter
-      setCategories((prev) => prev.filter((cat) => getCategoryName(cat) !== categoryName));
+      
+      // Refresh categories from server to ensure consistency
+      await loadCategoriesData();
       setSuccess('Category deleted successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
@@ -658,15 +649,13 @@ const SettingsPage = () => {
     if (!trimmedCategory || !editingCategory) return;
 
     try {
-      // For categories, we need to delete the old one and create a new one
       const oldCategoryName = getCategoryName(editingCategory);
       if (oldCategoryName !== trimmedCategory) {
-        await deleteCategory(oldCategoryName, 'General'); // Pass reassignTo parameter
-        await createCategory(trimmedCategory);
-        setCategories((prev) => {
-          const filtered = prev.filter((cat) => getCategoryName(cat) !== oldCategoryName);
-          return [...filtered, { name: trimmedCategory }].sort((a, b) => a.name.localeCompare(b.name));
-        });
+        // Use the proper rename API instead of delete+create
+        await renameCategory(oldCategoryName, trimmedCategory);
+        
+        // Refresh categories from server to ensure consistency
+        await loadCategoriesData();
         setSuccess('Category updated successfully');
       }
       setNewCategory('');
