@@ -11,12 +11,23 @@ module.exports = {
 
     // Check if category column exists and change it to categories (JSONB array)
     if (productTableDescription.category) {
-      await queryInterface.changeColumn('products', 'category', {
+      // First, add the new categories column
+      await queryInterface.addColumn('products', 'categories', {
         type: Sequelize.JSONB,
         allowNull: true,
         defaultValue: ['General']
       });
-      await queryInterface.renameColumn('products', 'category', 'categories');
+      
+      // Copy data from category to categories (convert string to array)
+      await queryInterface.sequelize.query(`
+        UPDATE products SET categories = CASE 
+          WHEN category IS NOT NULL THEN to_jsonb(ARRAY[category])
+          ELSE '["General"]'::jsonb
+        END;
+      `);
+      
+      // Remove the old category column
+      await queryInterface.removeColumn('products', 'category');
     }
 
     // Add unit_of_measure column if it doesn't exist
