@@ -104,7 +104,11 @@ const updateProductCategories = async (fromName, toName, transaction) => {
 // GET /api/categories - Retrieve all categories (public)
 router.get('/', async (req, res) => {
   try {
-    await bootstrapCategories();
+    // Only bootstrap categories if none exist (first time setup)
+    const existingCount = await Category.count();
+    if (existingCount === 0) {
+      await bootstrapCategories();
+    }
 
     const categories = await Category.findAll({
       order: [['name', 'ASC']],
