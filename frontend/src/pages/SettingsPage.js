@@ -11,6 +11,7 @@ import {
   createUser,
   updateUser,
   deactivateUser,
+  deleteUser,
   activateUser,
   fetchUserRoles,
   fetchCategories,
@@ -330,6 +331,24 @@ const SettingsPage = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       setError(error.message || 'Failed to update user status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to permanently DELETE "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteUser(userId);
+      setSuccess('User deleted successfully');
+      loadUsers(pagination.page);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message || 'Failed to delete user');
     } finally {
       setLoading(false);
     }
@@ -1146,6 +1165,13 @@ const SettingsPage = () => {
                               onClick={() => handleToggleUserStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)}
                             >
                               {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button 
+                              className="action-btn delete"
+                              onClick={() => handleDeleteUser(user.id, `${user.firstName} ${user.lastName}`)}
+                              title="Permanently delete user"
+                            >
+                              Delete
                             </button>
                           </div>
                         </td>

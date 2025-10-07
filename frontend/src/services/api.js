@@ -244,6 +244,15 @@ export const deactivateUser = async (id) => {
   }
 };
 
+export const deleteUser = async (id) => {
+  try {
+    const response = await API.delete(`/users/${id}?hardDelete=true`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete user' };
+  }
+};
+
 export const activateUser = async (id) => {
   try {
     const response = await API.put(`/users/${id}/activate`);

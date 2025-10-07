@@ -242,37 +242,52 @@ router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) =
   }
 });
 
-// DELETE /api/users/:id - Deactivate user (admin only)
-router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger('deactivate_user', 'users'), async (req, res) => {
+// DELETE /api/users/:id - Delete or deactivate user (admin only)
+router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger('delete_user', 'users'), async (req, res) => {
   try {
     const { id } = req.params;
+    const { hardDelete } = req.query; // ?hardDelete=true for permanent deletion
 
     const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Prevent admin from deactivating themselves
+    // Prevent admin from deleting themselves
     if (req.user.userId === parseInt(id)) {
       return res.status(400).json({ 
-        message: 'You cannot deactivate your own account' 
+        message: 'You cannot delete your own account' 
       });
     }
 
-    // Deactivate user instead of hard delete
-    await user.update({ isActive: false });
+    if (hardDelete === 'true') {
+      // Hard delete - permanently remove user
+      await user.destroy();
+      
+      res.json({ 
+        message: 'User deleted permanently',
+        user: {
+          id: user.id,
+          email: user.email,
+          deleted: true
+        }
+      });
+    } else {
+      // Soft delete - deactivate user
+      await user.update({ isActive: false });
 
-    res.json({ 
-      message: 'User deactivated successfully',
-      user: {
-        id: user.id,
-        email: user.email,
-        isActive: false
-      }
-    });
+      res.json({ 
+        message: 'User deactivated successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          isActive: false
+        }
+      });
+    }
 
   } catch (error) {
-    console.error('Deactivate user error:', error);
+    console.error('Delete user error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
