@@ -3,12 +3,12 @@ const router = express.Router();
 const { User, Location } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { activityLogger } = require('../middleware/activityLogger');
-const cache = require('../middleware/cache');
+const cache = require('../middleware/enhancedCache');
 
 // GET /api/users/roles - Get available roles (MUST be before /:id route) (cached)
 router.get('/roles', authenticateToken, async (req, res) => {
   try {
-    const roles = await cache.getOrSet('users:roles', async () => {
+    const roles = await cache.getOrSetSmart('users:roles', async () => {
       return [
         { value: 'owner', label: 'Owner', description: 'Full system access' },
         { value: 'manager', label: 'Manager', description: 'Manage inventory and sales' },
@@ -158,6 +158,23 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
       attributes: { exclude: ['password'] }
     });
 
+    // Invalidate user-related cache entries
+    cache.delete('users:all');
+    const cacheKeys = cache.getStats().keys;
+    cacheKeys.forEach(key => {
+      if (key.startsWith('users:')) {
+        cache.delete(key);
+      }
+    });
+
+    // Notify WebSocket clients if available
+    if (global.wsService) {
+      global.wsService.broadcast({
+        type: 'user_created',
+        user: userWithLocation
+      });
+    }
+
     res.status(201).json({
       message: 'User created successfully',
       user: userWithLocation
@@ -234,6 +251,24 @@ router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) =
       attributes: { exclude: ['password'] }
     });
 
+    // Invalidate user-related cache entries
+    cache.delete('users:all');
+    cache.delete(`users:${id}`);
+    const cacheKeys = cache.getStats().keys;
+    cacheKeys.forEach(key => {
+      if (key.startsWith('users:')) {
+        cache.delete(key);
+      }
+    });
+
+    // Notify WebSocket clients if available
+    if (global.wsService) {
+      global.wsService.broadcast({
+        type: 'user_updated',
+        user: updatedUser
+      });
+    }
+
     res.json({
       message: 'User updated successfully',
       user: updatedUser
@@ -267,6 +302,26 @@ router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger(
       // Hard delete - permanently remove user
       await user.destroy();
       
+      // Invalidate user-related cache entries
+      cache.delete(`user:${id}`);
+      cache.delete('users:roles');
+      // Clear all user list cache entries
+      const cacheKeys = cache.getStats().keys;
+      cacheKeys.forEach(key => {
+        if (key.startsWith('users:') || key.includes('user-list')) {
+          cache.delete(key);
+        }
+      });
+      
+      // Notify WebSocket clients if available
+      if (global.wsService) {
+        global.wsService.broadcast({
+          type: 'user_deleted',
+          userId: id,
+          permanent: true
+        }, 'role_owner');
+      }
+      
       res.json({ 
         message: 'User deleted permanently',
         user: {
@@ -278,6 +333,24 @@ router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger(
     } else {
       // Soft delete - deactivate user
       await user.update({ isActive: false });
+
+      // Invalidate user-related cache entries
+      cache.delete(`user:${id}`);
+      const cacheKeys = cache.getStats().keys;
+      cacheKeys.forEach(key => {
+        if (key.startsWith('users:') || key.includes('user-list')) {
+          cache.delete(key);
+        }
+      });
+      
+      // Notify WebSocket clients if available
+      if (global.wsService) {
+        global.wsService.broadcast({
+          type: 'user_updated',
+          userId: id,
+          isActive: false
+        }, 'role_owner');
+      }
 
       res.json({ 
         message: 'User deactivated successfully',

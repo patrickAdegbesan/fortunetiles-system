@@ -2,6 +2,7 @@ const express = require('express');
 const { Op } = require('sequelize');
 const { Category, Product, sequelize } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const cache = require('../middleware/enhancedCache');
 
 const router = express.Router();
 
@@ -244,6 +245,27 @@ router.delete('/', async (req, res) => {
     await Category.destroy({ where: { id: category.id }, transaction });
 
     await transaction.commit();
+
+    // Invalidate category-related cache entries
+    cache.delete('categories:all');
+    cache.delete('categories:default');
+    cache.delete(`categories:${category.id}`);
+    const cacheKeys = cache.getStats().keys;
+    cacheKeys.forEach(key => {
+      if (key.startsWith('categories:') || key.startsWith('products:')) {
+        cache.delete(key);
+      }
+    });
+
+    // Notify WebSocket clients if available
+    if (global.wsService) {
+      global.wsService.broadcast({
+        type: 'category_deleted',
+        categoryId: category.id,
+        categoryName: categoryName,
+        reassignedTo: fallbackName
+      });
+    }
 
     res.json({
       message: `Category deleted successfully. ${updatedCount} product(s) updated.`,
