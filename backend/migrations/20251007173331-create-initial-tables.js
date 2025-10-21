@@ -1,345 +1,276 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    // Check which tables exist and only create missing ones
-    const existingTables = await queryInterface.showAllTables();
+  async up(queryInterface, Sequelize) {
+    // Create locations table
+    await queryInterface.createTable('locations', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      address: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+    }, { transaction: undefined });
 
-    // Create locations table FIRST if it doesn't exist (other tables reference it)
-    if (!existingTables.includes('locations')) {
-      await queryInterface.createTable('locations', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
+    // Create users table
+    await queryInterface.createTable('users', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      firstName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      lastName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+      },
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      role: {
+        type: Sequelize.ENUM('owner', 'manager', 'staff'),
+        allowNull: false,
+        defaultValue: 'staff',
+      },
+      locationId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'locations',
+          key: 'id',
         },
-        name: {
-          type: Sequelize.STRING,
-          allowNull: false,
-        },
-        address: {
-          type: Sequelize.TEXT,
-          allowNull: false,
-        },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'updatedAt',
-        },
-      });
-    }
+      },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      lastLoginAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      resetToken: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      resetTokenExpiry: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+    }, { transaction: undefined });
 
-    // Create users table if it doesn't exist (after locations since it references it)
-    if (!existingTables.includes('users')) {
-      await queryInterface.createTable('users', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        firstName: {
-          type: Sequelize.STRING,
-          allowNull: false,
-          field: 'firstName',
-        },
-        lastName: {
-          type: Sequelize.STRING,
-          allowNull: false,
-          field: 'lastName',
-        },
-        email: {
-          type: Sequelize.STRING,
-          allowNull: false,
-          unique: true,
-        },
-        password: {
-          type: Sequelize.STRING,
-          allowNull: false,
-        },
-        role: {
-          type: Sequelize.ENUM('owner', 'manager', 'staff'),
-          allowNull: false,
-          defaultValue: 'staff',
-        },
-        locationId: {
-          type: Sequelize.INTEGER,
-          allowNull: true,
-          field: 'locationId',
-          references: {
-            model: 'locations',
-            key: 'id',
-          },
-        },
-        isActive: {
-          type: Sequelize.BOOLEAN,
-          defaultValue: true,
-          field: 'isActive',
-        },
-        lastLoginAt: {
-          type: Sequelize.DATE,
-          allowNull: true,
-          field: 'lastLoginAt',
-        },
-        resetToken: {
-          type: Sequelize.STRING,
-          allowNull: true,
-          field: 'resetToken',
-        },
-        resetTokenExpiry: {
-          type: Sequelize.DATE,
-          allowNull: true,
-          field: 'resetTokenExpiry',
-        },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'updatedAt',
-        },
-      });
-    }
+    // Create categories table
+    await queryInterface.createTable('categories', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      name: {
+        type: Sequelize.STRING(100),
+        allowNull: false,
+        unique: true,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+    }, { transaction: undefined });
 
-    // Create categories table if it doesn't exist
-    if (!existingTables.includes('categories')) {
-      await queryInterface.createTable('categories', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
+    // Create sales table
+    await queryInterface.createTable('sales', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      customerName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      customerPhone: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      totalAmount: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      locationId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'locations',
+          key: 'id',
         },
-        name: {
-          type: Sequelize.STRING(100),
-          allowNull: false,
-          unique: true,
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id',
         },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'updatedAt',
-        },
-      });
-    }
+      },
+      paymentMethod: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'cash',
+      },
+      discountType: {
+        type: Sequelize.ENUM('amount', 'percentage'),
+        allowNull: true,
+        defaultValue: null,
+      },
+      discountValue: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: 0,
+      },
+      subtotalAmount: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+    }, { transaction: undefined });
 
-    // Create sales table if it doesn't exist
-    if (!existingTables.includes('sales')) {
-      await queryInterface.createTable('sales', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
+    // Create user_activities table
+    await queryInterface.createTable('user_activities', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id',
         },
-        customerName: {
-          type: Sequelize.STRING,
-          allowNull: false,
-          field: 'customerName',
-        },
-        customerPhone: {
-          type: Sequelize.STRING,
-          allowNull: true,
-          field: 'customerPhone',
-        },
-        totalAmount: {
-          type: Sequelize.DECIMAL(10, 2),
-          allowNull: false,
-          field: 'totalAmount',
-        },
-        locationId: {
-          type: Sequelize.INTEGER,
-          allowNull: false,
-          field: 'locationId',
-          references: {
-            model: 'locations',
-            key: 'id',
-          },
-        },
-        userId: {
-          type: Sequelize.INTEGER,
-          allowNull: false,
-          field: 'userId',
-          references: {
-            model: 'users',
-            key: 'id',
-          },
-        },
-        paymentMethod: {
-          type: Sequelize.STRING,
-          allowNull: false,
-          defaultValue: 'cash',
-          field: 'paymentMethod',
-        },
-        discountType: {
-          type: Sequelize.ENUM('amount', 'percentage'),
-          allowNull: true,
-          defaultValue: null,
-          field: 'discountType',
-        },
-        discountValue: {
-          type: Sequelize.DECIMAL(10, 2),
-          allowNull: true,
-          defaultValue: 0,
-          field: 'discountValue',
-        },
-        subtotalAmount: {
-          type: Sequelize.DECIMAL(10, 2),
-          allowNull: false,
-          field: 'subtotalAmount',
-        },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: true,
-          field: 'updatedAt',
-        },
-      });
-    }
+      },
+      action: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      resource: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      resourceId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+      details: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      ipAddress: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      userAgent: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+    }, { transaction: undefined });
 
-    // NOTE: inventory_logs table will be created by later migrations (20251007173400-update-inventory-log.js)
-    // It references products table which is created in later migrations, so we skip it here
-    // to avoid foreign key reference errors
+    // Add indexes for user_activities
+    await queryInterface.addIndex('user_activities', ['userId']);
+    await queryInterface.addIndex('user_activities', ['action']);
+    await queryInterface.addIndex('user_activities', ['createdAt']);
 
-    // Create user_activities table if it doesn't exist
-    if (!existingTables.includes('user_activities')) {
-      await queryInterface.createTable('user_activities', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        userId: {
-          type: Sequelize.INTEGER,
-          allowNull: false,
-          field: 'userId',
-          references: {
-            model: 'users',
-            key: 'id',
-          },
-        },
-        action: {
-          type: Sequelize.STRING,
-          allowNull: false,
-        },
-        resource: {
-          type: Sequelize.STRING,
-          allowNull: true,
-        },
-        resourceId: {
-          type: Sequelize.INTEGER,
-          allowNull: true,
-          field: 'resourceId',
-        },
-        details: {
-          type: Sequelize.TEXT,
-          allowNull: true,
-        },
-        ipAddress: {
-          type: Sequelize.STRING,
-          allowNull: true,
-          field: 'ipAddress',
-        },
-        userAgent: {
-          type: Sequelize.TEXT,
-          allowNull: true,
-          field: 'userAgent',
-        },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'updatedAt',
-        },
-      });
-
-      // Add indexes for user_activities
-      await queryInterface.addIndex('user_activities', ['userId']);
-      await queryInterface.addIndex('user_activities', ['action']);
-      await queryInterface.addIndex('user_activities', ['createdAt']);
-    }
-
-    // Create global_attributes table if it doesn't exist
-    if (!existingTables.includes('global_attributes')) {
-      await queryInterface.createTable('global_attributes', {
-        id: {
-          type: Sequelize.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        name: {
-          type: Sequelize.STRING(100),
-          allowNull: false,
-          unique: true,
-        },
-        createdAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'createdAt',
-        },
-        updatedAt: {
-          type: Sequelize.DATE,
-          allowNull: false,
-          defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-          field: 'updatedAt',
-        },
-      });
-    }
+    // Create global_attributes table
+    await queryInterface.createTable('global_attributes', {
+      id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      name: {
+        type: Sequelize.STRING(100),
+        allowNull: false,
+        unique: true,
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
+    }, { transaction: undefined });
   },
 
-  async down (queryInterface, Sequelize) {
-    // Only drop tables that were created by this migration
-    const existingTables = await queryInterface.showAllTables();
-
-    if (existingTables.includes('user_activities')) {
-      await queryInterface.dropTable('user_activities');
-    }
-    if (existingTables.includes('inventory_logs')) {
-      await queryInterface.dropTable('inventory_logs');
-    }
-    if (existingTables.includes('sales')) {
-      await queryInterface.dropTable('sales');
-    }
-    if (existingTables.includes('categories')) {
-      await queryInterface.dropTable('categories');
-    }
-    if (existingTables.includes('locations')) {
-      await queryInterface.dropTable('locations');
-    }
-    if (existingTables.includes('users')) {
-      await queryInterface.dropTable('users');
-    }
-    if (existingTables.includes('global_attributes')) {
-      await queryInterface.dropTable('global_attributes');
-    }
+  async down(queryInterface, Sequelize) {
+    // Drop all tables in reverse order
+    await queryInterface.dropTable('global_attributes', { cascade: true });
+    await queryInterface.dropTable('user_activities', { cascade: true });
+    await queryInterface.dropTable('sales', { cascade: true });
+    await queryInterface.dropTable('categories', { cascade: true });
+    await queryInterface.dropTable('users', { cascade: true });
+    await queryInterface.dropTable('locations', { cascade: true });
   }
 };

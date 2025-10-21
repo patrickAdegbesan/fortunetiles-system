@@ -1,0 +1,13 @@
+DELETE FROM "SequelizeMeta";
+DROP TABLE IF EXISTS "user_activities" CASCADE;
+DROP TABLE IF EXISTS "global_attributes" CASCADE;
+DROP TABLE IF EXISTS "sales" CASCADE;
+DROP TABLE IF EXISTS "categories" CASCADE;
+DROP TABLE IF EXISTS "users" CASCADE;
+DROP TABLE IF EXISTS "locations" CASCADE;
+DROP TABLE IF EXISTS "inventory_logs" CASCADE;
+DROP TABLE IF EXISTS "products" CASCADE;
+DROP TABLE IF EXISTS "product_types" CASCADE;
+DROP TABLE IF EXISTS "inventory" CASCADE;
+DROP TABLE IF EXISTS "returns" CASCADE;
+SELECT 'Database reset complete' as status;

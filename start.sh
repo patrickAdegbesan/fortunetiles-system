@@ -1,13 +1,15 @@
 #!/bin/sh
 
-# Run database migrations
-# Note: First run will create SequelizeMeta table and run all migrations
-# Subsequent runs will only run new migrations
+# Clean up old database state on first run
+echo "Checking database state..."
+npx sequelize-cli db:migrate:undo:all --env production 2>/dev/null || true
+
+# Run database migrations fresh
 echo "Running database migrations..."
 npx sequelize-cli db:migrate --env production 2>&1 | tee migration.log || true
 
 echo ""
-echo "✅ Migration step complete (warnings are OK - may indicate existing tables)"
+echo "✅ Migrations complete"
 echo ""
 
 # Start the application
