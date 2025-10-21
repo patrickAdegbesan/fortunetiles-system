@@ -1,0 +1,14 @@
+'use strict';
+
+// Disabled original migration retained for reference. Creation of
+// returns/return_items is now handled idempotently by
+// 20251021104000-fix-returns-tables.js to avoid cross-order deps.
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    // no-op: see 20251021104000-fix-returns-tables.js
+  },
+  down: async (queryInterface, Sequelize) => {
+    // no-op
+  }
+};
