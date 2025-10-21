@@ -1,0 +1,14 @@
+﻿=== DATABASE_URL
+
+Plan:                  essential-0
+Status:                Available
+Connections:           8/20
+PG Version:            17.4
+Created:               2025-09-11 21:23 
+Data Size:             11.5 MB / 1 GB (1.12%) (In compliance)
+Tables:                16/4000 (In compliance)
+Fork/Follow:           Unsupported
+Rollback:              Unsupported
+Continuous Protection: Off
+Add-on:                postgresql-parallel-23767
+

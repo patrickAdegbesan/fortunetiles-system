@@ -10,12 +10,26 @@ const PWAInstallPrompt = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Check if user has recently dismissed the prompt
+    const dismissedTime = localStorage.getItem('pwa-prompt-dismissed');
+    if (dismissedTime) {
+      const daysSinceDismissed = (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismissed < 30) { // Don't show for 30 days
+        return;
+      }
+    }
+
     // Check if already installed
     const isInStandaloneMode = () =>
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
 
     setIsStandalone(isInStandaloneMode());
+
+    // Don't show if already installed
+    if (isInStandaloneMode()) {
+      return;
+    }
 
     // Check if iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -26,19 +40,19 @@ const PWAInstallPrompt = () => {
       e.preventDefault();
       setDeferredPrompt(e);
 
-      // Show prompt after a delay and only if not already installed
+      // Show prompt after a delay only if not already installed
       setTimeout(() => {
         if (!isInStandaloneMode()) {
           setShowPrompt(true);
         }
-      }, 3000);
+      }, 5000); // Increased to 5 seconds to be less intrusive
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // For iOS, show a different prompt
+    // For iOS, show a different prompt after longer delay
     if (iOS && !isInStandaloneMode()) {
-      setTimeout(() => setShowPrompt(true), 5000);
+      setTimeout(() => setShowPrompt(true), 10000); // 10 seconds for iOS
     }
 
     return () => {
@@ -47,17 +61,25 @@ const PWAInstallPrompt = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    if (deferredPrompt && typeof deferredPrompt.prompt === 'function') {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
 
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+
+        setDeferredPrompt(null);
+        setShowPrompt(false);
+      } catch (error) {
+        console.log('Error showing install prompt:', error);
+        setShowPrompt(false);
       }
-
-      setDeferredPrompt(null);
+    } else {
+      // Fallback for browsers that don't support the install prompt
       setShowPrompt(false);
     }
   };

@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+logs
+tmp
+.env
+public/static
+frontend/build
+website-build

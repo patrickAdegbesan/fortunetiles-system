@@ -19,44 +19,10 @@ function MainLayout({ children }) {
   const location = useLocation();
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const isAuthPage = location.pathname === '/login' || location.pathname.startsWith('/reset-password/');
 
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Show the install prompt only if user is logged in and on system pages
-    if (deferredPrompt && user && !isAuthPage) {
-      // Delay to avoid showing immediately on load
-      const timer = setTimeout(() => {
-        deferredPrompt.prompt();
-        // Wait for the user to respond to the prompt
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-          } else {
-            console.log('User dismissed the install prompt');
-          }
-          setDeferredPrompt(null);
-        });
-      }, 3000); // 3 seconds delay
-
-      return () => clearTimeout(timer);
-    }
-  }, [deferredPrompt, user, isAuthPage]);
+  // Remove automatic PWA prompt - let PWAInstallPrompt component handle it
+  // This prevents the "prompt() method must be called with a user gesture" error
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);

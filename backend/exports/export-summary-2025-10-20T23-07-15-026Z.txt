@@ -1,0 +1,30 @@
+
+HEROKU DATA EXPORT SUMMARY
+==========================
+Export Date: 2025-10-20T23:07:27.629Z
+Export File: heroku-data-export-2025-10-20T23-07-15-026Z.json
+Total Records: 745
+
+TABLE BREAKDOWN:
+users: 4 records
+locations: 1 records
+categories: 9 records
+global_attributes: 5 records
+product_types: 5 records
+products: 316 records
+inventory: 316 records
+inventory_logs: 5 records
+sales: 4 records
+sale_items: 4 records
+returns: 2 records
+return_items: 2 records
+user_activities: 72 records
+
+FILES CREATED:
+- heroku-data-export-2025-10-20T23-07-15-026Z.json (Full JSON export)
+- export-summary-2025-10-20T23-07-15-026Z.txt (This summary)
+
+NEXT STEPS:
+1. Review the exported data
+2. Import into local database using heroku-data-import.js
+3. Verify data integrity after import
