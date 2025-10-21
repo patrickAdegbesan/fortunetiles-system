@@ -3,6 +3,12 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
+    // Guard: if products table doesn't exist yet, skip this migration (will be handled by later migrations)
+    const tables = await queryInterface.showAllTables();
+    if (!tables.includes('products')) {
+      return;
+    }
+
     // Check if product_type_id column exists before removing it
     const productTableDescription = await queryInterface.describeTable('products');
     if (productTableDescription.product_type_id) {
@@ -45,7 +51,6 @@ module.exports = {
     }
 
     // Drop product_types table if it exists
-    const tables = await queryInterface.showAllTables();
     if (tables.includes('product_types')) {
       await queryInterface.dropTable('product_types');
     }
