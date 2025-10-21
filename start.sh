@@ -1,17 +1,10 @@
 #!/bin/sh
+set -e
 
-# Clean up old database state on first run
-echo "Checking database state..."
-npx sequelize-cli db:migrate:undo:all --env production 2>/dev/null || true
+echo "Running database migrations (no destructive undo)..."
+npx sequelize-cli db:migrate --env production 2>&1 | tee migration.log
 
-# Run database migrations fresh
-echo "Running database migrations..."
-npx sequelize-cli db:migrate --env production 2>&1 | tee migration.log || true
-
-echo ""
 echo "✅ Migrations complete"
-echo ""
 
-# Start the application
 echo "Starting application..."
 node server.js
