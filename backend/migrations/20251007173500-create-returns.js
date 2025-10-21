@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('Returns', {
+    await queryInterface.createTable('returns', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -66,7 +66,7 @@ module.exports = {
       }
     });
 
-    await queryInterface.createTable('ReturnItems', {
+    await queryInterface.createTable('return_items', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -143,7 +143,7 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('ReturnItems');
-    await queryInterface.dropTable('Returns');
+    await queryInterface.dropTable('return_items');
+    await queryInterface.dropTable('returns');
   }
 };
