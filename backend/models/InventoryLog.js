@@ -55,7 +55,8 @@ const InventoryLog = sequelize.define('InventoryLog', {
 }, {
   tableName: 'inventory_logs',
   timestamps: true,
-  updatedAt: false,
+  updatedAt: 'updated_at',
+  createdAt: 'created_at',
 });
 
 InventoryLog.associate = function(models) {

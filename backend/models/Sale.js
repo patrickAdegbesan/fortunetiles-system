@@ -72,7 +72,8 @@ const Sale = sequelize.define('Sale', {
 }, {
   tableName: 'sales',
   timestamps: true,
-  updatedAt: false,
+  updatedAt: 'updated_at',
+  createdAt: 'created_at',
 });
 
 Sale.associate = function(models) {

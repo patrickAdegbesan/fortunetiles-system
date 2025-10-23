@@ -87,7 +87,9 @@ ReturnItem.init({
   sequelize,
   modelName: 'ReturnItem',
   tableName: 'return_items',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = ReturnItem;

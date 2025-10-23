@@ -34,8 +34,8 @@ const Inventory = sequelize.define('Inventory', {
 }, {
   tableName: 'inventory',
   timestamps: true,
-  updatedAt: true,
-  createdAt: false,
+  updatedAt: 'updated_at',
+  createdAt: 'created_at',
   indexes: [
     {
       unique: true,

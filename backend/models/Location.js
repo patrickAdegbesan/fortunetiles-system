@@ -24,6 +24,9 @@ const Location = sequelize.define('Location', {
 }, {
   tableName: 'locations',
   timestamps: true,
+  // Align timestamp column names with existing DB schema (snake_case)
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
 Location.associate = function(models) {

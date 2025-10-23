@@ -36,9 +36,9 @@ const ProductType = sequelize.define('ProductType', {
 }, {
   tableName: 'product_types',
   timestamps: true,
-  underscored: false, // Changed to false since timestamps are camelCase
-  createdAt: 'createdAt', // Explicit mapping to camelCase column
-  updatedAt: 'updatedAt', // Explicit mapping to camelCase column
+  underscored: false,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
 ProductType.associate = function(models) {

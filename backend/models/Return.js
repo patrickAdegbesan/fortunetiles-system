@@ -10,7 +10,7 @@ class Return extends Model {
       onDelete: 'CASCADE'
     });
     this.belongsTo(models.User, {
-      foreignKey: 'processedBy',
+      foreignKey: 'processedById',
       as: 'processor'
     });
     this.hasMany(models.ReturnItem, {
@@ -34,7 +34,7 @@ Return.init({
       key: 'id'
     }
   },
-  processedBy: {
+  processedById: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
@@ -76,7 +76,9 @@ Return.init({
   sequelize,
   modelName: 'Return',
   tableName: 'returns',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = Return;

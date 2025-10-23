@@ -20,8 +20,8 @@ const GlobalAttribute = sequelize.define('GlobalAttribute', {
   tableName: 'global_attributes',
   timestamps: true,
   underscored: false,
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
 module.exports = GlobalAttribute;

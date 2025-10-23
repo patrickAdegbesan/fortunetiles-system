@@ -30,16 +30,14 @@ const SaleItem = sequelize.define('SaleItem', {
       min: 0,
     },
   },
-  unit: {
-    type: DataTypes.STRING(20),
-    allowNull: false,
-  },
   unitPrice: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     validate: {
       min: 0,
     },
+    // Physical column in DB is camelCase: unitPrice
+    field: 'unitPrice'
   },
   lineTotal: {
     type: DataTypes.DECIMAL(10, 2),
@@ -47,10 +45,14 @@ const SaleItem = sequelize.define('SaleItem', {
     validate: {
       min: 0,
     },
+    // Physical column in DB is camelCase: totalPrice
+    field: 'totalPrice'
   },
 }, {
   tableName: 'sale_items',
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
 SaleItem.associate = function(models) {
