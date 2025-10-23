@@ -3,18 +3,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install production dependencies first
-COPY backend/package*.json ./
+# Copy entire repository first
+COPY . .
+
+# Navigate to backend
+WORKDIR /app/backend
+
+# Install production dependencies
 RUN npm ci --only=production
 
 # Install sequelize-cli for migrations
 RUN npm install sequelize-cli
 
-# Copy backend source
-COPY backend/ ./
+# Go back to app root
+WORKDIR /app
 
-# Copy startup script
-COPY start.sh ./
+# Make start script executable
 RUN chmod +x start.sh
 
 # Create directories for static assets (will be built separately)
@@ -22,8 +26,9 @@ RUN mkdir -p public website-build
 
 # Environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8080
 
-EXPOSE 3000
+EXPOSE 8080
 
-CMD ["./start.sh"]
+# Start from app root, then run backend server
+CMD ["sh", "-c", "cd backend && node server.js"]
