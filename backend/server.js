@@ -379,8 +379,20 @@ const startServer = async () => {
     
     // Start keep-alive service for production
     if (process.env.NODE_ENV === 'production') {
-      const keepAlive = new HerokuKeepAlive(process.env.HEROKU_APP_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com');
-      keepAlive.start();
+      // Prefer explicit public URL, otherwise derive from Railway-provided domains; if none, disable keep-alive
+      const derivedRailwayUrl =
+        (process.env.RAILWAY_PUBLIC_DOMAIN && `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`) ||
+        (process.env.RAILWAY_STATIC_URL && `https://${process.env.RAILWAY_STATIC_URL}`) ||
+        (process.env.RAILWAY_SERVICE_F_F_URL && `https://${process.env.RAILWAY_SERVICE_F_F_URL}`);
+
+      const publicUrl = process.env.APP_PUBLIC_URL || process.env.HEROKU_APP_URL || derivedRailwayUrl;
+
+      if (publicUrl) {
+        const keepAlive = new HerokuKeepAlive(publicUrl);
+        keepAlive.start();
+      } else {
+        console.log('ℹ️ Keep-alive disabled: no public URL detected. Set APP_PUBLIC_URL or ensure Railway public domain is available.');
+      }
       
       // Graceful shutdown
       process.on('SIGTERM', () => {

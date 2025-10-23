@@ -54,17 +54,25 @@ module.exports = {
 		await queryInterface.sequelize.query(`
 			DO $$
 			BEGIN
-				-- returns.saleId -> sales.id
+				-- returns FKs (best-effort, ignore if already exist)
 				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='returns')
 					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='sales')
 					 AND NOT EXISTS (
 						 SELECT 1 FROM information_schema.table_constraints tc
-						 WHERE tc.table_name = 'returns' AND tc.constraint_type = 'FOREIGN KEY'
+						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_saleId_fkey'
 					 ) THEN
 					BEGIN
 						ALTER TABLE returns
 						ADD CONSTRAINT returns_saleId_fkey FOREIGN KEY ("saleId") REFERENCES sales(id) ON DELETE CASCADE;
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
+				END IF;
+
+				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='returns')
+					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='users')
+					 AND NOT EXISTS (
+						 SELECT 1 FROM information_schema.table_constraints tc
+						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_processedById_fkey'
+					 ) THEN
 					BEGIN
 						ALTER TABLE returns
 						ADD CONSTRAINT returns_processedById_fkey FOREIGN KEY ("processedById") REFERENCES users(id);
@@ -72,19 +80,48 @@ module.exports = {
 				END IF;
 
 				-- return_items FKs (best-effort, ignore if already exist)
-				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items') THEN
+				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items')
+					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='returns')
+					 AND NOT EXISTS (
+						 SELECT 1 FROM information_schema.table_constraints tc
+						 WHERE tc.table_name = 'return_items' AND tc.constraint_name = 'return_items_returnId_fkey'
+					 ) THEN
 					BEGIN
 						ALTER TABLE return_items
 						ADD CONSTRAINT return_items_returnId_fkey FOREIGN KEY ("returnId") REFERENCES returns(id) ON DELETE CASCADE;
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
+				END IF;
+
+				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items')
+					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='sale_items')
+					 AND NOT EXISTS (
+						 SELECT 1 FROM information_schema.table_constraints tc
+						 WHERE tc.table_name = 'return_items' AND tc.constraint_name = 'return_items_saleItemId_fkey'
+					 ) THEN
 					BEGIN
 						ALTER TABLE return_items
 						ADD CONSTRAINT return_items_saleItemId_fkey FOREIGN KEY ("saleItemId") REFERENCES sale_items(id);
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
+				END IF;
+
+				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items')
+					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='products')
+					 AND NOT EXISTS (
+						 SELECT 1 FROM information_schema.table_constraints tc
+						 WHERE tc.table_name = 'return_items' AND tc.constraint_name = 'return_items_productId_fkey'
+					 ) THEN
 					BEGIN
 						ALTER TABLE return_items
 						ADD CONSTRAINT return_items_productId_fkey FOREIGN KEY ("productId") REFERENCES products(id);
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
+				END IF;
+
+				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items')
+					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='locations')
+					 AND NOT EXISTS (
+						 SELECT 1 FROM information_schema.table_constraints tc
+						 WHERE tc.table_name = 'return_items' AND tc.constraint_name = 'return_items_locationId_fkey'
+					 ) THEN
 					BEGIN
 						ALTER TABLE return_items
 						ADD CONSTRAINT return_items_locationId_fkey FOREIGN KEY ("locationId") REFERENCES locations(id);

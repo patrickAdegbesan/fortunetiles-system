@@ -60,7 +60,13 @@ const PWAInstallPrompt = () => {
     };
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = async (event) => {
+    // Ensure this is called from a user gesture
+    if (event && event.type !== 'click') {
+      console.log('Install prompt must be triggered by user gesture');
+      return;
+    }
+
     if (deferredPrompt && typeof deferredPrompt.prompt === 'function') {
       try {
         deferredPrompt.prompt();

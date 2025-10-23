@@ -10,19 +10,20 @@ router.get('/', authenticateToken, async (req, res) => {
     const { startDate, endDate, locationId } = req.query;
     
     // Build where clause for date and location filtering
-    const whereClause = {};
+  const whereAnd = [];
     
     // Add date range filtering
     if (startDate && endDate) {
       const startDateTime = new Date(startDate + 'T00:00:00.000Z');
       const endDateTime = new Date(endDate + 'T23:59:59.999Z');
-      whereClause.createdAt = {
-        [Op.between]: [startDateTime, endDateTime]
-      };
+      whereAnd.push(require('../config/database').sequelize.where(
+        require('../config/database').sequelize.col('created_at'),
+        { [Op.between]: [startDateTime, endDateTime] }
+      ));
     }
     
     const returns = await Return.findAll({
-      where: whereClause,
+      where: whereAnd.length ? { [Op.and]: whereAnd } : {},
       include: [
         {
           model: ReturnItem,
@@ -38,12 +39,18 @@ router.get('/', authenticateToken, async (req, res) => {
           attributes: ['id', 'firstName', 'lastName', 'email']
         }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
     res.json({ returns });
   } catch (error) {
     console.error('Error fetching returns:', error);
-    res.status(500).json({ error: 'Failed to fetch returns' });
+    console.error('Error stack:', error.stack);
+    console.error('Query parameters:', { startDate, endDate, locationId });
+    res.status(500).json({
+      error: 'Failed to fetch returns',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -116,7 +123,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // Create the return record
     const returnRecord = await Return.create({
       saleId,
-      processedBy: req.user.id,
+      processedById: req.user.id,
       returnType: normalizedReturnType,
       reason,
       refundMethod: normalizedRefundMethod,

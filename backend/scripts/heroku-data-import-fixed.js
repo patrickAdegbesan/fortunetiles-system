@@ -31,6 +31,16 @@ function transformRecord(table, record) {
       transformed.totalPrice = transformed.lineTotal;
       delete transformed.lineTotal;
     }
+    // Remove locationId if present (not in current schema)
+    if (transformed.locationId !== undefined) {
+      delete transformed.locationId;
+    }
+  }
+  if (table === 'product_types') {
+    // Fix null unitOfMeasure values
+    if (!transformed.unitOfMeasure || transformed.unitOfMeasure === null) {
+      transformed.unitOfMeasure = 'pcs'; // Default value
+    }
   }
   if (table === 'returns') {
     // Map processedBy to processedById
@@ -50,6 +60,11 @@ function transformRecord(table, record) {
     if (!transformed.createdAt) {
       transformed.createdAt = new Date().toISOString();
     }
+    // Fix user_id vs userId issue
+    if (transformed.user_id !== undefined && !transformed.userId) {
+      transformed.userId = transformed.user_id;
+      delete transformed.user_id;
+    }
   }
 
   return transformed;
@@ -58,7 +73,7 @@ function transformRecord(table, record) {
 async function importHerokuDataSimple() {
   try {
     console.log('📂 Looking for export files...');
-    
+
     const exportDir = path.join(__dirname, '../exports');
     if (!fs.existsSync(exportDir)) {
       console.error('❌ Export directory not found. Run heroku-data-export.js first!');
@@ -81,14 +96,14 @@ async function importHerokuDataSimple() {
 
     // Read the export data
     const exportData = JSON.parse(fs.readFileSync(latestExportFile, 'utf8'));
-    
+
     console.log('🔗 Connecting to local database...');
     await sequelize.authenticate();
     console.log('✅ Connected to local database successfully');
 
     console.log('\n⚠️  WARNING: This will overwrite existing data in your local database!');
     console.log('Press Ctrl+C now if you want to cancel...');
-    
+
     // Wait 3 seconds for user to cancel
     await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -124,22 +139,22 @@ async function importHerokuDataSimple() {
 
       try {
         console.log(`📥 Importing ${table}... (${data.length} records)`);
-        
+
         // Clear existing data
         await sequelize.query(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE;`);
-        
+
         let imported = 0;
-        
+
         // Import records using Sequelize models
         for (const record of data) {
           try {
             const transformedRecord = transformRecord(table, record);
-            await sequelize.models[model].create(transformedRecord, { 
+            await sequelize.models[model].create(transformedRecord, {
               hooks: false,  // Skip hooks to avoid password hashing issues
               validate: false  // Skip validation for import
             });
             imported++;
-            
+
             // Show progress for large tables
             if (imported % 50 === 0) {
               console.log(`   ... ${imported}/${data.length} records imported`);
@@ -182,7 +197,7 @@ async function importHerokuDataSimple() {
           const [result] = await sequelize.query(`SELECT COUNT(*) as count FROM "${table}"`);
           const localCount = parseInt(result[0].count);
           const exportedCount = data.length;
-          
+
           if (localCount === exportedCount) {
             console.log(`   ✅ ${table}: ${localCount} records (verified)`);
           } else if (localCount > 0) {
@@ -197,7 +212,7 @@ async function importHerokuDataSimple() {
     }
 
     console.log('\n✅ Heroku data import process completed!');
-    
+
     if (totalImported > 0) {
       console.log('🎯 SUCCESS: Your production data has been imported to local database!');
       console.log('💡 You can now use your local system with all your production data.');

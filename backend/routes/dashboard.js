@@ -7,13 +7,13 @@ const router = express.Router();
 
 // GET /api/dashboard - Get dashboard summary data
 router.get('/', async (req, res) => {
-  try {
-    const { locationId, category, startDate, endDate } = req.query;
+  const { locationId, category, startDate, endDate } = req.query;
 
+  try {
     console.log('Dashboard query parameters:', { locationId, category, startDate, endDate });
     
     // Build where clauses for location filtering - handle "all" case
-    const saleWhereClause = {};
+  const saleWhereClause = {};
     if (locationId && locationId !== 'all') {
       saleWhereClause.locationId = parseInt(locationId);
     }
@@ -23,22 +23,18 @@ router.get('/', async (req, res) => {
       inventoryWhereClause.locationId = parseInt(locationId);
     }
     
-    const logWhereClause = {};
+  const logWhereClause = {};
     if (locationId && locationId !== 'all') {
       logWhereClause.locationId = parseInt(locationId);
     }
 
-    // Add date range filtering
+    // Add date range filtering to inventory logs
     if (startDate && endDate) {
       const startDateTime = new Date(startDate + 'T00:00:00.000Z');
       const endDateTime = new Date(endDate + 'T23:59:59.999Z');
-      
-      saleWhereClause.createdAt = {
-        [Op.between]: [startDateTime, endDateTime]
-      };
-      logWhereClause.createdAt = {
-        [Op.between]: [startDateTime, endDateTime]
-      };
+      logWhereClause[Op.and] = [
+        sequelize.where(sequelize.col('InventoryLog.created_at'), { [Op.between]: [startDateTime, endDateTime] })
+      ];
     }
 
     // Build product filter for category
@@ -248,7 +244,7 @@ router.get('/', async (req, res) => {
         { model: Location, as: 'location' },
         { model: User, as: 'user', attributes: ['firstName', 'lastName'] }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 15,
       raw: false
     });
@@ -256,9 +252,11 @@ router.get('/', async (req, res) => {
     // Get recent returns activity
     const returnWhereClause = {};
     if (startDate && endDate) {
-      returnWhereClause.createdAt = {
-        [Op.between]: [new Date(startDate), new Date(endDate + ' 23:59:59')]
-      };
+      returnWhereClause[Op.and] = [
+        sequelize.where(sequelize.col('created_at'), {
+          [Op.between]: [new Date(startDate + 'T00:00:00.000Z'), new Date(endDate + 'T23:59:59.999Z')]
+        })
+      ];
     }
 
     const returnActivity = await Return.findAll({
@@ -270,7 +268,7 @@ router.get('/', async (req, res) => {
           include: [{ model: Product }]
         }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 10,
       raw: false
     });
@@ -312,9 +310,9 @@ router.get('/', async (req, res) => {
       if (startDate && endDate) {
         const startDateTime = new Date(startDate + 'T00:00:00.000Z');
         const endDateTime = new Date(endDate + 'T23:59:59.999Z');
-        salesByLocationWhereClause.createdAt = {
-          [Op.between]: [startDateTime, endDateTime]
-        };
+        salesByLocationWhereClause[Op.and] = [
+          sequelize.where(sequelize.col('created_at'), { [Op.between]: [startDateTime, endDateTime] })
+        ];
       }
       
       salesByLocation = await Sale.findAll({
@@ -389,7 +387,13 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     console.error('Dashboard error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    console.error('Query parameters:', { locationId, category, startDate, endDate });
+    res.status(500).json({
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 

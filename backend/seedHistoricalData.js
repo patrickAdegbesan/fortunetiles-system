@@ -647,7 +647,7 @@ async function generateReturn(sale, saleItems, location, users) {
   
   const returnRecord = await Return.create({
     saleId: sale.id,
-    processedBy: managerUser.id,
+    processedById: managerUser.id,
     returnDate: returnDate,
     returnType: randomChoice(['REFUND', 'EXCHANGE']),
     reason: randomChoice([

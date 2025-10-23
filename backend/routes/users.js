@@ -52,7 +52,7 @@ router.get('/', authenticateToken, requireRole(['owner']), activityLogger('view_
       attributes: { exclude: ['password'] },
       offset,
       limit: parseInt(limit),
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     const totalPages = Math.ceil(count / limit);

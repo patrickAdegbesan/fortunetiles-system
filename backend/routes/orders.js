@@ -10,28 +10,30 @@ router.get('/', async (req, res) => {
     const { startDate, endDate, locationId } = req.query;
     
     // Build where clause for date and location filtering
-    const whereClause = {};
+    const whereAnd = [];
     
-    // Add date range filtering
+    // Add date range filtering (snake_case column)
     if (startDate && endDate) {
       const startDateTime = new Date(startDate + 'T00:00:00.000Z');
       const endDateTime = new Date(endDate + 'T23:59:59.999Z');
-      whereClause.createdAt = {
-        [Op.between]: [startDateTime, endDateTime]
-      };
+      whereAnd.push(require('../config/database').sequelize.where(
+        require('../config/database').sequelize.col('created_at'),
+        { [Op.between]: [startDateTime, endDateTime] }
+      ));
     }
     
     // Add location filtering
     if (locationId && locationId !== 'all') {
-      whereClause.locationId = parseInt(locationId);
+      whereAnd.push({ locationId: parseInt(locationId) });
     }
     
     const sales = await Sale.findAll({
-      where: whereClause,
+  where: whereAnd.length ? { [Op.and]: whereAnd } : {},
       include: [
         {
           model: SaleItem,
           as: 'items',
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal'],
           include: [
             {
               model: Product,
@@ -49,7 +51,7 @@ router.get('/', async (req, res) => {
           model: Return,
           as: 'returns',
           required: false, // Left join to include sales without returns
-          attributes: ['id', 'returnType', 'status', 'totalRefundAmount', 'createdAt']
+          attributes: ['id', 'returnType', 'status', 'totalRefundAmount', 'created_at']
         }
         // Temporarily removed Location association to debug
         // {
@@ -58,13 +60,13 @@ router.get('/', async (req, res) => {
         //   attributes: ['id', 'name', 'address']
         // }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 1000 // Limit to last 1000 orders for performance
     });
 
     // Format the data for the frontend
     const formattedSales = sales.map(sale => {
-      const saleData = sale.toJSON();
+  const saleData = sale.toJSON();
       
       // Format items with product names
       const formattedItems = saleData.items?.map(item => ({
@@ -74,7 +76,7 @@ router.get('/', async (req, res) => {
         categories: item.product?.categories || [],
         description: item.product?.description || '',
         quantity: item.quantity,
-        unit: item.unit || 'sqm',
+        unit: item.product?.unitOfMeasure || 'sqm',
         unitPrice: parseFloat(item.unitPrice),
         totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
       })) || [];
@@ -89,7 +91,7 @@ router.get('/', async (req, res) => {
         discountType: saleData.discountType,
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
-        status: saleData.returns && saleData.returns.length > 0 ? 'partially_returned' : 'completed',
+  status: saleData.returns && saleData.returns.length > 0 ? 'partially_returned' : 'completed',
         createdAt: saleData.createdAt,
         saleDate: saleData.createdAt, // Use createdAt as saleDate
         items: formattedItems,
@@ -107,9 +109,12 @@ router.get('/', async (req, res) => {
     res.json(formattedSales);
   } catch (error) {
     console.error('Error fetching orders:', error);
-    res.status(500).json({ 
+    console.error('Error stack:', error.stack);
+    console.error('Query parameters:', { startDate, endDate, locationId });
+    res.status(500).json({
       error: 'Failed to fetch orders',
-      details: error.message 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -124,6 +129,7 @@ router.get('/:id', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal'],
           include: [
             {
               model: Product,
@@ -154,7 +160,7 @@ router.get('/:id', async (req, res) => {
       categories: item.product?.categories || [],
       description: item.product?.description || '',
       quantity: item.quantity,
-      unit: item.unit || 'sqm',
+      unit: item.product?.unitOfMeasure || 'sqm',
       unitPrice: parseFloat(item.unitPrice),
       totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
     })) || [];
@@ -211,6 +217,7 @@ router.get('/search/:term', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal'],
           include: [
             {
               model: Product,
@@ -225,7 +232,7 @@ router.get('/search/:term', async (req, res) => {
           attributes: ['id', 'username', 'email']
         }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: 100
     });
 
@@ -239,7 +246,7 @@ router.get('/search/:term', async (req, res) => {
         category: item.product?.categories?.[0] || '',
         description: item.product?.description || '',
         quantity: item.quantity,
-        unit: item.unit || 'sqm',
+        unit: item.product?.unitOfMeasure || 'sqm',
         unitPrice: parseFloat(item.unitPrice),
         totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
       })) || [];

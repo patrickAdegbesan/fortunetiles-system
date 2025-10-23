@@ -45,7 +45,7 @@ const UserActivity = sequelize.define('UserActivity', {
 }, {
   tableName: 'user_activities',
   timestamps: true,
-  underscored: true,
+  underscored: false,  // Changed to false to match actual table column names
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [

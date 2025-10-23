@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
           required: false
         }
       ],
-      order: [['updatedAt', 'DESC']],
+      order: [['updated_at', 'DESC']],
       limit: limitNum,
       offset: offset,
       distinct: true // Ensure accurate count with joins
@@ -176,9 +176,9 @@ router.get('/logs', async (req, res) => {
       const { Op } = require('sequelize');
       const startDateTime = new Date(startDate + 'T00:00:00.000Z');
       const endDateTime = new Date(endDate + 'T23:59:59.999Z');
-      whereClause.createdAt = {
-        [Op.between]: [startDateTime, endDateTime]
-      };
+      whereClause[Op.and] = [
+        sequelize.where(sequelize.col('created_at'), { [Op.between]: [startDateTime, endDateTime] })
+      ];
     }
     
     const logs = await InventoryLog.findAll({
@@ -188,7 +188,7 @@ router.get('/logs', async (req, res) => {
         { model: Location, as: 'location' },
         { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }
       ],
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit)
     });
 

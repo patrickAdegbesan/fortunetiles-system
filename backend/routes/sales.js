@@ -14,9 +14,11 @@ router.get('/', async (req, res) => {
     const whereClause = {};
     if (locationId) whereClause.locationId = locationId;
     if (startDate && endDate) {
-      whereClause.createdAt = {
-        [sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
-      };
+      whereClause[sequelize.Op.and] = [
+        sequelize.where(sequelize.col('created_at'), {
+          [sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
+        })
+      ];
     }
     
     const sales = await Sale.findAndCountAll({
@@ -43,7 +45,7 @@ router.get('/', async (req, res) => {
           }]
         }
       ],
-      order: [['createdAt', 'DESC']],
+  order: [['created_at', 'DESC']],
       limit: parseInt(limit),
       offset: parseInt(offset),
       // Add database-level optimization

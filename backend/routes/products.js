@@ -124,7 +124,10 @@ router.get('/', async (req, res) => {
       include: includeClause,
       attributes: [
         'id', 'name', 'description', 'categories', 'price',
-        'isActive', 'attributes', 'unitOfMeasure', 'createdAt', 'updatedAt'
+        'isActive', 'attributes', 'unitOfMeasure',
+        // Map snake_case columns to camelCase fields for the response
+        [sequelize.col('created_at'), 'createdAt'],
+        [sequelize.col('updated_at'), 'updatedAt']
       ], // Only fetch needed product attributes
       order: [['name', 'ASC']],
       limit: parseInt(limit),

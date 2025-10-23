@@ -273,10 +273,7 @@ module.exports = {
           type: Sequelize.INTEGER,
           allowNull: false,
           field: 'returnId',
-          references: {
-            model: 'returns',
-            key: 'id',
-          },
+          // Remove reference to returns table for now - will be added later
         },
         sale_item_id: {
           type: Sequelize.INTEGER,
@@ -314,10 +311,11 @@ module.exports = {
           allowNull: true,
           field: 'returnReason',
         },
+        // Use TEXT for condition to avoid enum incompatibility across environments
         condition: {
-          type: Sequelize.ENUM('damaged', 'defective', 'wrong_item', 'customer_change_mind', 'other'),
+          type: Sequelize.STRING,
           allowNull: false,
-          defaultValue: 'other',
+          defaultValue: 'PERFECT',
         },
         refund_amount: {
           type: Sequelize.DECIMAL(10, 2),

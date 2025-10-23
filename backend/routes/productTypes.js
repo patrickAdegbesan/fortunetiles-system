@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
   try {
     const productTypes = await cache.getOrSet('product-types:all', async () => {
       return await ProductType.findAll({
-        attributes: ['id', 'name', 'createdAt', 'updatedAt'], // Only select needed fields
+        attributes: ['id', 'name', 'created_at', 'updated_at'], // Only select needed fields (snake_case in DB)
         order: [['name', 'ASC']]
       });
     }, 300000); // Cache for 5 minutes

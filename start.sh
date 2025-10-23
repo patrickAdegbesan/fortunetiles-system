@@ -1,8 +1,8 @@
 #!/bin/sh
-set -e
+set -euo pipefail
 
 echo "Running database migrations (no destructive undo)..."
-npx sequelize-cli db:migrate --env production 2>&1 | tee migration.log
+npx sequelize-cli db:migrate --env production
 
 echo "✅ Migrations complete"
 

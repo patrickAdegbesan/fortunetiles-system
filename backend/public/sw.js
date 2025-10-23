@@ -25,12 +25,26 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 
   // Pre-cache essential assets
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(CACHE_NAME);
       console.log('Caching static assets...');
-      return cache.addAll(STATIC_CACHE_URLS);
-    })
-  );
+      // Cache assets individually to avoid failing the whole install if one request fails
+      await Promise.allSettled(
+        STATIC_CACHE_URLS.map(async (url) => {
+          try {
+            const resp = await fetch(url, { cache: 'no-cache' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+            await cache.put(url, resp);
+          } catch (e) {
+            console.warn('Skipping cache for', url, e?.message || e);
+          }
+        })
+      );
+    } catch (e) {
+      console.warn('Static pre-cache encountered errors; continuing install.', e?.message || e);
+    }
+  })());
 });
 
 self.addEventListener('activate', (event) => {

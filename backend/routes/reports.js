@@ -17,28 +17,24 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
     // Set end date to end of day
     end.setHours(23, 59, 59, 999);
 
-    const whereClause = {
-      createdAt: {
-        [Op.between]: [start, end]
-      }
-    };
-
-    if (locationId) {
-      whereClause.locationId = locationId;
-    }
+    // Use raw column due to snake_case timestamps in DB
+    const whereAnd = [
+      sequelize.where(sequelize.col('created_at'), { [Op.between]: [start, end] })
+    ];
+    if (locationId) whereAnd.push({ locationId });
 
     // Get daily sales data
     const dailySales = await Sale.findAll({
       attributes: [
-        [sequelize.fn('DATE', sequelize.col('Sale.createdAt')), 'date'],
-        [sequelize.fn('COUNT', sequelize.col('Sale.id')), 'totalSales'],
-        [sequelize.fn('SUM', sequelize.col('Sale.totalAmount')), 'totalRevenue'],
-        [sequelize.fn('SUM', sequelize.col('Sale.subtotalAmount')), 'totalSubtotal'],
-        [sequelize.fn('AVG', sequelize.col('Sale.totalAmount')), 'averageOrderValue']
+        [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalSales'],
+        [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('subtotalAmount')), 'totalSubtotal'],
+        [sequelize.fn('AVG', sequelize.col('totalAmount')), 'averageOrderValue']
       ],
-      where: whereClause,
-      group: [sequelize.fn('DATE', sequelize.col('Sale.createdAt'))],
-      order: [[sequelize.fn('DATE', sequelize.col('Sale.createdAt')), 'ASC']],
+      where: { [Op.and]: whereAnd },
+      group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+      order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']],
       raw: true
     });
 
@@ -52,7 +48,7 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
         [sequelize.fn('MIN', sequelize.col('totalAmount')), 'minOrderValue'],
         [sequelize.fn('MAX', sequelize.col('totalAmount')), 'maxOrderValue']
       ],
-      where: whereClause,
+      where: { [Op.and]: whereAnd },
       raw: true
     });
 
@@ -198,24 +194,24 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
     const end = endDate ? new Date(endDate) : new Date();
     end.setHours(23, 59, 59, 999);
 
-    const whereClause = {
-      createdAt: {
-        [Op.between]: [start, end]
-      }
-    };
-
-    if (locationId) {
-      whereClause.locationId = locationId;
-    }
+    const whereAndPM = [
+      // Qualify column with model alias to avoid ambiguity
+      sequelize.where(sequelize.col('Sale.created_at'), { [Op.between]: [start, end] })
+    ];
+    if (locationId) whereAndPM.push({ locationId });
 
     // Get sales with items and product details
     let salesData = await Sale.findAll({
-      where: whereClause,
-      attributes: ['id', 'customerName', 'customerPhone', 'totalAmount', 'subtotalAmount', 'discountType', 'discountValue', 'locationId', 'userId', 'paymentMethod', 'createdAt'],
+      where: { [Op.and]: whereAndPM },
+      attributes: [
+        'id', 'customerName', 'customerPhone', 'totalAmount', 'subtotalAmount', 'discountType', 'discountValue', 'locationId', 'userId', 'paymentMethod',
+        [sequelize.col('created_at'), 'createdAt']
+      ],
       include: [
         {
           model: SaleItem,
           as: 'items',
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal'],
           include: [
             {
               model: Product,
@@ -338,7 +334,13 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
 
   } catch (error) {
     console.error('Profit margin report error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    console.error('Query parameters:', { startDate, endDate, locationId });
+    res.status(500).json({
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -351,15 +353,12 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
     const end = endDate ? new Date(endDate) : new Date();
     end.setHours(23, 59, 59, 999);
 
-    let whereClause = {
-      createdAt: {
-        [Op.between]: [start, end]
-      }
-    };
-
-    if (locationId) {
-      whereClause.locationId = locationId;
-    }
+    // Build where for the joined Sale alias using raw column name
+    const saleWhereAnd = [
+      sequelize.where(sequelize.col('sale.created_at'), { [Op.between]: [start, end] })
+    ];
+    if (locationId) saleWhereAnd.push({ locationId });
+    const whereClause = { [Op.and]: saleWhereAnd };
 
     // Get top products by quantity sold and filter out any items with null products
     let topProductsByQuantity = await SaleItem.findAll({
@@ -367,7 +366,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         'productId',
         [sequelize.fn('SUM', sequelize.col('SaleItem.quantity')), 'totalQuantitySold'],
         [sequelize.fn('COUNT', sequelize.col('SaleItem.id')), 'totalTransactions'],
-        [sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('SaleItem.totalPrice')), 'totalRevenue'],
         [sequelize.fn('AVG', sequelize.col('SaleItem.unitPrice')), 'averagePrice']
       ],
       include: [
@@ -380,7 +379,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
           model: Sale,
           as: 'sale',
           attributes: [],
-          where: whereClause
+          where: { [Op.and]: saleWhereAnd }
         }
       ],
       group: ['SaleItem.productId', 'product.id'],
@@ -396,7 +395,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
     let topProductsByRevenue = await SaleItem.findAll({
       attributes: [
         'productId',
-        [sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('SaleItem.totalPrice')), 'totalRevenue'],
         [sequelize.fn('SUM', sequelize.col('SaleItem.quantity')), 'totalQuantitySold'],
         [sequelize.fn('COUNT', sequelize.col('SaleItem.id')), 'totalTransactions'],
         [sequelize.fn('AVG', sequelize.col('SaleItem.unitPrice')), 'averagePrice']
@@ -411,11 +410,11 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
           model: Sale,
           as: 'sale',
           attributes: [],
-          where: whereClause
+          where: { [Op.and]: saleWhereAnd }
         }
       ],
       group: ['SaleItem.productId', 'product.id'],
-      order: [[sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'DESC']],
+  order: [[sequelize.fn('SUM', sequelize.col('SaleItem.totalPrice')), 'DESC']],
       limit: parseInt(limit),
       raw: false
     });
@@ -440,7 +439,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
     const categoryPerformance = await SaleItem.findAll({
       attributes: [
         [sequelize.fn('SUM', sequelize.col('SaleItem.quantity')), 'totalQuantitySold'],
-        [sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'totalRevenue'],
+        [sequelize.fn('SUM', sequelize.col('SaleItem.totalPrice')), 'totalRevenue'],
         [sequelize.fn('COUNT', sequelize.col('SaleItem.id')), 'totalTransactions']
       ],
       include: [
@@ -457,7 +456,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
         }
       ],
       group: ['product.categories'],
-      order: [[sequelize.fn('SUM', sequelize.col('SaleItem.lineTotal')), 'DESC']],
+      order: [[sequelize.fn('SUM', sequelize.col('SaleItem.totalPrice')), 'DESC']],
       raw: true
     });
 

@@ -1,4 +1,4 @@
-// Heroku Keep-Alive Service - Prevents Cold Starts
+// Keep-Alive Service - Prevents cold starts on platforms that may idle apps
 const https = require('https');
 
 class HerokuKeepAlive {
@@ -10,7 +10,7 @@ class HerokuKeepAlive {
 
   start() {
     if (process.env.NODE_ENV === 'production' && this.appUrl) {
-      console.log('🔥 Starting Heroku keep-alive service...');
+  console.log('🔥 Starting keep-alive service...');
       this.timer = setInterval(() => {
         this.ping();
       }, this.interval);
@@ -33,7 +33,7 @@ class HerokuKeepAlive {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
-      console.log('🛑 Heroku keep-alive service stopped');
+  console.log('🛑 Keep-alive service stopped');
     }
   }
 }

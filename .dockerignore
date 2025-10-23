@@ -8,8 +8,11 @@ backend/node_modules
 website/node_modules
 frontend/build
 website/dist
-backend/public
-backend/website-build
+# Include prebuilt static assets in the Docker image
+# (we serve these directly from the backend). If you prefer building in Docker,
+# create a multi-stage build and keep these ignored.
+# backend/public
+# backend/website-build
 logs
 tmp
 coverage
