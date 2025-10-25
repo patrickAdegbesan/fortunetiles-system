@@ -19,22 +19,22 @@ router.get('/sales-daily', authenticateToken, requireRole(['owner', 'manager']),
 
     // Use raw column due to snake_case timestamps in DB
     const whereAnd = [
-      sequelize.where(sequelize.col('created_at'), { [Op.between]: [start, end] })
+      sequelize.where(sequelize.col('Sale.created_at'), { [Op.between]: [start, end] })
     ];
     if (locationId) whereAnd.push({ locationId });
 
     // Get daily sales data
     const dailySales = await Sale.findAll({
       attributes: [
-        [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+        [sequelize.fn('DATE', sequelize.col('Sale.created_at')), 'date'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalSales'],
         [sequelize.fn('SUM', sequelize.col('totalAmount')), 'totalRevenue'],
         [sequelize.fn('SUM', sequelize.col('subtotalAmount')), 'totalSubtotal'],
         [sequelize.fn('AVG', sequelize.col('totalAmount')), 'averageOrderValue']
       ],
       where: { [Op.and]: whereAnd },
-      group: [sequelize.fn('DATE', sequelize.col('created_at'))],
-      order: [[sequelize.fn('DATE', sequelize.col('created_at')), 'ASC']],
+      group: [sequelize.fn('DATE', sequelize.col('Sale.created_at'))],
+      order: [[sequelize.fn('DATE', sequelize.col('Sale.created_at')), 'ASC']],
       raw: true
     });
 
@@ -205,7 +205,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
       where: { [Op.and]: whereAndPM },
       attributes: [
         'id', 'customerName', 'customerPhone', 'totalAmount', 'subtotalAmount', 'discountType', 'discountValue', 'locationId', 'userId', 'paymentMethod',
-        [sequelize.col('created_at'), 'createdAt']
+        [sequelize.col('Sale.created_at'), 'createdAt']
       ],
       include: [
         {
@@ -335,7 +335,6 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
   } catch (error) {
     console.error('Profit margin report error:', error);
     console.error('Error stack:', error.stack);
-    console.error('Query parameters:', { startDate, endDate, locationId });
     res.status(500).json({
       message: 'Internal server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -355,7 +354,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
 
     // Build where for the joined Sale alias using raw column name
     const saleWhereAnd = [
-      sequelize.where(sequelize.col('sale.created_at'), { [Op.between]: [start, end] })
+      sequelize.where(sequelize.col('Sale.created_at'), { [Op.between]: [start, end] })
     ];
     if (locationId) saleWhereAnd.push({ locationId });
     const whereClause = { [Op.and]: saleWhereAnd };
