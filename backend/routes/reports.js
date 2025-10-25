@@ -354,7 +354,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
 
     // Build where for the joined Sale alias using raw column name
     const saleWhereAnd = [
-      sequelize.where(sequelize.col('Sale.created_at'), { [Op.between]: [start, end] })
+      sequelize.where(sequelize.col('sale.created_at'), { [Op.between]: [start, end] })
     ];
     if (locationId) saleWhereAnd.push({ locationId });
     const whereClause = { [Op.and]: saleWhereAnd };
