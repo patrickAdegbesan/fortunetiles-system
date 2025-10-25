@@ -1,0 +1,10 @@
+# DEPLOYMENT TRIGGER FILE
+# This file is used to trigger a new deployment on Railway
+# The fixes include:
+# 1. Fixed ambiguous 'created_at' column references in dashboard.js
+# 2. Updated all table aliases to be explicit (Sale.created_at, Return.created_at, etc.)
+# 3. Temporary workaround: Removed date filtering from sales by location query
+
+DEPLOYMENT_VERSION=2
+FIXED_ISSUES="ambiguous-column-references"
+CHANGES="dashboard.js"

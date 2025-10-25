@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>F&F API Test</h1>
+    
+    <div id="test1" class="test">
+        <h3>Test 1: Dashboard API</h3>
+        <button onclick="testDashboard()">Test</button>
+        <pre id="result1">Waiting...</pre>
+    </div>
+
+    <div id="test2" class="test">
+        <h3>Test 2: Products API</h3>
+        <button onclick="testProducts()">Test</button>
+        <pre id="result2">Waiting...</pre>
+    </div>
+
+    <div id="test3" class="test">
+        <h3>Test 3: Inventory API</h3>
+        <button onclick="testInventory()">Test</button>
+        <pre id="result3">Waiting...</pre>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://fandf-production.up.railway.app/api';
+
+        async function testDashboard() {
+            try {
+                const response = await fetch(`${BASE_URL}/dashboard`);
+                const data = await response.json();
+                const el = document.getElementById('result1');
+                el.className = response.ok ? 'success' : 'error';
+                el.textContent = `Status: ${response.status}\n\n${JSON.stringify(data, null, 2).substring(0, 500)}...`;
+            } catch (err) {
+                document.getElementById('result1').className = 'error';
+                document.getElementById('result1').textContent = `Error: ${err.message}`;
+            }
+        }
+
+        async function testProducts() {
+            try {
+                const response = await fetch(`${BASE_URL}/products?limit=5`);
+                const data = await response.json();
+                const el = document.getElementById('result2');
+                el.className = response.ok ? 'success' : 'error';
+                el.textContent = `Status: ${response.status}\n\n${JSON.stringify(data, null, 2).substring(0, 500)}...`;
+            } catch (err) {
+                document.getElementById('result2').className = 'error';
+                document.getElementById('result2').textContent = `Error: ${err.message}`;
+            }
+        }
+
+        async function testInventory() {
+            try {
+                const response = await fetch(`${BASE_URL}/inventory?limit=5`);
+                const data = await response.json();
+                const el = document.getElementById('result3');
+                el.className = response.ok ? 'success' : 'error';
+                el.textContent = `Status: ${response.status}\n\n${JSON.stringify(data, null, 2).substring(0, 500)}...`;
+            } catch (err) {
+                document.getElementById('result3').className = 'error';
+                document.getElementById('result3').textContent = `Error: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

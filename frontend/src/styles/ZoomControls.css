@@ -1,0 +1,274 @@
+/* Zoom Controls Styling */
+.zoom-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zoom-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zoom-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #333;
+  font-size: 18px;
+}
+
+.zoom-button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: #007bff;
+  transform: scale(1.1);
+}
+
+.zoom-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #ccc;
+}
+
+.zoom-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.zoom-display {
+  position: relative;
+  min-width: 70px;
+  text-align: center;
+}
+
+.zoom-percentage-btn {
+  background: linear-gradient(135deg, #f5f5f5 0%, #ebebeb 100%);
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.2s ease;
+  width: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.zoom-percentage-btn:hover {
+  background: linear-gradient(135deg, #ebebeb 0%, #e0e0e0 100%);
+  border-color: #999;
+}
+
+.zoom-percentage-btn:active {
+  transform: scale(0.98);
+}
+
+.zoom-dropdown {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px 0;
+  margin-bottom: 8px;
+  min-width: 120px;
+  z-index: 1001;
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.zoom-preset {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: background-color 0.15s ease;
+  display: block;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.zoom-preset:hover {
+  background-color: #f0f0f0;
+}
+
+.zoom-preset.active {
+  background-color: #e3f2fd;
+  color: #007bff;
+  font-weight: 600;
+}
+
+.zoom-preset.active::before {
+  content: '✓ ';
+  font-weight: bold;
+}
+
+.zoom-dropdown-divider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 6px 0;
+}
+
+.zoom-reset {
+  color: #666;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.zoom-reset:hover {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.zoom-reset-btn {
+  padding: 6px;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .zoom-controls {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .zoom-control-group {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .zoom-button {
+    padding: 4px;
+    font-size: 16px;
+  }
+
+  .zoom-display {
+    min-width: 60px;
+  }
+
+  .zoom-percentage-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .zoom-dropdown {
+    min-width: 100px;
+    font-size: 12px;
+  }
+
+  .zoom-preset {
+    padding: 6px 10px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  .zoom-control-group {
+    border-width: 2px;
+    border-color: #000;
+  }
+
+  .zoom-button,
+  .zoom-percentage-btn {
+    border-width: 2px;
+  }
+}
+
+/* Dark mode support (if your app has dark mode) */
+@media (prefers-color-scheme: dark) {
+  .zoom-control-group {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .zoom-button {
+    color: #e0e0e0;
+  }
+
+  .zoom-button:hover:not(:disabled) {
+    background-color: #444;
+    color: #64b5f6;
+  }
+
+  .zoom-percentage-btn {
+    background: linear-gradient(135deg, #404040 0%, #383838 100%);
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  .zoom-percentage-btn:hover {
+    background: linear-gradient(135deg, #383838 0%, #303030 100%);
+    border-color: #777;
+  }
+
+  .zoom-dropdown {
+    background: #2a2a2a;
+    border-color: #444;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .zoom-preset {
+    color: #e0e0e0;
+  }
+
+  .zoom-preset:hover {
+    background-color: #404040;
+  }
+
+  .zoom-preset.active {
+    background-color: #1a3a52;
+    color: #64b5f6;
+  }
+
+  .zoom-dropdown-divider {
+    background-color: #444;
+  }
+}
