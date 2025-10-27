@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ZoomProvider } from './contexts/ZoomContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav_fixed';
-import ZoomControls from './components/ZoomControls';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -42,7 +40,6 @@ function MainLayout({ children }) {
           {children}
         </main>
       </div>
-      <ZoomControls />
     </div>
   );
 }
@@ -51,75 +48,73 @@ function App() {
   const basename = process.env.NODE_ENV === 'production' ? '/inventory/' : '/';
   return (
     <AuthProvider>
-      <ZoomProvider>
-        <Router basename={basename}>
-          <MainLayout>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/sales"
-                element={
-                  <ProtectedRoute>
-                    <SalePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/products"
-                element={
-                  <ProtectedRoute>
-                    <ProductsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute>
-                    <ReportsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/transactions"
-                element={
-                  <ProtectedRoute>
-                    <TransactionsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/inventory"
-                element={
-                  <ProtectedRoute>
-                    <ProductsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </MainLayout>
-          <PWAInstallPrompt />
-        </Router>
-      </ZoomProvider>
+      <Router basename={basename}>
+        <MainLayout>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sales"
+              element={
+                <ProtectedRoute>
+                  <SalePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <TransactionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute>
+                  <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </MainLayout>
+        <PWAInstallPrompt />
+      </Router>
     </AuthProvider>
   );
 }

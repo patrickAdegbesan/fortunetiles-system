@@ -4,13 +4,13 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, hsl(224, 99%, 33%) 0%, hsl(225, 87%, 32%) 25%, hsl(0, 0%, 0%) 50%, hsla(229, 96%, 29%, 0.733) 100%);
-  padding: 20px;
+  padding: 16.6px; /* Reduced from 20px (17% reduction) */
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  animation: fadeIn 0.8s ease-in-out;
+  animation: fadeIn 0.664s ease-in-out; /* Reduced from 0.8s (17% reduction) */
 }
 
 @keyframes fadeIn {
@@ -20,15 +20,15 @@
 
 .login-card {
   background: hsl(0, 0%, 100%);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px -8px hsl(225, 60%, 25%, 0.1);
-  padding: 40px;
+  border-radius: 9.96px; /* Reduced from 12px (17% reduction) */
+  box-shadow: 0 6.64px 26.56px -6.64px hsl(225, 60%, 25%, 0.1); /* Reduced from 0 8px 32px -8px */
+  padding: 33.2px; /* Reduced from 40px (17% reduction) */
   width: 100%;
-  max-width: 400px;
+  max-width: 332px; /* Reduced from 400px (17% reduction) */
   border: 1px solid hsl(220, 13%, 91%);
   position: relative;
   margin: 0 auto;
-  animation: slideUp 0.6s ease-out;
+  animation: slideUp 0.498s ease-out; /* Reduced from 0.6s (17% reduction) */
 }
 
 @keyframes slideUp {

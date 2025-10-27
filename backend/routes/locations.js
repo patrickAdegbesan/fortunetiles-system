@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
     
     const locations = await cache.getOrSetSmart('locations:all', async () => {
       return await Location.findAll({
-        attributes: ['id', 'name', 'createdAt'], // Only select needed fields
+        attributes: ['id', 'name', 'created_at'], // Use snake_case as defined in model
         include: [
           { 
             model: User, 
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
             attributes: ['id', 'firstName', 'lastName', 'email', 'role'] 
           }
         ],
-        order: [['createdAt', 'ASC']]
+        order: [['created_at', 'ASC']]  // Use snake_case
       });
     }, 600000); // Base 10 minutes (enhanced cache will extend to 20 minutes)
 

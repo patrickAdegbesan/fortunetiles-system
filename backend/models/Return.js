@@ -29,6 +29,7 @@ Return.init({
   saleId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'saleid',  // Map to lowercase column in database
     references: {
       model: 'sales',
       key: 'id'
@@ -37,6 +38,7 @@ Return.init({
   processedById: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'processedbyid',  // Map to lowercase column in database
     references: {
       model: 'users',
       key: 'id'
@@ -45,28 +47,32 @@ Return.init({
   returnDate: {
     type: DataTypes.DATE,
     allowNull: false,
+    field: 'returndate',  // Map to lowercase column
     defaultValue: DataTypes.NOW
   },
   returnType: {
-    type: DataTypes.ENUM('REFUND', 'EXCHANGE'),
-    allowNull: false
+    type: DataTypes.TEXT,  // Changed from ENUM to TEXT to match database
+    allowNull: false,
+    field: 'returntype'  // Map to lowercase column
   },
   reason: {
     type: DataTypes.TEXT,
     allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'),
+    type: DataTypes.TEXT,  // Changed from ENUM to TEXT to match database
     allowNull: false,
     defaultValue: 'PENDING'
   },
   totalRefundAmount: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: true
+    allowNull: true,
+    field: 'totalrefundamount'  // Map to lowercase column
   },
   refundMethod: {
-    type: DataTypes.ENUM('CASH', 'BANK_TRANSFER', 'STORE_CREDIT'),
-    allowNull: true
+    type: DataTypes.TEXT,  // Changed from ENUM to TEXT to match database
+    allowNull: true,
+    field: 'refundmethod'  // Map to lowercase column
   },
   notes: {
     type: DataTypes.TEXT,

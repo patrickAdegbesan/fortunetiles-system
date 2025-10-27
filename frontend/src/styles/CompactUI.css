@@ -1,0 +1,887 @@
+/* ====================================
+    GLOBAL UI SIZE REDUCTION - CompactUI
+    Systematically reduces all UI elements by 15-20%
+    ==================================== */
+
+/* ============ GLOBAL FONT SIZE REDUCTIONS ============ */
+/* Base font sizes reduced by 17% */
+html, body {
+  font-size: 14px; /* Reduced from ~16px default */
+}
+
+/* ============ HEADER REDUCTIONS ============ */
+.header-title-section h1 {
+  font-size: 2.08rem !important; /* Reduced from 2.5rem (17% reduction) */
+}
+
+.header-title-section p {
+  font-size: 0.91rem !important; /* Reduced from 1.1rem */
+}
+
+.enhanced-header {
+  padding: 16.6px !important; /* Reduced from 20px */
+  margin: 13.28px !important; /* Reduced from 16px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.header-top {
+  margin-bottom: 1.245rem !important; /* Reduced from 1.5rem */
+}
+
+/* ============ BUTTON REDUCTIONS ============ */
+.btn-primary,
+.btn-secondary {
+  padding: 0.62rem 1.04rem !important; /* Reduced from 0.75rem 1.25rem */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  font-size: 0.79rem !important; /* Reduced from 0.95rem */
+  gap: 0.415rem !important; /* Reduced from 0.5rem */
+}
+
+.reset-filters-btn {
+  padding: 6.64px 13.28px !important; /* Reduced from 8px 16px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  font-size: 10.79px !important; /* Reduced from 13px */
+  gap: 4.98px !important; /* Reduced from 6px */
+}
+
+.reset-filters-btn svg {
+  width: 11.62px !important; /* Reduced from 14px */
+  height: 11.62px !important; /* Reduced from 14px */
+}
+
+/* ============ DASHBOARD CONTENT REDUCTIONS ============ */
+.main-content {
+  padding: 16.6px !important; /* Reduced from 20px */
+}
+
+.dashboard-filters {
+  padding: 16.6px !important; /* Reduced from 20px */
+  margin: 13.28px !important; /* Reduced from 16px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  gap: 16.6px !important; /* Reduced from 20px */
+}
+
+.filter-group {
+  gap: 6.64px !important; /* Reduced from 8px */
+  min-width: 166px !important; /* Reduced from 200px */
+}
+
+.filter-group label {
+  font-size: 11.62px !important; /* Reduced from 14px */
+  gap: 4.98px !important; /* Reduced from 6px */
+}
+
+.filter-group label svg {
+  width: 13.28px !important; /* Reduced from 16px */
+  height: 13.28px !important; /* Reduced from 16px */
+}
+
+.filter-select {
+  padding: 9.96px 13.28px !important; /* Reduced from 12px 16px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  font-size: 11.62px !important; /* Reduced from 14px */
+  border-width: 1.66px !important; /* Reduced from 2px */
+  background-position: right 9.96px center !important; /* Reduced from right 12px center */
+  background-size: 13.28px !important; /* Reduced from 16px */
+  padding-right: 33.2px !important; /* Reduced from 40px */
+}
+
+/* ============ DASHBOARD SECTIONS ============ */
+.dashboard-section {
+  padding: 19.92px !important; /* Reduced from 24px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  margin-bottom: 16.6px !important; /* Reduced from 20px */
+}
+
+.dashboard-section h2 {
+  font-size: 1.245rem !important; /* Reduced from 1.5rem */
+  margin-bottom: 16.6px !important; /* Reduced from 20px */
+  gap: 6.64px !important; /* Reduced from 8px */
+  padding-bottom: 9.96px !important; /* Reduced from 12px */
+  border-bottom-width: 1.66px !important; /* Reduced from 2px */
+}
+
+.dashboard-section h2 svg {
+  width: 16.6px !important; /* Reduced from 20px */
+  height: 16.6px !important; /* Reduced from 20px */
+}
+
+.dashboard-grid {
+  gap: 16.6px !important; /* Reduced from 20px */
+  margin-top: 16.6px !important; /* Reduced from 20px */
+}
+
+/* ============ STAT CARDS REDUCTIONS ============ */
+.stat-card {
+  padding: 6.64px 4.98px 0 4.98px !important; /* Reduced from 8px 6px 0 6px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.stat-card::before {
+  height: 3.32px !important; /* Reduced from 4px */
+}
+
+.stat-header {
+  gap: 9.96px !important; /* Reduced from 12px */
+}
+
+.stat-card h3 {
+  font-size: 1.08rem !important; /* Reduced from 1.3rem */
+}
+
+.stat-card p {
+  font-size: 0.664rem !important; /* Reduced from 0.8rem */
+}
+
+.stat-icon {
+  width: 1.66em !important; /* Reduced from 2em */
+  height: 1.66em !important; /* Reduced from 2em */
+  border-radius: 8.3px !important; /* Reduced from 10px */
+  font-size: 14.94px !important; /* Reduced from 18px */
+}
+
+.stat-value {
+  padding-top: 13.28px !important; /* Reduced from 16px */
+}
+
+.stat-value .stat-number {
+  font-size: 21.58px !important; /* Reduced from 26px */
+}
+
+.stat-unit {
+  font-size: 9.96px !important; /* Reduced from 12px */
+}
+
+/* ============ STATS GRID REDUCTIONS ============ */
+.stats-grid {
+  gap: 9.13px !important; /* Reduced from 11px */
+  margin-bottom: 0.415rem !important; /* Reduced from 0.5rem */
+}
+
+.stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(83px, 1fr)) !important; /* Reduced from minmax(100px, 1fr) */
+}
+
+/* ============ LOW STOCK SECTION REDUCTIONS ============ */
+.low-stock-section {
+  padding: 13.28px !important; /* Reduced from 16px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.low-stock-section h4 {
+  font-size: 1.04rem !important; /* Reduced from 1.25rem */
+  margin-bottom: 16.6px !important; /* Reduced from 20px */
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.alert-summary {
+  font-size: 0.623rem !important; /* Reduced from 0.75rem */
+  padding: 3.32px 6.64px !important; /* Reduced from 4px 8px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.low-stock-grid {
+  grid-template-columns: repeat(auto-fill, minmax(166px, 1fr)) !important; /* Reduced from minmax(200px, 1fr) */
+  gap: 9.96px !important; /* Reduced from 12px */
+}
+
+.low-stock-item {
+  padding: 13.28px !important; /* Reduced from 16px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  gap: 9.96px !important; /* Reduced from 12px */
+  border-width: 1.66px !important; /* Reduced from 2px */
+}
+
+.low-stock-item::before {
+  height: 3.32px !important; /* Reduced from 4px */
+}
+
+.low-stock-item-compact {
+  padding: 9.96px !important; /* Reduced from 12px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+}
+
+.low-stock-item-compact::before {
+  height: 2.49px !important; /* Reduced from 3px */
+}
+
+/* ============ ITEM INFO REDUCTIONS ============ */
+.item-info {
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.item-info h3 {
+  font-size: 10.79px !important; /* Reduced from 13px */
+  margin-bottom: 1.66px !important; /* Reduced from 2px */
+}
+
+.stat-description {
+  font-size: 9.13px !important; /* Reduced from 11px */
+}
+
+.product-name {
+  font-size: 11.62px !important; /* Reduced from 14px */
+}
+
+.quantity-compact {
+  font-size: 14.94px !important; /* Reduced from 18px */
+  padding: 1.66px 4.98px !important; /* Reduced from 2px 6px */
+  border-radius: 3.32px !important; /* Reduced from 4px */
+}
+
+.stock-status {
+  font-size: 9.13px !important; /* Reduced from 11px */
+}
+
+/* ============ ITEM DETAILS REDUCTIONS ============ */
+.item-details {
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.item-header {
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.item-header strong {
+  font-size: 13.28px !important; /* Reduced from 16px */
+}
+
+.status-badge {
+  font-size: 8.3px !important; /* Reduced from 10px */
+  padding: 3.32px 6.64px !important; /* Reduced from 4px 8px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.item-specs {
+  font-size: 10.79px !important; /* Reduced from 13px */
+}
+
+.item-meta {
+  gap: 9.96px !important; /* Reduced from 12px */
+}
+
+.item-location {
+  font-size: 9.96px !important; /* Reduced from 12px */
+  gap: 3.32px !important; /* Reduced from 4px */
+}
+
+.sales-indicator {
+  font-size: 9.13px !important; /* Reduced from 11px */
+  padding: 1.66px 4.98px !important; /* Reduced from 2px 6px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+}
+
+/* ============ QUANTITY ALERT REDUCTIONS ============ */
+.quantity-alert {
+  padding: 9.96px 13.28px !important; /* Reduced from 12px 16px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  min-width: 83px !important; /* Reduced from 100px */
+}
+
+.quantity {
+  font-size: 23.24px !important; /* Reduced from 28px */
+}
+
+.quantity.out-of-stock,
+.quantity.critical,
+.quantity.low {
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  padding: 3.32px 6.64px !important; /* Reduced from 4px 8px */
+  border-width: 1.66px !important; /* Reduced from 2px */
+}
+
+.unit {
+  font-size: 8.3px !important; /* Reduced from 10px */
+  margin-top: 3.32px !important; /* Reduced from 4px */
+}
+
+.more-items {
+  padding: 9.96px !important; /* Reduced from 12px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+}
+
+/* ============ ACTIVITY LIST REDUCTIONS ============ */
+.activity-list {
+  max-height: 332px !important; /* Reduced from 400px */
+  padding-right: 6.64px !important; /* Reduced from 8px */
+}
+
+.activity-list::-webkit-scrollbar {
+  width: 3.32px !important; /* Reduced from 4px */
+}
+
+.activity-list::-webkit-scrollbar-track,
+.activity-list::-webkit-scrollbar-thumb {
+  border-radius: 1.66px !important; /* Reduced from 2px */
+}
+
+.activity-item {
+  padding: 13.28px !important; /* Reduced from 16px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  margin-bottom: 9.96px !important; /* Reduced from 12px */
+  border-left-width: 3.32px !important; /* Reduced from 4px */
+}
+
+.activity-info {
+  gap: 3.32px !important; /* Reduced from 4px */
+}
+
+.activity-info strong {
+  font-size: 11.62px !important; /* Reduced from 14px */
+}
+
+.change-type {
+  padding: 1.66px 6.64px !important; /* Reduced from 2px 8px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  font-size: 8.3px !important; /* Reduced from 10px */
+}
+
+.activity-details {
+  gap: 3.32px !important; /* Reduced from 4px */
+}
+
+.activity-details span {
+  font-size: 10.79px !important; /* Reduced from 13px */
+}
+
+.activity-details small {
+  font-size: 9.13px !important; /* Reduced from 11px */
+}
+
+/* ============ QUICK STATS REDUCTIONS ============ */
+.quick-stats {
+  grid-template-columns: repeat(auto-fit, minmax(166px, 1fr)) !important; /* Reduced from minmax(200px, 1fr) */
+  gap: 13.28px !important; /* Reduced from 16px */
+  max-height: 332px !important; /* Reduced from 400px */
+  padding-right: 6.64px !important; /* Reduced from 8px */
+}
+
+.quick-stats.scrollable::-webkit-scrollbar {
+  width: 3.32px !important; /* Reduced from 4px */
+}
+
+.quick-stats.scrollable::-webkit-scrollbar-track,
+.quick-stats.scrollable::-webkit-scrollbar-thumb {
+  border-radius: 1.66px !important; /* Reduced from 2px */
+}
+
+.stat-item {
+  padding: 16.6px !important; /* Reduced from 20px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+}
+
+.stat-item::before {
+  width: 3.32px !important; /* Reduced from 4px */
+}
+
+.stat-content {
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.stat-content span {
+  font-size: 9.96px !important; /* Reduced from 12px */
+  gap: 6.64px !important; /* Reduced from 8px */
+  gap: 4.98px !important; /* Reduced from 6px */
+}
+
+.stat-content span svg {
+  width: 11.62px !important; /* Reduced from 14px */
+  height: 11.62px !important; /* Reduced from 14px */
+}
+
+.stat-content strong {
+  font-size: 19.92px !important; /* Reduced from 24px */
+}
+
+/* ============ LOADING & ERROR STATES REDUCTIONS ============ */
+.loading {
+  min-height: 166px !important; /* Reduced from 200px */
+  font-size: 0.91rem !important; /* Reduced from 1.1rem */
+}
+
+.loading::before {
+  width: 26.56px !important; /* Reduced from 32px */
+  height: 26.56px !important; /* Reduced from 32px */
+  border-width: 2.49px !important; /* Reduced from 3px */
+  margin-right: 9.96px !important; /* Reduced from 12px */
+}
+
+.loading-spinner {
+  min-height: 166px !important; /* Reduced from 200px */
+  font-size: 0.91rem !important; /* Reduced from 1.1rem */
+}
+
+.loading-spinner::before {
+  width: 26.56px !important; /* Reduced from 32px */
+  height: 26.56px !important; /* Reduced from 32px */
+  border-width: 2.49px !important; /* Reduced from 3px */
+  margin-right: 9.96px !important; /* Reduced from 12px */
+}
+
+.error-message {
+  padding: 13.28px 16.6px !important; /* Reduced from 16px 20px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  margin-bottom: 16.6px !important; /* Reduced from 20px */
+  border-left-width: 3.32px !important; /* Reduced from 4px */
+  gap: 6.64px !important; /* Reduced from 8px */
+}
+
+.error {
+  padding: 16.6px !important; /* Reduced from 20px */
+  border-radius: 9.96px !important; /* Reduced from 12px */
+  border-width: 1.66px !important; /* Reduced from 2px */
+}
+
+/* ============ FILTER INFO REDUCTIONS ============ */
+.filter-info {
+  padding: 9.96px 16.6px !important; /* Reduced from 12px 20px */
+  border-radius: 6.64px !important; /* Reduced from 8px */
+  margin: 13.28px !important; /* Reduced from 16px */
+}
+
+.active-filters {
+  gap: 9.96px !important; /* Reduced from 12px */
+}
+
+.filter-label {
+  font-size: 11.62px !important; /* Reduced from 14px */
+}
+
+.filter-label svg {
+  width: 11.62px !important; /* Reduced from 14px */
+  height: 11.62px !important; /* Reduced from 14px */
+}
+
+.filter-tag {
+  padding: 3.32px 9.96px !important; /* Reduced from 4px 12px */
+  border-radius: 13.28px !important; /* Reduced from 16px */
+  font-size: 9.96px !important; /* Reduced from 12px */
+  gap: 3.32px !important; /* Reduced from 4px */
+}
+
+.filter-tag svg {
+  width: 9.96px !important; /* Reduced from 12px */
+  height: 9.96px !important; /* Reduced from 12px */
+}
+
+.filter-indicator {
+  gap: 6.64px !important; /* Reduced from 8px */
+  padding: 9.96px 16.6px !important; /* Reduced from 12px 20px */
+  border-radius: 20.75px !important; /* Reduced from 25px */
+  font-size: 11.62px !important; /* Reduced from 14px */
+}
+
+/* ============ SIDEBAR REDUCTIONS ============ */
+.sidebar {
+  width: 49.8px !important; /* Reduced from 60px */
+}
+
+.sidebar.sidebar-open {
+  width: 249px !important; /* Reduced from 300px */
+}
+
+.app-layout {
+  margin-left: 49.8px !important; /* Reduced from 60px */
+}
+
+.sidebar-open .app-layout {
+  margin-left: 249px !important; /* Reduced from 300px */
+}
+
+/* ============ RESPONSIVE BREAKPOINTS ADJUSTMENTS ============ */
+/* Tablet adjustments */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(207.5px, 1fr)) !important; /* Reduced from minmax(250px, 1fr) */
+    gap: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .low-stock-grid {
+    grid-template-columns: repeat(auto-fit, minmax(149.4px, 1fr)) !important; /* Reduced from minmax(180px, 1fr) */
+  }
+  
+  .item-header {
+    gap: 4.98px !important; /* Reduced from 6px */
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .enhanced-header {
+    padding: 13.28px !important; /* Reduced from 16px */
+    margin: 8.3px !important; /* Reduced from 10px */
+  }
+  
+  .header-top {
+    gap: 0.83rem !important; /* Reduced from 1rem */
+  }
+  
+  .header-title-section h1 {
+    font-size: 1.66rem !important; /* Reduced from 2rem */
+  }
+  
+  .dashboard-filters {
+    gap: 13.28px !important; /* Reduced from 16px */
+    margin: 8.3px !important; /* Reduced from 10px */
+    padding: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .dashboard-content {
+    padding: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .dashboard-section {
+    padding: 16.6px !important; /* Reduced from 20px */
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(182.6px, 1fr)) !important; /* Reduced from minmax(220px, 1fr) */
+    gap: 9.96px !important; /* Reduced from 12px */
+  }
+  
+  .stat-card {
+    padding: 16.6px !important; /* Reduced from 20px */
+  }
+  
+  .stat-value .stat-number {
+    font-size: 23.24px !important; /* Reduced from 28px */
+  }
+  
+  .stat-icon {
+    width: 39.84px !important; /* Reduced from 48px */
+    height: 39.84px !important; /* Reduced from 48px */
+    font-size: 16.6px !important; /* Reduced from 20px */
+  }
+  
+  .low-stock-section {
+    padding: 16.6px !important; /* Reduced from 20px */
+  }
+  
+  .low-stock-grid {
+    grid-template-columns: repeat(auto-fit, minmax(132.8px, 1fr)) !important; /* Reduced from minmax(160px, 1fr) */
+    gap: 6.64px !important; /* Reduced from 8px */
+  }
+  
+  .low-stock-item-compact {
+    padding: 8.3px !important; /* Reduced from 10px */
+  }
+  
+  .product-name {
+    font-size: 10.79px !important; /* Reduced from 13px */
+  }
+  
+  .quantity-compact {
+    font-size: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .stock-status {
+    font-size: 8.3px !important; /* Reduced from 10px */
+  }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+  .header-title-section h1 {
+    font-size: 1.45rem !important; /* Reduced from 1.75rem */
+  }
+  
+  .dashboard-filters {
+    margin: 4.15px !important; /* Reduced from 5px */
+    padding: 9.96px !important; /* Reduced from 12px */
+  }
+  
+  .dashboard-content {
+    padding: 8.3px !important; /* Reduced from 10px */
+  }
+  
+  .dashboard-section {
+    padding: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .stat-card {
+    padding: 13.28px !important; /* Reduced from 16px */
+  }
+  
+  .stat-value .stat-number {
+    font-size: 19.92px !important; /* Reduced from 24px */
+  }
+  
+  .low-stock-item {
+    padding: 9.96px !important; /* Reduced from 12px */
+  }
+  
+  .item-meta {
+    gap: 4.98px !important; /* Reduced from 6px */
+  }
+}
+
+/* ============ LAYOUT SPACING REDUCTIONS ============ */
+.app-layout {
+  transition: margin-left 0.249s ease !important; /* Reduced from 0.3s */
+}
+
+.sidebar {
+  transition: width 0.249s ease !important; /* Reduced from 0.3s */
+}
+
+/* ============ GENERAL SPACING OVERRIDES ============ */
+/* Reduce all margin and padding values by 17% where not specifically handled */
+.dashboard-page {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dashboard-container {
+  margin-left: 0 !important;
+  transition: margin-left 0.249s ease !important; /* Reduced from 0.3s */
+}
+
+/* ============ ICON SIZE REDUCTIONS ============ */
+/* Reduce all SVG icons by 17% throughout the application */
+svg {
+  width: calc(1em * 0.83) !important;
+  height: calc(1em * 0.83) !important;
+}
+
+/* Specific icon overrides where needed */
+.stat-content span svg,
+.activity-info svg,
+.activity-details svg {
+  width: 11.62px !important; /* Reduced from 14px */
+  height: 11.62px !important; /* Reduced from 14px */
+}
+
+/* ============ TABLE REDUCTIONS ============ */
+table {
+  font-size: 0.83rem !important; /* Reduced from ~1rem (17% reduction) */
+}
+
+th, td {
+  padding: 8.3px 9.96px !important; /* Reduced from ~10px 12px (17% reduction) */
+}
+
+th {
+  font-size: 0.748rem !important; /* Reduced from ~0.9rem (17% reduction) */
+}
+
+/* ============ FORM ELEMENT REDUCTIONS ============ */
+input, select, textarea, button {
+  font-size: 0.83rem !important; /* Reduced from ~1rem (17% reduction) */
+  padding: 8.3px 12.45px !important; /* Reduced from ~10px 15px (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from ~8px (17% reduction) */
+  border-width: 1.66px !important; /* Reduced from ~2px (17% reduction) */
+}
+
+/* Specific form input reductions */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8.3px !important; /* Reduced from 10px (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from 8px (17% reduction) */
+  border-width: 1.66px !important; /* Reduced from 2px (17% reduction) */
+}
+
+.form-group label {
+  margin-bottom: 4.15px !important; /* Reduced from 5px (17% reduction) */
+}
+
+.form-group {
+  margin-bottom: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+.form-row {
+  gap: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+/* ============ SEARCH INPUT REDUCTIONS ============ */
+.search-input,
+.enhanced-search-input {
+  padding: 9.96px 13.28px 9.96px 20.75px !important; /* Reduced from 12px 16px 12px 25px (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from 8px (17% reduction) */
+  font-size: 0.789rem !important; /* Reduced from 0.95rem (17% reduction) */
+  margin-bottom: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+.search-container {
+  min-width: 207.5px !important; /* Reduced from 250px (17% reduction) */
+}
+
+.search-icon {
+  left: 9.96px !important; /* Reduced from 12px (17% reduction) */
+}
+
+/* ============ MODAL REDUCTIONS ============ */
+.modal {
+  padding: 16.6px !important; /* Reduced from 20px (17% reduction) */
+}
+
+.modal-content {
+  padding: 24.9px !important; /* Reduced from 30px (17% reduction) */
+  border-radius: 9.96px !important; /* Reduced from 12px (17% reduction) */
+  max-width: 415px !important; /* Reduced from 500px (17% reduction) */
+}
+
+.modal-header {
+  margin-bottom: 16.6px !important; /* Reduced from 20px (17% reduction) */
+  padding-bottom: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+.modal-header h2,
+.modal-header h3 {
+  font-size: 1.245rem !important; /* Reduced from 1.5rem (17% reduction) */
+}
+
+.modal-footer {
+  margin-top: 16.6px !important; /* Reduced from 20px (17% reduction) */
+  gap: 8.3px !important; /* Reduced from 10px (17% reduction) */
+}
+
+/* ============ CARD REDUCTIONS ============ */
+.card {
+  padding: 16.6px !important; /* Reduced from 20px (17% reduction) */
+  border-radius: 9.96px !important; /* Reduced from 12px (17% reduction) */
+  margin-bottom: 16.6px !important; /* Reduced from 20px (17% reduction) */
+}
+
+.card-header {
+  padding: 12.45px 16.6px !important; /* Reduced from 15px 20px (17% reduction) */
+  margin: -16.6px -16.6px 16.6px !important; /* Reduced from -20px -20px 20px (17% reduction) */
+}
+
+.card-body {
+  padding: 16.6px !important; /* Reduced from 20px (17% reduction) */
+}
+
+.card-title {
+  font-size: 1.245rem !important; /* Reduced from 1.5rem (17% reduction) */
+  margin-bottom: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+/* ============ NAVIGATION REDUCTIONS ============ */
+.nav {
+  padding: 8.3px 0 !important; /* Reduced from 10px 0 (17% reduction) */
+}
+
+.nav-item {
+  padding: 8.3px 12.45px !important; /* Reduced from 10px 15px (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from 8px (17% reduction) */
+  margin: 2.49px !important; /* Reduced from 3px (17% reduction) */
+}
+
+.nav-link {
+  font-size: 0.789rem !important; /* Reduced from 0.95rem (17% reduction) */
+  padding: 6.64px 9.96px !important; /* Reduced from 8px 12px (17% reduction) */
+}
+
+/* ============ BADGE/TAG REDUCTIONS ============ */
+.badge {
+  padding: 2.49px 6.64px !important; /* Reduced from 3px 8px (17% reduction) */
+  border-radius: 8.3px !important; /* Reduced from 10px (17% reduction) */
+  font-size: 0.664rem !important; /* Reduced from 0.8rem (17% reduction) */
+}
+
+.tag {
+  padding: 4.15px 8.3px !important; /* Reduced from 5px 10px (17% reduction) */
+  border-radius: 10.79px !important; /* Reduced from 13px (17% reduction) */
+  font-size: 0.706rem !important; /* Reduced from 0.85rem (17% reduction) */
+}
+
+/* ============ TOOLTIP REDUCTIONS ============ */
+.tooltip {
+  font-size: 0.706rem !important; /* Reduced from 0.85rem (17% reduction) */
+  padding: 4.15px 6.64px !important; /* Reduced from 5px 8px (17% reduction) */
+  border-radius: 4.15px !important; /* Reduced from 5px (17% reduction) */
+}
+
+/* ============ DROPDOWN REDUCTIONS ============ */
+.dropdown-menu {
+  padding: 4.15px 0 !important; /* Reduced from 5px 0 (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from 8px (17% reduction) */
+  min-width: 124.5px !important; /* Reduced from 150px (17% reduction) */
+}
+
+.dropdown-item {
+  padding: 6.64px 12.45px !important; /* Reduced from 8px 15px (17% reduction) */
+  font-size: 0.789rem !important; /* Reduced from 0.95rem (17% reduction) */
+}
+
+/* ============ ALERT REDUCTIONS ============ */
+.alert {
+  padding: 9.96px 12.45px !important; /* Reduced from 12px 15px (17% reduction) */
+  border-radius: 6.64px !important; /* Reduced from 8px (17% reduction) */
+  margin-bottom: 12.45px !important; /* Reduced from 15px (17% reduction) */
+}
+
+/* ============ PAGINATION REDUCTIONS ============ */
+.pagination {
+  gap: 4.15px !important; /* Reduced from 5px (17% reduction) */
+}
+
+.pagination-item {
+  padding: 6.64px 9.96px !important; /* Reduced from 8px 12px (17% reduction) */
+  border-radius: 4.15px !important; /* Reduced from 5px (17% reduction) */
+  font-size: 0.789rem !important; /* Reduced from 0.95rem (17% reduction) */
+}
+
+/* ============ BREADCRUMB REDUCTIONS ============ */
+.breadcrumb {
+  padding: 8.3px 12.45px !important; /* Reduced from 10px 15px (17% reduction) */
+  font-size: 0.789rem !important; /* Reduced from 0.95rem (17% reduction) */
+}
+
+.breadcrumb-item {
+  margin-right: 8.3px !important; /* Reduced from 10px (17% reduction) */
+}
+
+/* ============ GENERAL SPACING UTILITIES ============ */
+.p-1 { padding: 2.49px !important; } /* Reduced from 3px */
+.p-2 { padding: 4.98px !important; } /* Reduced from 6px */
+.p-3 { padding: 8.3px !important; } /* Reduced from 10px */
+.p-4 { padding: 12.45px !important; } /* Reduced from 15px */
+.p-5 { padding: 16.6px !important; } /* Reduced from 20px */
+
+.m-1 { margin: 2.49px !important; } /* Reduced from 3px */
+.m-2 { margin: 4.98px !important; } /* Reduced from 6px */
+.m-3 { margin: 8.3px !important; } /* Reduced from 10px */
+.m-4 { margin: 12.45px !important; } /* Reduced from 15px */
+.m-5 { margin: 16.6px !important; } /* Reduced from 20px */
+
+.gap-1 { gap: 2.49px !important; } /* Reduced from 3px */
+.gap-2 { gap: 4.98px !important; } /* Reduced from 6px */
+.gap-3 { gap: 8.3px !important; } /* Reduced from 10px */
+.gap-4 { gap: 12.45px !important; } /* Reduced from 15px */
+.gap-5 { gap: 16.6px !important; } /* Reduced from 20px */
+
+/* ============ RESPONSIVE TEXT SCALING ============ */
+h1 { font-size: 2.08rem !important; } /* Reduced from 2.5rem */
+h2 { font-size: 1.66rem !important; } /* Reduced from 2rem */
+h3 { font-size: 1.245rem !important; } /* Reduced from 1.5rem */
+h4 { font-size: 1.04rem !important; } /* Reduced from 1.25rem */
+h5 { font-size: 0.913rem !important; } /* Reduced from 1.1rem */
+h6 { font-size: 0.83rem !important; } /* Reduced from 1rem */
+
+/* Small text */
+small, .small { font-size: 0.706rem !important; } /* Reduced from 0.85rem */
+
+/* ============ FLEX AND GRID ADJUSTMENTS ============ */
+.container {
+  max-width: 996px !important; /* Reduced from 1200px (17% reduction) */
+  padding: 0 12.45px !important; /* Reduced from 0 15px (17% reduction) */
+}
+
+.container-fluid {
+  padding: 0 12.45px !important; /* Reduced from 0 15px (17% reduction) */
+}
+
+/* Grid gaps */
+.grid {
+  gap: 16.6px !important; /* Reduced from 20px (17% reduction) */
+}
+
+.grid-sm {
+  gap: 8.3px !important; /* Reduced from 10px (17% reduction) */
+}
+
+.grid-lg {
+  gap: 24.9px !important; /* Reduced from 30px (17% reduction) */
+}

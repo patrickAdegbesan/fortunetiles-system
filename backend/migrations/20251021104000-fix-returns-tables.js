@@ -59,11 +59,11 @@ module.exports = {
 					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='sales')
 					 AND NOT EXISTS (
 						 SELECT 1 FROM information_schema.table_constraints tc
-						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_saleId_fkey'
+						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_saleid_fkey'
 					 ) THEN
 					BEGIN
 						ALTER TABLE returns
-						ADD CONSTRAINT returns_saleId_fkey FOREIGN KEY ("saleId") REFERENCES sales(id) ON DELETE CASCADE;
+						ADD CONSTRAINT returns_saleid_fkey FOREIGN KEY (saleid) REFERENCES sales(id) ON DELETE CASCADE;
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
 				END IF;
 
@@ -71,11 +71,11 @@ module.exports = {
 					 AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='users')
 					 AND NOT EXISTS (
 						 SELECT 1 FROM information_schema.table_constraints tc
-						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_processedById_fkey'
+						 WHERE tc.table_name = 'returns' AND tc.constraint_name = 'returns_processedbyid_fkey'
 					 ) THEN
 					BEGIN
 						ALTER TABLE returns
-						ADD CONSTRAINT returns_processedById_fkey FOREIGN KEY ("processedById") REFERENCES users(id);
+						ADD CONSTRAINT returns_processedbyid_fkey FOREIGN KEY (processedbyid) REFERENCES users(id);
 					EXCEPTION WHEN duplicate_object THEN NULL; END;
 				END IF;
 
@@ -89,7 +89,10 @@ module.exports = {
 					BEGIN
 						ALTER TABLE return_items
 						ADD CONSTRAINT return_items_returnId_fkey FOREIGN KEY ("returnId") REFERENCES returns(id) ON DELETE CASCADE;
-					EXCEPTION WHEN duplicate_object THEN NULL; END;
+					EXCEPTION 
+						WHEN duplicate_object THEN NULL;
+						WHEN undefined_column THEN RAISE NOTICE 'Column returnId does not exist in return_items';
+					END;
 				END IF;
 
 				IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='return_items')

@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+frontend/build/
+backend/public/
+website/dist/
+website/build/
+
+# Development files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Desktop app
+desktop-app/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Git
+.git/
+.gitignore
+
+# Scripts and batch files (already on Railway)
+*.bat
+*.sh
+
+# Documentation
+*.md
+!README.md
+
+# Heroku data collection
+heroku-data-collection/
+
+# Scripts
+scripts/
+
+# Frontend source (if already built)
+# Uncomment if you're deploying only the build folder
+# frontend/src/
+# website/src/
+
+# Exports
+backend/exports/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+
+# Bun lock file (use npm on Railway)
+bun.lockb
