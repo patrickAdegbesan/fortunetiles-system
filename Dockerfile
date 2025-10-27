@@ -1,34 +1,26 @@
-# Simple Node.js backend deployment
+# Use Node.js LTS Alpine
 FROM node:20-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy entire repository first
-COPY . .
+# Copy backend package files
+COPY backend/package.json backend/package-lock.json ./
 
-# Navigate to backend
-WORKDIR /app/backend
+# Install dependencies
+RUN npm install --production --no-optional
 
-# Install production dependencies
-RUN npm ci --only=production
+# Copy backend source code
+COPY backend/ ./
 
-# Install sequelize-cli for migrations
-RUN npm install sequelize-cli
+# Create website-build directory if it doesn't exist (public folder already exists from backend copy)
+RUN mkdir -p website-build
 
-# Go back to app root
-WORKDIR /app
-
-# Make start script executable
-RUN chmod +x start.sh
-
-# Create directories for static assets (will be built separately)
-RUN mkdir -p public website-build
-
-# Environment variables
+# Set environment
 ENV NODE_ENV=production
 ENV PORT=8080
 
 EXPOSE 8080
 
-# Start from app root, then run backend server
-CMD ["sh", "-c", "cd backend && node server.js"]
+# Run migrations and start server
+CMD ["sh", "-c", "npx sequelize-cli db:migrate --env production && node server.js"]

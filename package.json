@@ -10,7 +10,7 @@
     "build": "npm run build:frontend && npm run build:website",
     "build:frontend": "cd frontend && npm run build",
     "build:website": "cd website && bun run build",
-    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && bun install && bun run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
+  "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../website && npm install && npm run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/ && rm -rf ./website-build && mkdir -p ./website-build && cp -a ../website/dist/. ./website-build/",
     "compress-images": "node scripts/compress-images.js",
     "seed-types": "node seed-product-types.js"
   },
@@ -20,6 +20,10 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sharp": "^0.32.6"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   },
   "devDependencies": {
     "pg": "^8.16.3"

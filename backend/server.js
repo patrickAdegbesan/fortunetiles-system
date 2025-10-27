@@ -28,6 +28,17 @@ const performanceRoutes = require('./routes/performance');
 const HerokuKeepAlive = require('./services/keepAlive');
 const WebSocketService = require('./services/WebSocketService');
 
+// Add global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error.message, error.stack);
+  // Don't exit - log and continue
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit - log and continue
+});
+
 const app = express();
 
 // Middleware
@@ -139,6 +150,15 @@ const staticOptions = {
 // Special route for the exact /inventory path - serve React app directly
 app.get('/inventory', (req, res) => {
   const inventoryIndexPath = path.join(__dirname, 'public', 'index.html');
+
+  // Check if file exists before trying to serve it
+  if (!fs.existsSync(inventoryIndexPath)) {
+    console.warn('⚠️ Inventory app not found at:', inventoryIndexPath);
+    return res.status(503).json({ 
+      error: 'Inventory system not available', 
+      message: 'The inventory frontend has not been built. This is a backend-only deployment.'
+    });
+  }
 
   // Set headers to prevent caching issues
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -377,7 +397,12 @@ const startServer = async () => {
     // Make WebSocket service available globally for notifications
     global.wsService = wsService;
     
+    // TEMPORARILY DISABLE keep-alive service for debugging
+    console.log('ℹ️ Keep-alive service temporarily disabled for debugging');
+    
+    /*
     // Start keep-alive service for production
+    let keepAlive = null;
     if (process.env.NODE_ENV === 'production') {
       // Prefer explicit public URL, otherwise derive from Railway-provided domains; if none, disable keep-alive
       const derivedRailwayUrl =
@@ -388,7 +413,7 @@ const startServer = async () => {
       const publicUrl = process.env.APP_PUBLIC_URL || process.env.HEROKU_APP_URL || derivedRailwayUrl;
 
       if (publicUrl) {
-        const keepAlive = new HerokuKeepAlive(publicUrl);
+        keepAlive = new HerokuKeepAlive(publicUrl);
         keepAlive.start();
       } else {
         console.log('ℹ️ Keep-alive disabled: no public URL detected. Set APP_PUBLIC_URL or ensure Railway public domain is available.');
@@ -396,14 +421,33 @@ const startServer = async () => {
       
       // Graceful shutdown
       process.on('SIGTERM', () => {
-        keepAlive.stop();
+        if (keepAlive) keepAlive.stop();
         wsService?.wss?.close();
       });
       process.on('SIGINT', () => {
-        keepAlive.stop();
+        if (keepAlive) keepAlive.stop();
         wsService?.wss?.close();
       });
     }
+    */
+    
+    // Graceful shutdown (without keep-alive)
+    process.on('SIGTERM', () => {
+      console.log('📴 Received SIGTERM signal, shutting down gracefully...');
+      wsService?.wss?.close();
+      process.exit(0);
+    });
+    process.on('SIGINT', () => {
+      console.log('📴 Received SIGINT signal, shutting down gracefully...');
+      wsService?.wss?.close();
+      process.exit(0);
+    });
+    
+    // Log that server is staying alive
+    console.log('✅ Server setup complete, now listening for requests...');
+    setInterval(() => {
+      console.log(`💓 Heartbeat: Server still running (uptime: ${Math.floor(process.uptime())}s)`);
+    }, 30000); // Log every 30 seconds
   });
 
   server.on('error', (error) => {
