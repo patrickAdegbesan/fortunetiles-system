@@ -250,28 +250,35 @@ router.get('/', async (req, res) => {
     });
 
     // Get recent returns activity
-    const returnWhereClause = {};
-    if (startDate && endDate) {
-      returnWhereClause[Op.and] = [
-        sequelize.where(sequelize.col('Return.created_at'), {
-          [Op.between]: [new Date(startDate + 'T00:00:00.000Z'), new Date(endDate + 'T23:59:59.999Z')]
-        })
-      ];
-    }
+    let returnActivity = [];
+    try {
+      const returnWhereClause = {};
+      if (startDate && endDate) {
+        returnWhereClause[Op.and] = [
+          sequelize.where(sequelize.col('Return.created_at'), {
+            [Op.between]: [new Date(startDate + 'T00:00:00.000Z'), new Date(endDate + 'T23:59:59.999Z')]
+          })
+        ];
+      }
 
-    const returnActivity = await Return.findAll({
-      where: returnWhereClause,
-      include: [
-        {
-          model: ReturnItem,
-          as: 'items',
-          include: [{ model: Product }]
-        }
-      ],
-      order: [['created_at', 'DESC']],
-      limit: 10,
-      raw: false
-    });
+      returnActivity = await Return.findAll({
+        where: returnWhereClause,
+        include: [
+          {
+            model: ReturnItem,
+            as: 'items',
+            include: [{ model: Product }]
+          }
+        ],
+        order: [['created_at', 'DESC']],
+        limit: 10,
+        raw: false
+      });
+    } catch (returnError) {
+      console.error('Error fetching return activity (skipping):', returnError.message);
+      // Continue without return activity if there's an error
+      returnActivity = [];
+    }
 
     // Combine and format all activities
     const allActivities = [
@@ -380,12 +387,18 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Dashboard error:', error);
     console.error('Error stack:', error.stack);
-    console.error('Query parameters:', { locationId, category, startDate, endDate });
-    res.status(500).json({
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    // Don't log query parameters if they might be undefined
+    if (typeof locationId !== 'undefined' || typeof category !== 'undefined') {
+      console.error('Query parameters:', { locationId, category, startDate, endDate });
+    }
+    
+    // Send proper error response
+    if (!res.headersSent) {
+      res.status(500).json({
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 });
 

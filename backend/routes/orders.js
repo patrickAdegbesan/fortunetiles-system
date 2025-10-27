@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
     }
     
     const sales = await Sale.findAll({
-  where: whereAnd.length ? { [Op.and]: whereAnd } : {},
+      where: whereAnd.length ? { [Op.and]: whereAnd } : {},
       include: [
         {
           model: SaleItem,
@@ -46,18 +46,13 @@ router.get('/', async (req, res) => {
           model: User,
           as: 'cashier',
           attributes: ['id', 'firstName', 'lastName', 'email']
-        },
-        {
-          model: Return,
-          as: 'returns',
-          required: false, // Left join to include sales without returns
-          attributes: ['id', 'returnType', 'status', 'totalRefundAmount', 'created_at']
         }
-        // Temporarily removed Location association to debug
+        // Temporarily removed Return association due to database schema mismatch
         // {
-        //   model: Location,
-        //   as: 'location',
-        //   attributes: ['id', 'name', 'address']
+        //   model: Return,
+        //   as: 'returns',
+        //   required: false,
+        //   attributes: ['id', 'returnType', 'status', 'totalRefundAmount', 'created_at']
         // }
       ],
       order: [['created_at', 'DESC']],
@@ -91,7 +86,7 @@ router.get('/', async (req, res) => {
         discountType: saleData.discountType,
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
-  status: saleData.returns && saleData.returns.length > 0 ? 'partially_returned' : 'completed',
+        status: 'completed', // Default to completed since we can't check returns right now
         createdAt: saleData.createdAt,
         saleDate: saleData.createdAt, // Use createdAt as saleDate
         items: formattedItems,
@@ -102,7 +97,7 @@ router.get('/', async (req, res) => {
         } : null,
         location: 'Main Store', // Hardcoded since location association is temporarily removed
         notes: saleData.notes || '',
-        returns: saleData.returns || []
+        returns: [] // Empty array since we can't fetch returns right now
       };
     });
 
@@ -110,12 +105,18 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching orders:', error);
     console.error('Error stack:', error.stack);
-    console.error('Query parameters:', { startDate, endDate, locationId });
-    res.status(500).json({
-      error: 'Failed to fetch orders',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    // Don't try to log variables that might not be defined yet
+    if (req && req.query) {
+      console.error('Query parameters:', req.query);
+    }
+    
+    // Make sure we send a response
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Failed to fetch orders',
+        details: error.message
+      });
+    }
   }
 });
 
