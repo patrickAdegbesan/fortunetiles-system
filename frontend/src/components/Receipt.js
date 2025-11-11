@@ -476,6 +476,7 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
                 <span className="col-item">ITEM DESCRIPTION</span>
                 <span className="col-qty">QUANTITY</span>
                 <span className="col-price">UNIT PRICE</span>
+                <span className="col-markup">MARKUP</span>
                 <span className="col-total">AMOUNT</span>
               </div>
               
@@ -485,11 +486,11 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
                     <div className="col-item">
                       <div className="item-name">{item.product?.name || item.productName || 'Unknown Product'}</div>
                       <div className="item-specs">
-                        {item.product?.customAttributes ? 
+                        {item.product?.customAttributes ?
                           Object.entries(item.product.customAttributes)
                             .filter(([_, value]) => value !== null && value !== undefined && value !== '')
                             .map(([key, value]) => `${key}: ${value}`)
-                            .join(' | ') 
+                            .join(' | ')
                           : ''}
                       </div>
                     </div>
@@ -497,7 +498,10 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
                       {item.quantity} {item.unit || 'sqm'}
                     </div>
                     <div className="col-price">
-                      ₦{parseFloat(item.unitPrice).toLocaleString()}
+                      ₦{parseFloat(item.baseUnitPrice || item.unitPrice).toLocaleString()}
+                    </div>
+                    <div className="col-markup">
+                      ₦{parseFloat(item.markupPrice || 0).toLocaleString()}
                     </div>
                     <div className="col-total">
                       ₦{parseFloat(item.lineTotal || item.totalPrice || (item.quantity * item.unitPrice)).toLocaleString()}
