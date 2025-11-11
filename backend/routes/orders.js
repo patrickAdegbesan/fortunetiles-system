@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'totalPrice'],
           include: [
             {
               model: Product,
@@ -73,10 +73,10 @@ router.get('/', async (req, res) => {
         quantity: item.quantity,
         unit: item.product?.unitOfMeasure || 'sqm',
         unitPrice: parseFloat(item.unitPrice),
-        baseUnitPrice: parseFloat(item.baseUnitPrice || item.unitPrice),
-        markupPrice: parseFloat(item.markupPrice || 0),
-        markupBy: item.markupBy,
-        totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
+        baseUnitPrice: parseFloat(item.unitPrice), // Use unitPrice as base
+        markupPrice: 0, // No markup data available
+        markupBy: null,
+        totalPrice: parseFloat(item.totalPrice)
       })) || [];
 
       return {
@@ -133,7 +133,7 @@ router.get('/:id', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'totalPrice'],
           include: [
             {
               model: Product,
@@ -166,10 +166,10 @@ router.get('/:id', async (req, res) => {
       quantity: item.quantity,
       unit: item.product?.unitOfMeasure || 'sqm',
       unitPrice: parseFloat(item.unitPrice),
-      baseUnitPrice: parseFloat(item.baseUnitPrice || item.unitPrice),
-      markupPrice: parseFloat(item.markupPrice || 0),
-      markupBy: item.markupBy,
-      totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
+      baseUnitPrice: parseFloat(item.unitPrice), // Use unitPrice as base
+      markupPrice: 0, // No markup data available
+      markupBy: null,
+      totalPrice: parseFloat(item.totalPrice)
     })) || [];
 
     const formattedSale = {
@@ -224,7 +224,7 @@ router.get('/search/:term', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'totalPrice'],
           include: [
             {
               model: Product,
@@ -255,10 +255,10 @@ router.get('/search/:term', async (req, res) => {
         quantity: item.quantity,
         unit: item.product?.unitOfMeasure || 'sqm',
         unitPrice: parseFloat(item.unitPrice),
-        baseUnitPrice: parseFloat(item.baseUnitPrice || item.unitPrice),
-        markupPrice: parseFloat(item.markupPrice || 0),
-        markupBy: item.markupBy,
-        totalPrice: parseFloat(item.lineTotal) // Map lineTotal to totalPrice
+        baseUnitPrice: parseFloat(item.unitPrice), // Use unitPrice as base
+        markupPrice: 0, // No markup data available
+        markupBy: null,
+        totalPrice: parseFloat(item.totalPrice)
       })) || [];
 
       return {
