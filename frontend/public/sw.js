@@ -168,7 +168,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Handle static assets with cache-first strategy
-  if (STATIC_CACHE_URLS.some(staticUrl => url.pathname === staticUrl)) {
+  if (CRITICAL_ASSETS.some(staticUrl => url.pathname === staticUrl)) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
