@@ -124,32 +124,31 @@ router.post('/register', async (req, res) => {
 router.post('/verify-pin', authenticateToken, async (req, res) => {
   try {
     const { pin } = req.body;
-    console.log('[PIN VERIFY] Request received:', { pin, userId: req.user?.id });
+    console.log('[PIN VERIFY] Request received:', { pin, userId: req.user?.id, userRole: req.user?.role });
 
     if (!pin) {
       console.log('[PIN VERIFY] PIN is missing');
       return res.status(400).json({ message: 'PIN is required' });
     }
 
-    // Get the first admin user (owner or manager)
+    // Get the first admin user (owner or manager) with a PIN set
     const admin = await User.findOne({
       where: {
         role: {
           [Op.in]: ['owner', 'manager']
+        },
+        pin: {
+          [Op.ne]: null,
+          [Op.ne]: ''
         }
       }
     });
 
-    console.log('[PIN VERIFY] Admin found:', { id: admin?.id, hasPin: !!admin?.pin, adminPin: admin?.pin });
+    console.log('[PIN VERIFY] Admin with PIN found:', { id: admin?.id, hasPin: !!admin?.pin });
 
     if (!admin) {
-      console.log('[PIN VERIFY] No admin user found');
-      return res.status(400).json({ message: 'No admin user found' });
-    }
-
-    if (!admin.pin) {
-      console.log('[PIN VERIFY] Admin has no PIN configured');
-      return res.status(400).json({ message: 'No admin PIN configured' });
+      console.log('[PIN VERIFY] No admin user with PIN configured found');
+      return res.status(400).json({ message: 'No admin PIN configured. Please contact an administrator to set up PIN verification.' });
     }
 
     // Verify PIN
