@@ -36,7 +36,14 @@ const User = sequelize.define('User', {
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: [6, 255],
+      len: [12, 255],
+      isStrongPassword(value) {
+        // Require at least 12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+        if (!strongRegex.test(value)) {
+          throw new Error('Password must be at least 12 characters and contain uppercase, lowercase, number, and special character');
+        }
+      }
     },
   },
   role: {
@@ -67,6 +74,11 @@ const User = sequelize.define('User', {
   resetTokenExpiry: {
     type: DataTypes.DATE,
     allowNull: true,
+  },
+  pin: {
+    type: DataTypes.STRING(4),
+    allowNull: true,
+    comment: 'Admin PIN for granting markup privileges to staff'
   }
 }, {
   tableName: 'users',

@@ -20,7 +20,8 @@ import {
   renameCategory,
   fetchGlobalAttributes,
   createGlobalAttribute,
-  deleteGlobalAttribute
+  deleteGlobalAttribute,
+  setAdminPin
 } from '../services/api';
 import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
@@ -136,6 +137,11 @@ const SettingsPage = () => {
   const [showGlobalAttributeDeleteModal, setShowGlobalAttributeDeleteModal] = useState(false);
   const [globalAttributeToDelete, setGlobalAttributeToDelete] = useState(null);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
+
+  // PIN setup state
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinLoading, setPinLoading] = useState(false);
 
   // Check permissions
   const isOwner = user?.role === 'owner';
@@ -762,6 +768,34 @@ const SettingsPage = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const handleSetPin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!pin || pin.length !== 4 || !/^\d+$/.test(pin)) {
+      setError('PIN must be exactly 4 digits');
+      return;
+    }
+
+    if (pin !== confirmPin) {
+      setError('PINs do not match');
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      await setAdminPin(pin);
+      setSuccess('PIN set successfully! Staff can now use this PIN to unlock markup editing.');
+      setPin('');
+      setConfirmPin('');
+    } catch (err) {
+      setError(err.message || 'Failed to set PIN');
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
   // Tab configuration
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <MdDashboard />, available: true },
@@ -889,6 +923,45 @@ const SettingsPage = () => {
                   </div>
                 )}
               </div>
+
+              {/* PIN Setup Section - Only for Admin/Owner */}
+              {isAdmin && (
+                <div className="pin-setup-section">
+                  <h3>🔐 Markup Access PIN</h3>
+                  <p>Set a 4-digit PIN that staff members will use to unlock markup editing privileges.</p>
+                  <form onSubmit={handleSetPin} className="pin-setup-form">
+                    <div className="form-group">
+                      <label>PIN (4 digits)</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength="4"
+                        placeholder="••••"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                        disabled={pinLoading}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Confirm PIN</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength="4"
+                        placeholder="••••"
+                        value={confirmPin}
+                        onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                        disabled={pinLoading}
+                        required
+                      />
+                    </div>
+                    <button type="submit" disabled={pinLoading || pin.length !== 4 || confirmPin.length !== 4} className="pin-submit-btn">
+                      {pinLoading ? 'Setting PIN...' : 'Set PIN'}
+                    </button>
+                  </form>
+                </div>
+              )}
 
               {/* Quick Actions */}
               <div className="quick-actions">

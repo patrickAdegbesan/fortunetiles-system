@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo, memo } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { fetchProducts, fetchInventory, fetchLocations, createSale, fetchSaleById } from '../services/api';
+import { fetchProducts, fetchInventory, fetchLocations, createSale, verifyMarkupPin } from '../services/api';
 import Receipt from '../components/Receipt';
 import { 
   FaBox, 
@@ -16,12 +16,13 @@ import {
   FaCreditCard,
   FaUser,
   FaPhone,
-  FaDollarSign,
   FaCheck,
   FaExclamationTriangle,
   FaStore,
   FaTags,
-  FaCube
+  FaCube,
+  FaLock,
+  FaTimes
 } from 'react-icons/fa';
 import '../styles/SalePage.css';
 import QuickViewModal from '../components/QuickViewModal';
@@ -85,8 +86,7 @@ const ProductCard = memo(({
       
       <div className="price-stock-info">
         <div className="product-price">
-          <FaDollarSign size={12} />
-          <MoneyValue amount={product.price || 0} sensitive={false} />
+                    <MoneyValue amount={product.price || 0} sensitive={false} />
         </div>
         <div className="product-stock">
           <FaStore size={10} />
@@ -123,50 +123,189 @@ const ProductCard = memo(({
   </div>
 ));
 
+// PIN Dialog Component
+const MarkupPinDialog = ({ isOpen, onClose, onVerify, loading }) => {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (pin.length !== 4) {
+      setError('PIN must be 4 digits');
+      return;
+    }
+
+    try {
+      await onVerify(pin);
+      setPin('');
+    } catch (err) {
+      setError(err.message || 'Invalid PIN');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="pin-dialog-overlay">
+      <div className="pin-dialog">
+        <div className="pin-dialog-header">
+          <FaLock className="pin-icon" />
+          <h2>Unlock Markup Feature</h2>
+          <button className="close-btn" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+
+        <div className="pin-dialog-body">
+          <p className="pin-description">
+            Enter the admin PIN to unlock markup editing
+          </p>
+
+          <form onSubmit={handleSubmit}>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength="4"
+              placeholder="••••"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+              className="pin-input"
+              autoFocus
+            />
+
+            {error && <div className="pin-error">{error}</div>}
+
+            <div className="pin-dialog-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-verify"
+                disabled={loading || pin.length !== 4}
+              >
+                {loading ? 'Verifying...' : 'Unlock'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Memoized CartItem component
 const CartItem = memo(({ 
   item, 
   onUpdateQuantity, 
-  onRemove 
-}) => (
-  <div className="cart-item-enhanced">
-    <div className="item-details">
-      <div className="item-name">{item.productName}</div>
-      <div className="item-price">
-        <FaDollarSign size={10} />
-        <MoneyValue amount={item.price} sensitive={false} />
-        {item.unitOfMeasure && <span className="unit">per {item.unitOfMeasure}</span>}
+  onRemove,
+  onUpdateMarkup,
+  userRole,
+  canEditMarkup,
+  onRequestMarkupAccess
+}) => {
+  const basePrice = parseFloat(item.basePrice || item.price) || 0;
+  const markupPrice = parseFloat(item.markupPrice) || 0;
+  const finalPrice = basePrice + markupPrice;
+  // Show markup section for all users, but only allow editing if authorized
+  const canShowMarkup = true;
+
+  return (
+    <div className="cart-item-enhanced">
+      {/* Left: Product Info */}
+      <div className="item-info-section">
+        <div className="item-name">{item.productName}</div>
+        <div className="item-unit">{item.unitOfMeasure}</div>
       </div>
-      <div className="item-subtotal">
-        Subtotal: <MoneyValue amount={item.price * item.quantity} sensitive={false} />
+
+      {/* Middle: Pricing */}
+      <div className="item-pricing-section">
+        <div className="price-display">
+          <div className="price-label">Unit Price</div>
+          <div className="price-value">
+            <MoneyValue amount={finalPrice} sensitive={false} />
+          </div>
+        </div>
+        {markupPrice > 0 && (
+          <div className="markup-info">
+            <span className="markup-breakdown">
+              <MoneyValue amount={basePrice} sensitive={false} /> + <MoneyValue amount={markupPrice} sensitive={false} />
+            </span>
+          </div>
+        )}
+        {canShowMarkup && (
+          <div className="markup-editor">
+            <label className="markup-label">Markup:</label>
+            {canEditMarkup ? (
+              <input
+                type="number"
+                min="0"
+                max="999999.99"
+                step="0.01"
+                value={isNaN(markupPrice) ? '' : markupPrice}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                  onUpdateMarkup(item.productId, val);
+                }}
+                placeholder="0"
+                className="markup-input"
+              />
+            ) : (
+              <button
+                className="markup-unlock-btn"
+                onClick={onRequestMarkupAccess}
+                title="Click to unlock markup editing"
+              >
+                🔒 Unlock
+              </button>
+            )}
+          </div>
+        )}
       </div>
-    </div>
-    
-    <div className="quantity-controls-enhanced">
-      <button
-        className="qty-btn decrease"
-        onClick={() => onUpdateQuantity(item.productId, item.quantity - 1)}
-        disabled={item.quantity <= 1}
-      >
-        <FaMinus size={10} />
-      </button>
-      <span className="quantity-display">{item.quantity}</span>
-      <button
-        className="qty-btn increase"
-        onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
-      >
-        <FaPlus size={10} />
-      </button>
+
+      {/* Right: Quantity & Subtotal */}
+      <div className="item-quantity-section">
+        <div className="qty-controls">
+          <button
+            className="qty-btn decrease"
+            onClick={() => onUpdateQuantity(item.productId, item.quantity - 1)}
+            disabled={item.quantity <= 1}
+            title="Decrease quantity"
+          >
+            <FaMinus size={12} />
+          </button>
+          <span className="qty-value">{item.quantity}</span>
+          <button
+            className="qty-btn increase"
+            onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+            title="Increase quantity"
+          >
+            <FaPlus size={12} />
+          </button>
+        </div>
+        <div className="item-total">
+          <MoneyValue amount={finalPrice * parseFloat(item.quantity)} sensitive={false} />
+        </div>
+      </div>
+
+      {/* Far Right: Remove */}
       <button
         className="remove-btn"
         onClick={() => onRemove(item.productId)}
         title="Remove item"
       >
-        <FaTrash size={10} />
+        <FaTrash size={14} />
       </button>
     </div>
-  </div>
-));
+  );
+});
 
 const SalePage = () => {
   // eslint-disable-next-line no-unused-vars
@@ -189,6 +328,9 @@ const SalePage = () => {
   const [viewMode, setViewMode] = useState('grid'); // grid or table
   const [discountType, setDiscountType] = useState(''); // 'amount' or 'percentage'
   const [discountValue, setDiscountValue] = useState('');
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [markupPrivilegeGranted, setMarkupPrivilegeGranted] = useState(false);
+  const [pinVerifyLoading, setPinVerifyLoading] = useState(false);
 
   const loadInventory = useCallback(async () => {
     try {
@@ -202,6 +344,11 @@ const SalePage = () => {
 
   useEffect(() => {
     loadInitialData();
+    // Check if markup privilege is already granted
+    const grantedUntil = localStorage.getItem('markupPrivilegeGrantedUntil');
+    if (grantedUntil && new Date(grantedUntil) > new Date()) {
+      setMarkupPrivilegeGranted(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -283,6 +430,8 @@ const SalePage = () => {
           productId: product.id,
           productName: product.name,
           price: product.price,
+          basePrice: product.price,
+          markupPrice: 0,
           quantity: 1,
           unitOfMeasure: product.unitOfMeasure
         }];
@@ -311,9 +460,44 @@ const SalePage = () => {
     setCart(prevCart => prevCart.filter(item => item.productId !== productId));
   }, []);
 
-  // Memoized subtotal and total calculation
+  const updateMarkup = useCallback((productId, markupPrice) => {
+    const numericMarkup = parseFloat(markupPrice) || 0;
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.productId === productId
+          ? { ...item, markupPrice: Math.max(0, numericMarkup) }
+          : item
+      )
+    );
+  }, []);
+
+  // Handle PIN verification
+  const handleVerifyPin = async (pin) => {
+    setPinVerifyLoading(true);
+    try {
+      const response = await verifyMarkupPin(pin);
+      setMarkupPrivilegeGranted(true);
+      localStorage.setItem('markupPrivilegeGrantedUntil', response.grantedUntil);
+      setShowPinDialog(false);
+    } catch (error) {
+      throw new Error(error.message || 'PIN verification failed');
+    } finally {
+      setPinVerifyLoading(false);
+    }
+  };
+
+  // Determine if user can edit markup
+  const canEditMarkup = user?.role === 'owner' || user?.role === 'manager' || markupPrivilegeGranted;
+
+  // Memoized subtotal and total calculation (including markup)
   const subtotalAmount = useMemo(() => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => {
+      const basePrice = parseFloat(item.basePrice || item.price) || 0;
+      const markupPrice = parseFloat(item.markupPrice) || 0;
+      const quantity = parseFloat(item.quantity) || 0;
+      const finalPrice = basePrice + markupPrice;
+      return total + (finalPrice * quantity);
+    }, 0);
   }, [cart]);
 
   const discountAmount = useMemo(() => {
@@ -365,15 +549,15 @@ const SalePage = () => {
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.price
+          unitPrice: item.basePrice || item.price,
+          markupPrice: item.markupPrice || 0
         }))
       };
 
       const result = await createSale(saleData);
-      
-      // Fetch the complete sale details for receipt
-      const saleDetails = await fetchSaleById(result.sale.id);
-      setCompletedSale(saleDetails.sale);
+
+      // Use the complete sale details returned from createSale
+      setCompletedSale(result.sale);
       setShowReceipt(true);
       
       // Reset form
@@ -390,7 +574,14 @@ const SalePage = () => {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError(error.message || 'Failed to complete sale');
+      console.error('Sale completion error:', error);
+      console.error('Error response data:', error.response?.data);
+      // Show detailed error message
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.errors?.map(err => err.message).join(', ') ||
+                          error.message ||
+                          'Failed to complete sale';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -485,7 +676,7 @@ const SalePage = () => {
             </span>
             {totalAmount > 0 && (
               <span className="compact-stat total">
-                <FaDollarSign className="compact-icon" /> 
+                 
                 <MoneyValue amount={totalAmount} sensitive={false} />
               </span>
             )}
@@ -644,6 +835,10 @@ const SalePage = () => {
                         item={item}
                         onUpdateQuantity={updateCartQuantity}
                         onRemove={removeFromCart}
+                        onUpdateMarkup={canEditMarkup ? updateMarkup : null}
+                        userRole={user?.role}
+                        canEditMarkup={canEditMarkup}
+                        onRequestMarkupAccess={() => setShowPinDialog(true)}
                       />
                     ))}
                   </div>
@@ -797,6 +992,12 @@ const SalePage = () => {
           onRequestClose={closeQuickView}
         />
       )}
+      <MarkupPinDialog
+        isOpen={showPinDialog}
+        onClose={() => setShowPinDialog(false)}
+        onVerify={handleVerifyPin}
+        loading={pinVerifyLoading}
+      />
     </>
   );
 };

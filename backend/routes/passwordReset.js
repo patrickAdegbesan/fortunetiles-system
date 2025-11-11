@@ -27,7 +27,7 @@ async function initializeEmailService() {
         pass: process.env.EMAIL_PASSWORD
       },
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false
       }
     });
     
@@ -76,9 +76,10 @@ router.post('/forgot-password', async (req, res) => {
     // Find user by email
     const user = await User.findOne({ where: { email } });
 
+    // Don't reveal whether email exists (prevent user enumeration)
     if (!user) {
-      return res.status(404).json({
-        message: 'No account found with this email address. Please verify your email or contact admin for assistance.'
+      return res.status(200).json({
+        message: 'If an account with this email exists, a password reset link has been sent.'
       });
     }
 

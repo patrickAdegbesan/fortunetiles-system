@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const { User, Location } = require('../models');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -29,7 +31,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate JWT token with shorter expiry (2 hours)
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -38,7 +40,7 @@ router.post('/login', async (req, res) => {
         locationId: user.locationId 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '2h' }
     );
 
     res.json({
@@ -115,6 +117,92 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// POST /api/auth/verify-pin - Verify admin PIN and grant markup privileges
+router.post('/verify-pin', authenticateToken, async (req, res) => {
+  try {
+    const { pin } = req.body;
+    console.log('[PIN VERIFY] Request received:', { pin, userId: req.user?.id });
+
+    if (!pin) {
+      console.log('[PIN VERIFY] PIN is missing');
+      return res.status(400).json({ message: 'PIN is required' });
+    }
+
+    // Get the first admin user (owner or manager)
+    const admin = await User.findOne({
+      where: {
+        role: {
+          [Op.in]: ['owner', 'manager']
+        }
+      }
+    });
+
+    console.log('[PIN VERIFY] Admin found:', { id: admin?.id, hasPin: !!admin?.pin, adminPin: admin?.pin });
+
+    if (!admin) {
+      console.log('[PIN VERIFY] No admin user found');
+      return res.status(400).json({ message: 'No admin user found' });
+    }
+
+    if (!admin.pin) {
+      console.log('[PIN VERIFY] Admin has no PIN configured');
+      return res.status(400).json({ message: 'No admin PIN configured' });
+    }
+
+    // Verify PIN
+    const pinMatch = admin.pin === pin.toString();
+    console.log('[PIN VERIFY] PIN comparison:', { provided: pin.toString(), stored: admin.pin, match: pinMatch });
+
+    if (!pinMatch) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Return success with markup privilege granted
+    res.json({
+      message: 'PIN verified successfully',
+      markupPrivilegeGranted: true,
+      grantedUntil: new Date(Date.now() + 8 * 60 * 60 * 1000) // 8 hours
+    });
+
+  } catch (error) {
+    console.error('PIN verification error:', error);
+    res.status(500).json({ message: 'PIN verification failed', error: error.message });
+  }
+});
+
+// POST /api/auth/set-pin - Admin sets their PIN (owner/manager only)
+router.post('/set-pin', authenticateToken, async (req, res) => {
+  try {
+    const { pin } = req.body;
+    const userId = req.user?.id;
+
+    console.log('[SET PIN] Request received:', { pin, userId, role: req.user?.role });
+
+    if (!['owner', 'manager'].includes(req.user?.role)) {
+      console.log('[SET PIN] User is not admin');
+      return res.status(403).json({ message: 'Only admins can set PIN' });
+    }
+
+    if (!pin || pin.length !== 4 || !/^\d+$/.test(pin)) {
+      console.log('[SET PIN] PIN validation failed:', { pin, length: pin?.length });
+      return res.status(400).json({ message: 'PIN must be 4 digits' });
+    }
+
+    const user = await User.findByPk(userId);
+    console.log('[SET PIN] User found:', { id: user?.id, email: user?.email });
+
+    user.pin = pin;
+    await user.save();
+
+    console.log('[SET PIN] PIN saved successfully');
+    res.json({ message: 'PIN set successfully' });
+
+  } catch (error) {
+    console.error('Set PIN error:', error);
+    res.status(500).json({ message: 'Failed to set PIN', error: error.message });
   }
 });
 

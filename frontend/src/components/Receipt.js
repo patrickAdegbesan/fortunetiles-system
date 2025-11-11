@@ -19,23 +19,34 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const handlePrint = () => {
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
-    const content = document.getElementById('receipt-content').innerHTML;
+    const receiptElement = document.getElementById('receipt-content');
     
-    // Get all CSS from the current document
-    const styles = Array.from(document.styleSheets)
-      .map(styleSheet => {
-        try {
-          return Array.from(styleSheet.cssRules)
-            .map(rule => rule.cssText)
-            .join('\n');
-        } catch (e) {
-          // Handle cross-origin stylesheets
-          return '';
+    // Sanitize content to prevent XSS - use textContent for text-only, or clone and sanitize for HTML
+    if (!receiptElement) {
+      console.error('Receipt element not found');
+      return;
+    }
+    
+    // Clone the element to avoid modifying the original
+    const clonedElement = receiptElement.cloneNode(true);
+    
+    // Remove any script tags and event handlers
+    const scripts = clonedElement.querySelectorAll('script');
+    scripts.forEach(script => script.remove());
+    
+    // Remove event handlers from all elements
+    const allElements = clonedElement.querySelectorAll('*');
+    allElements.forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        if (attr.name.startsWith('on')) {
+          el.removeAttribute(attr.name);
         }
-      })
-      .join('\n');
+      });
+    });
     
-    // Set up the print window with enhanced styles
+    const content = clonedElement.innerHTML;
+    
+    // Set up the print window with minimal styles to avoid blank pages
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -51,66 +62,280 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
             }
             
             html, body {
-              margin: 0;
-              padding: 0;
-              height: auto;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              background: white !important;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
             }
             
-            ${styles}
+            body {
+              width: 100%;
+              overflow: visible;
+            }
+            
+            .receipt {
+              width: 100%;
+              margin: 0;
+              padding: 0;
+              background: white;
+              page-break-after: avoid;
+              page-break-inside: avoid;
+            }
+            
+            .receipt-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              width: 80%;
+              height: auto;
+              opacity: 0.08;
+              transform: translate(-50%, -50%);
+              pointer-events: none;
+              z-index: 0;
+            }
+            
+            .company-header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding: 15px 0;
+              position: relative;
+              z-index: 1;
+            }
+            
+            .company-header h2 {
+              margin: 8px 0;
+              font-size: 18px;
+              font-weight: bold;
+              color: #1a3a52;
+            }
+            
+            .receipt-logo-full {
+              width: 120px;
+              height: auto;
+              margin-bottom: 8px;
+            }
+            
+            .company-details {
+              display: block;
+              font-size: 11px;
+              margin: 8px 0;
+              color: #333;
+            }
+            
+            .detail {
+              margin: 3px 0;
+              line-height: 1.4;
+            }
+            
+            .receipt-divider {
+              border-top: 2px solid #333;
+              margin: 12px 0;
+              position: relative;
+            }
+            
+            .receipt-divider.with-text {
+              text-align: center;
+              border-top: none;
+              height: 20px;
+              line-height: 20px;
+              margin: 12px 0;
+            }
+            
+            .receipt-divider.with-text span {
+              background: white;
+              padding: 0 8px;
+              font-weight: bold;
+              font-size: 12px;
+              color: #1a3a52;
+              letter-spacing: 0.5px;
+            }
+            
+            .sale-info-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin: 15px 0;
+              font-size: 11px;
+            }
+            
+            .info-group {
+              display: flex;
+              gap: 8px;
+              margin-bottom: 5px;
+            }
+            
+            .info-group label {
+              font-weight: bold;
+              min-width: 80px;
+              color: #1a3a52;
+            }
+            
+            .info-group .value {
+              color: #333;
+            }
+            
+            .items-section {
+              margin: 15px 0;
+            }
+            
+            .items-header {
+              display: grid;
+              grid-template-columns: 2fr 1fr 1fr 1fr;
+              padding: 8px;
+              font-weight: bold;
+              font-size: 11px;
+              background: #f5f5f5;
+              border: 1px solid #ddd;
+              border-radius: 3px;
+              margin-bottom: 8px;
+              color: #1a3a52;
+            }
+            
+            .item-row {
+              display: grid;
+              grid-template-columns: 2fr 1fr 1fr 1fr;
+              padding: 6px 8px;
+              font-size: 11px;
+              border-bottom: 1px solid #eee;
+              align-items: center;
+            }
+            
+            .item-row:last-child {
+              border-bottom: 1px solid #333;
+            }
+            
+            .item-specs {
+              font-size: 10px;
+              color: #666;
+              margin-top: 2px;
+              font-style: italic;
+            }
+            
+            .totals-section {
+              margin-top: 15px;
+              border-top: 2px solid #333;
+              padding-top: 10px;
+            }
+            
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 6px 0;
+              font-size: 11px;
+            }
+            
+            .grand-total {
+              font-weight: bold;
+              font-size: 13px;
+              border-top: 2px solid #1a3a52;
+              padding-top: 8px;
+              margin-top: 8px;
+              color: #1a3a52;
+            }
+            
+            .payment-info {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin: 15px 0;
+              font-size: 10px;
+            }
+            
+            .payment-method h3, .bank-details h3 {
+              margin: 0 0 6px 0;
+              font-size: 11px;
+              font-weight: bold;
+              color: #1a3a52;
+            }
+            
+            .payment-method-display {
+              font-weight: bold;
+              padding: 3px 8px;
+              border: 1px solid #333;
+              border-radius: 3px;
+              display: inline-block;
+              font-size: 11px;
+            }
+            
+            .terms-section {
+              margin: 15px 0;
+              font-size: 10px;
+            }
+            
+            .terms-section h3 {
+              margin: 0 0 8px 0;
+              font-size: 11px;
+              font-weight: bold;
+              color: #1a3a52;
+            }
+            
+            .terms-section ol {
+              padding-left: 18px;
+              margin: 5px 0;
+              line-height: 1.5;
+            }
+            
+            .thank-you {
+              text-align: center;
+              margin: 15px 0;
+              font-size: 12px;
+              page-break-inside: avoid;
+            }
+            
+            .thank-you h3 {
+              margin: 0 0 5px 0;
+              font-size: 13px;
+              color: #1a3a52;
+            }
+            
+            .thank-you p {
+              margin: 3px 0;
+              color: #666;
+            }
+            
+            .footer-contact {
+              text-align: center;
+              font-size: 10px;
+              margin: 10px 0;
+              page-break-inside: avoid;
+              color: #666;
+            }
+            
+            .footer-contact p {
+              margin: 3px 0;
+            }
             
             @media print {
               @page {
                 size: A4;
-                margin: 10mm;
-              }
-
-              body {
-                margin: 0 !important;
-                padding: 5mm !important;
-                background: white !important;
+                margin: 5mm;
               }
               
-              .receipt {
-                width: 100% !important;
-                max-width: none !important;
+              body, html {
+                margin: 0 !important;
                 padding: 0 !important;
-                margin: 0 !important;
-                background: white !important;
-                box-shadow: none !important;
-                border: none !important;
-              }
-            }
-            
-            @media screen {
-              body {
-                padding: 20px;
-                background: #f5f5f5;
+                height: auto !important;
               }
               
               .receipt {
-                max-width: 800px;
-                margin: 0 auto;
-                background: white;
-                padding: 20px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
               }
             }
           </style>
         </head>
         <body>
-          <div class="receipt">
-            ${content}
-          </div>
+          ${content}
           <script>
-            // Auto-print when page loads
             window.onload = function() {
               setTimeout(function() {
                 window.print();
-              }, 500);
+              }, 300);
             };
             
-            // Close window after printing
             window.onafterprint = function() {
               setTimeout(function() {
                 window.close();
@@ -121,10 +346,8 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
       </html>
     `);
     
-    // Close the document to trigger loading
     printWindow.document.close();
     
-    // Fallback for older browsers
     setTimeout(() => {
       if (onPrint) onPrint();
     }, 2000);
@@ -406,9 +629,6 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               <p>Follow us on social media @FortunetilesNG</p>
             </div>
           </div>
-          
-          {/* Extra spacing to ensure content is visible */}
-          <div style={{ height: '50px', clear: 'both' }}></div>
         </div>
       </div>
     </div>

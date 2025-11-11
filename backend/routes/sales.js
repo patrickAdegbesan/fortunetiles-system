@@ -6,7 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // GET /api/sales - Get all sales with optimized queries
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { locationId, limit = 50, offset = 0, startDate, endDate } = req.query;
     
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
         { 
           model: SaleItem, 
           as: 'items',
-          attributes: ['id', 'quantity', 'unitPrice', 'lineTotal'],
+          attributes: ['id', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
           include: [{ 
             model: Product, 
             as: 'product',
@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/sales/:id - Get single sale
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -117,19 +117,28 @@ router.post('/', authenticateToken, async (req, res) => {
     const { customerName, customerPhone, discountType, discountValue, subtotalAmount } = req.body;
     // Accept string or number for locationId, coerce to number if possible
     const locationIdRaw = req.body.locationId;
-    const locationId = Number.isFinite(locationIdRaw) ? locationIdRaw : parseInt(locationIdRaw, 10);
+    const locationId = locationIdRaw ? (Number.isFinite(Number(locationIdRaw)) ? Number(locationIdRaw) : parseInt(locationIdRaw, 10)) : null;
     // Prefer authenticated user, fallback to body for backward compatibility
-    const userId = req.user?.id || req.body.userId;
-    const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
+    let userId = req.user?.id || req.body.userId;
     
-    // Log parsed values
-    console.log('Parsed values:', {
-      customerName,
-      customerPhone,
-      locationId,
-      userId,
-      items: itemsInput
-    });
+    // If still no userId, try to find first active user (fallback for development)
+    if (!userId && process.env.NODE_ENV === 'development') {
+      const firstUser = await User.findOne({ where: { isActive: true } });
+      userId = firstUser?.id;
+    }
+    
+    const itemsInput = Array.isArray(req.body.items) ? req.body.items : [];
+
+    // Log parsed values for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Parsed sale values:', {
+        customerName,
+        customerPhone,
+        locationId,
+        userId,
+        itemsCount: itemsInput.length
+      });
+    }
 
     // Validate required fields
     const errors = [];
@@ -142,11 +151,18 @@ router.post('/', authenticateToken, async (req, res) => {
       errors.push({ field: 'items', message: 'At least one item is required' });
     }
 
+    // Log validation results in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Initial validation results:', { errors, customerName, locationId, userId, itemsCount: itemsInput?.length });
+      console.log('req.user:', req.user);
+    }
+
     if (errors.length > 0) {
       await transaction.rollback();
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Validation failed',
-        errors 
+        errors,
+        debug: { customerName, locationId, userId, itemsCount: itemsInput?.length }
       });
     }
 
@@ -157,7 +173,8 @@ router.post('/', authenticateToken, async (req, res) => {
     // Normalize items to ensure unitPrice is present (fallback to price)
     const normalizedItems = itemsInput.map(it => ({
       ...it,
-      unitPrice: it.unitPrice !== undefined && it.unitPrice !== null ? it.unitPrice : it.price
+      unitPrice: it.unitPrice !== undefined && it.unitPrice !== null ? it.unitPrice : it.price,
+      markupPrice: it.markupPrice || 0
     }));
 
     for (let i = 0; i < normalizedItems.length; i++) {
@@ -176,7 +193,9 @@ router.post('/', authenticateToken, async (req, res) => {
       }
 
       if (item.productId && item.quantity && item.unitPrice) {
-        calculatedSubtotal += parseFloat(item.quantity) * parseFloat(item.unitPrice);
+        // Frontend already calculated subtotal with markup included
+        // Just validate the items exist and have quantities
+        // Don't recalculate here - use frontend's subtotalAmount
       }
     }
 
@@ -198,12 +217,6 @@ router.post('/', authenticateToken, async (req, res) => {
     const totalAmount = subtotal - discountAmount;
 
     if (itemErrors.length > 0) {
-      await transaction.rollback();
-      return res.status(400).json({
-        message: 'Validation failed',
-        errors: itemErrors
-      });
-    }    if (itemErrors.length > 0) {
       await transaction.rollback();
       return res.status(400).json({
         message: 'Item validation failed',
@@ -283,17 +296,22 @@ router.post('/', authenticateToken, async (req, res) => {
 
       try {
         // Calculate line total
-        const unitPrice = parseFloat(item.unitPrice);
-        const lineTotal = requestedQty * unitPrice;
+        const baseUnitPrice = parseFloat(item.unitPrice);
+        const markupPrice = parseFloat(item.markupPrice) || 0;
+        const finalUnitPrice = baseUnitPrice + markupPrice;
+        const lineTotal = requestedQty * finalUnitPrice;
 
-        // Create sale item
+        // Create sale item with markup tracking
         const saleItem = await SaleItem.create({
           saleId: sale.id,
           productId: item.productId,
           quantity: requestedQty,
           unit: product.unitOfMeasure,
-          unitPrice: unitPrice,
-          lineTotal
+          unitPrice: finalUnitPrice,
+          lineTotal,
+          baseUnitPrice: baseUnitPrice,
+          markupPrice: markupPrice,
+          markupBy: markupPrice > 0 ? req.user?.id : null
         }, { transaction });
 
         console.log('Created sale item:', JSON.stringify(saleItem.toJSON(), null, 2));

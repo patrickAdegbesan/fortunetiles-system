@@ -188,6 +188,24 @@ const TransactionsPage = () => {
     return transaction.items.map(item => `${item.productName} (${item.quantity})`).join(', ');
   };
 
+  const calculateBaseAmount = (transaction) => {
+    if (!transaction.items || transaction.items.length === 0) return 0;
+    return transaction.items.reduce((total, item) => {
+      const basePrice = parseFloat(item.baseUnitPrice || item.unitPrice || 0) || 0;
+      const qty = parseFloat(item.quantity) || 0;
+      return total + (basePrice * qty);
+    }, 0);
+  };
+
+  const calculateMarkupAmount = (transaction) => {
+    if (!transaction.items || transaction.items.length === 0) return 0;
+    return transaction.items.reduce((total, item) => {
+      const markup = parseFloat(item.markupPrice || 0) || 0;
+      const qty = parseFloat(item.quantity) || 0;
+      return total + (markup * qty);
+    }, 0);
+  };
+
   if (loading) {
     return (
       <div className="transactions-page">
@@ -276,6 +294,8 @@ const TransactionsPage = () => {
                 <th>ID</th>
                 <th>Customer</th>
                 <th>Items</th>
+                <th>Base Amount</th>
+                <th>Markup</th>
                 <th>Subtotal</th>
                 <th>Discount</th>
                 <th>Total Amount</th>
@@ -288,7 +308,7 @@ const TransactionsPage = () => {
             <tbody>
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="no-transactions">
+                  <td colSpan="12" className="no-transactions">
                     {searchTerm || filterStatus !== 'all' ? 'No transactions found matching your criteria' : 'No transactions found'}
                   </td>
                 </tr>
@@ -319,6 +339,18 @@ const TransactionsPage = () => {
                           <span>No items</span>
                         )}
                       </div>
+                    </td>
+                    <td className="transaction-base-amount">
+                      <MoneyValue amount={calculateBaseAmount(transaction)} sensitive={true} />
+                    </td>
+                    <td className="transaction-markup">
+                      {calculateMarkupAmount(transaction) > 0 ? (
+                        <span className="markup-badge">
+                          <MoneyValue amount={calculateMarkupAmount(transaction)} sensitive={false} />
+                        </span>
+                      ) : (
+                        <span className="no-markup">—</span>
+                      )}
                     </td>
                     <td className="transaction-subtotal">
                       <MoneyValue amount={transaction.subtotalAmount || transaction.total || 0} sensitive={false} />

@@ -1737,3 +1737,500 @@
   position: relative;
   min-width: 200px;
 }
+
+/* ============ CART ITEM ENHANCED (NEW) ============ */
+
+.cart-item-enhanced {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  background: hsl(0, 0%, 100%);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+  border: 1px solid hsl(220, 13%, 91%);
+  position: relative;
+}
+
+.cart-item-enhanced:hover {
+  background: hsl(220, 40%, 97%);
+  box-shadow: 0 2px 12px hsla(225, 60%, 25%, 0.1);
+  border-color: hsl(225, 60%, 25%);
+}
+
+/* Product Info Section */
+.cart-item-enhanced .item-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-item-enhanced .item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(225, 60%, 15%);
+  line-height: 1.3;
+}
+
+.cart-item-enhanced .item-unit {
+  font-size: 12px;
+  color: hsl(225, 40%, 50%);
+  font-weight: 500;
+}
+
+/* Pricing Section */
+.cart-item-enhanced .item-pricing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-item-enhanced .price-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cart-item-enhanced .price-label {
+  font-size: 11px;
+  color: hsl(225, 40%, 50%);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cart-item-enhanced .price-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: hsl(225, 60%, 15%);
+}
+
+.cart-item-enhanced .price-value .money-value {
+  font-weight: 700;
+}
+
+/* Markup Info */
+.cart-item-enhanced .markup-info {
+  font-size: 11px;
+  color: hsl(225, 40%, 50%);
+  padding: 6px 8px;
+  background: hsla(225, 60%, 25%, 0.05);
+  border-radius: 6px;
+}
+
+.cart-item-enhanced .markup-breakdown {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.cart-item-enhanced .markup-breakdown .money-value {
+  font-weight: 600;
+}
+
+/* Markup Editor */
+.cart-item-enhanced .markup-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cart-item-enhanced .markup-label {
+  font-size: 11px;
+  color: hsl(225, 40%, 50%);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cart-item-enhanced .markup-input {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid hsl(220, 13%, 91%);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: hsl(0, 0%, 100%);
+  color: hsl(225, 60%, 15%);
+  transition: all 0.2s ease;
+}
+
+.cart-item-enhanced .markup-input:focus {
+  outline: none;
+  border-color: hsl(225, 60%, 25%);
+  box-shadow: 0 0 0 2px hsla(225, 60%, 25%, 0.1);
+}
+
+.cart-item-enhanced .markup-input::placeholder {
+  color: hsl(225, 40%, 50%);
+}
+
+/* Quantity & Total Section */
+.cart-item-enhanced .item-quantity-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.cart-item-enhanced .qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: hsla(225, 60%, 25%, 0.05);
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.cart-item-enhanced .qty-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(225, 60%, 15%);
+  min-width: 20px;
+  text-align: center;
+}
+
+.cart-item-enhanced .item-total {
+  font-size: 15px;
+  font-weight: 700;
+  color: hsl(225, 60%, 15%);
+}
+
+.cart-item-enhanced .item-total .money-value {
+  font-weight: 700;
+}
+
+/* ============ QUANTITY CONTROLS ENHANCED ============ */
+
+.quantity-controls-enhanced {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: hsla(225, 60%, 25%, 0.05);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: hsl(225, 60%, 25%);
+  color: hsl(0, 0%, 100%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.qty-btn svg {
+  width: 12px;
+  height: 12px;
+  color: hsl(0, 0%, 100%);
+  flex-shrink: 0;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: hsl(225, 60%, 30%);
+  transform: scale(1.05);
+}
+
+.qty-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.remove-btn {
+  background: hsl(0, 70%, 50%);
+  color: hsl(0, 0%, 100%);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.remove-btn svg {
+  width: 12px;
+  height: 12px;
+  color: hsl(0, 0%, 100%);
+  flex-shrink: 0;
+}
+
+.remove-btn:hover {
+  background: hsl(0, 70%, 55%);
+  transform: scale(1.05);
+}
+
+.remove-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============ ITEM PRICE ROW (with inline markup) ============ */
+.item-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.item-price-row .item-price {
+  flex: 1;
+}
+
+/* ============ MARKUP INPUT COMPACT ============ */
+.markup-input-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: hsla(225, 60%, 25%, 0.08);
+  border-radius: 6px;
+  border: 1px solid hsl(225, 60%, 25%);
+  white-space: nowrap;
+}
+
+.markup-input-compact::before {
+  content: '+';
+  font-size: 12px;
+  font-weight: 700;
+  color: hsl(225, 60%, 25%);
+}
+
+.markup-input-small {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid hsl(220, 13%, 91%);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: hsl(0, 0%, 100%);
+  color: hsl(225, 60%, 15%);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.markup-input-small:focus {
+  outline: none;
+  border-color: hsl(225, 60%, 25%);
+  box-shadow: 0 0 0 2px hsla(225, 60%, 25%, 0.1);
+}
+
+.markup-input-small::placeholder {
+  color: hsl(225, 40%, 50%);
+}
+
+/* Remove spinner for number input */
+.markup-input-small::-webkit-outer-spin-button,
+.markup-input-small::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.markup-input-small[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* ============ MARKUP BREAKDOWN ============ */
+.item-markup-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: hsl(225, 40%, 50%);
+  padding: 4px 0;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.markup-label {
+  font-weight: 600;
+  color: hsl(225, 60%, 25%);
+}
+
+/* ============ MARKUP UNLOCK BUTTON ============ */
+.markup-unlock-btn {
+  padding: 6px 12px;
+  background: hsl(0, 70%, 50%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.markup-unlock-btn:hover {
+  background: hsl(0, 70%, 55%);
+  transform: scale(1.05);
+}
+
+.markup-unlock-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============ PIN DIALOG ============ */
+.pin-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.pin-dialog {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.pin-dialog-header {
+  background: linear-gradient(135deg, hsl(225, 60%, 25%) 0%, hsl(225, 50%, 20%) 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.pin-dialog-header .pin-icon {
+  font-size: 24px;
+}
+
+.pin-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  flex: 1;
+}
+
+.pin-dialog-header .close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-dialog-header .close-btn:hover {
+  opacity: 0.8;
+}
+
+.pin-dialog-body {
+  padding: 24px;
+}
+
+.pin-description {
+  margin: 0 0 20px 0;
+  color: hsl(225, 40%, 50%);
+  font-size: 14px;
+  text-align: center;
+}
+
+.pin-dialog-body form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pin-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid hsl(220, 13%, 91%);
+  border-radius: 8px;
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.pin-input:focus {
+  outline: none;
+  border-color: hsl(225, 60%, 25%);
+  box-shadow: 0 0 0 3px hsla(225, 60%, 25%, 0.1);
+}
+
+.pin-error {
+  color: hsl(0, 70%, 50%);
+  font-size: 13px;
+  padding: 8px 12px;
+  background: hsla(0, 70%, 50%, 0.1);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.pin-dialog-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-cancel,
+.btn-verify {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background: hsl(220, 13%, 91%);
+  color: hsl(225, 60%, 15%);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: hsl(220, 13%, 85%);
+}
+
+.btn-verify {
+  background: hsl(225, 60%, 25%);
+  color: white;
+}
+
+.btn-verify:hover:not(:disabled) {
+  background: hsl(225, 60%, 30%);
+}
+
+.btn-cancel:disabled,
+.btn-verify:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

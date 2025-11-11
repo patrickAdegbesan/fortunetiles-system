@@ -331,6 +331,81 @@
   }
 }
 
+/* PIN Setup Form */
+.pin-setup-form {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  max-width: 400px;
+}
+
+.pin-setup-form .form-group {
+  margin-bottom: 16px;
+}
+
+.pin-setup-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.pin-setup-form input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-align: center;
+  font-weight: 600;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.pin-setup-form input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.pin-setup-form button {
+  width: 100%;
+  padding: 12px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pin-setup-form button:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.pin-setup-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-section p {
+  padding: 0 20px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-section ul {
+  padding: 0 20px 20px 40px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
 @media (max-width: 480px) {
   .content-area {
     padding: 10px;
@@ -355,5 +430,9 @@
   
   .modal {
     margin: 10px;
+  }
+
+  .pin-setup-form {
+    max-width: 100%;
   }
 }

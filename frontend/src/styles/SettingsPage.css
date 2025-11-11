@@ -951,3 +951,96 @@
     border-color: #c9e0ff;
   }
 }
+
+/* PIN Setup Section */
+.pin-setup-section {
+  background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 40%, 98%) 100%);
+  border: 2px solid hsl(225, 60%, 25%);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px hsla(225, 60%, 25%, 0.1);
+}
+
+.pin-setup-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: hsl(225, 60%, 15%);
+}
+
+.pin-setup-section p {
+  margin: 0 0 20px 0;
+  color: hsl(225, 40%, 50%);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pin-setup-form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  max-width: 500px;
+}
+
+.pin-setup-form .form-group {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
+}
+
+.pin-setup-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: hsl(225, 60%, 15%);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.pin-setup-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid hsl(220, 13%, 91%);
+  border-radius: 6px;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-align: center;
+  font-weight: 600;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.pin-setup-form input:focus {
+  outline: none;
+  border-color: hsl(225, 60%, 25%);
+  box-shadow: 0 0 0 2px hsla(225, 60%, 25%, 0.1);
+}
+
+.pin-submit-btn {
+  padding: 10px 24px;
+  background: hsl(225, 60%, 25%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.pin-submit-btn:hover:not(:disabled) {
+  background: hsl(225, 60%, 30%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px hsla(225, 60%, 25%, 0.2);
+}
+
+.pin-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pin-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

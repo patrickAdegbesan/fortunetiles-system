@@ -42,6 +42,29 @@ process.on('unhandledRejection', (reason, promise) => {
 const app = express();
 
 // Middleware
+// Add security headers
+app.use((req, res, next) => {
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Prevent referrer leakage
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'");
+  
+  // Permissions Policy
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
+  
+  next();
+});
+
 // Enable aggressive compression for all responses
 app.use(compression({ 
   level: 9,        // Maximum compression
@@ -76,7 +99,21 @@ app.use(setCache);
 // Increase limits to accommodate base64 images from camera/file uploads
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
-app.use(cors());
+
+// Configure CORS with origin whitelist
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Logging middleware - only log in development mode
 app.use((req, res, next) => {
@@ -117,25 +154,50 @@ app.use('/api/orders', ordersRoutes);
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
 
-// Webhook endpoint for automatic website updates
+// Webhook endpoint for automatic website updates with HMAC signature verification
 const { exec } = require('child_process');
+const crypto = require('crypto');
+
 app.post('/webhook/website-update', express.raw({type: 'application/json'}), (req, res) => {
   console.log('📡 Website update webhook received');
   
-  // Add basic security - you can enhance this with proper webhook verification
-  const userAgent = req.get('User-Agent') || '';
-  if (!userAgent.includes('GitHub-Hookshot')) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  // Verify GitHub webhook signature
+  const signature = req.get('x-hub-signature-256');
+  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+  
+  if (!webhookSecret) {
+    console.error('❌ GITHUB_WEBHOOK_SECRET not configured');
+    return res.status(500).json({ error: 'Webhook not configured' });
+  }
+  
+  if (!signature) {
+    console.error('❌ Missing webhook signature');
+    return res.status(401).json({ error: 'Unauthorized: missing signature' });
+  }
+  
+  // Verify HMAC signature
+  const hash = crypto.createHmac('sha256', webhookSecret).update(req.body).digest('hex');
+  const expectedSignature = `sha256=${hash}`;
+  
+  if (!crypto.timingSafeEqual(signature, expectedSignature)) {
+    console.error('❌ Invalid webhook signature');
+    return res.status(401).json({ error: 'Unauthorized: invalid signature' });
+  }
+  
+  // Verify event type
+  const event = req.get('x-github-event');
+  if (event !== 'push') {
+    return res.status(400).json({ error: 'Only push events are supported' });
   }
   
   exec('git submodule update --remote website', { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
     if (error) {
       console.error('❌ Submodule update failed:', error);
-      return res.status(500).json({ error: 'Update failed', details: error.message });
+      return res.status(500).json({ error: 'Update failed' });
     }
     
-    console.log('✅ Website updated:', stdout);
-    res.json({ success: true, message: 'Website updated successfully', output: stdout });
+    console.log('✅ Website updated successfully');
+    res.json({ success: true, message: 'Website updated successfully' });
   });
 });
 
@@ -342,17 +404,23 @@ const initializeDatabase = async () => {
       console.log('✅ Default location created.');
     }
     
-    // Create default admin user if it doesn't exist
-    const adminExists = await User.findOne({ where: { email: 'admin@fortunetiles.com' } });
-    if (!adminExists) {
-      await User.create({
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@fortunetiles.com',
-        password: 'admin123',
-        role: 'owner'
-      });
-      console.log('✅ Default admin user created.');
+    // Create default admin user only in development if SEED_ADMIN_USER is set
+    if (process.env.NODE_ENV !== 'production' && process.env.SEED_ADMIN_USER === 'true') {
+      const adminExists = await User.findOne({ where: { email: 'admin@fortunetiles.com' } });
+      if (!adminExists) {
+        const adminPassword = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
+        await User.create({
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@fortunetiles.com',
+          password: adminPassword,
+          role: 'owner'
+        });
+        console.log('✅ Default admin user created. Email: admin@fortunetiles.com');
+        console.log('⚠️  IMPORTANT: Change the default password immediately!');
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      console.log('ℹ️  Admin user auto-creation disabled in production. Create users manually via admin panel.');
     }
 
     // Ensure default categories exist

@@ -569,4 +569,23 @@ export const searchOrders = async (searchTerm) => {
   }
 };
 
+// PIN Verification API
+export const verifyMarkupPin = async (pin) => {
+  try {
+    const response = await API.post('/auth/verify-pin', { pin });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'PIN verification failed' };
+  }
+};
+
+export const setAdminPin = async (pin) => {
+  try {
+    const response = await API.post('/auth/set-pin', { pin });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to set PIN' };
+  }
+};
+
 export default API;
