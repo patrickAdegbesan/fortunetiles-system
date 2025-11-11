@@ -44,7 +44,10 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
       });
     });
     
-    const content = clonedElement.innerHTML;
+    let content = clonedElement.innerHTML;
+    
+    // Remove extra whitespace that might cause blank pages
+    content = content.trim();
     
     // Set up the print window with minimal styles to avoid blank pages
     printWindow.document.write(`
@@ -69,11 +72,14 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               font-family: Arial, sans-serif;
               font-size: 12px;
               line-height: 1.4;
+              min-height: auto !important;
             }
             
             body {
               width: 100%;
               overflow: visible;
+              display: flex;
+              flex-direction: column;
             }
             
             .receipt {
@@ -81,8 +87,10 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               margin: 0;
               padding: 0;
               background: white;
-              page-break-after: avoid;
-              page-break-inside: avoid;
+              page-break-after: avoid !important;
+              page-break-inside: avoid !important;
+              page-break-before: avoid !important;
+              flex-shrink: 0;
             }
             
             .receipt-watermark {
