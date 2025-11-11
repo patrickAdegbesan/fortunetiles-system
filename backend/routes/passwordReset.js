@@ -198,12 +198,11 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
 
-    // Update password and clear reset token
-    await user.update({
-      password: newPassword,
-      resetToken: null,
-      resetTokenExpiry: null
-    });
+    // Update password directly (bypass validation for password reset)
+    user.password = newPassword;
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+    await user.save({ validate: false });
 
     res.json({ message: 'Password has been reset successfully' });
   } catch (error) {
