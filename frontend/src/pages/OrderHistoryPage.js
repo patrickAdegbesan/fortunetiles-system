@@ -165,6 +165,24 @@ const OrderHistoryPage = () => {
     return order.items.map(item => `${item.productName} (${item.quantity})`).join(', ');
   };
 
+  const calculateOrderMarkup = (order) => {
+    if (!order.items || order.items.length === 0) return { baseAmount: 0, markupAmount: 0 };
+
+    let totalBaseAmount = 0;
+    let totalMarkupAmount = 0;
+
+    order.items.forEach(item => {
+      const quantity = item.quantity || 0;
+      const basePrice = item.baseUnitPrice || item.unitPrice || 0;
+      const markupPrice = item.markupPrice || 0;
+
+      totalBaseAmount += (basePrice * quantity);
+      totalMarkupAmount += (markupPrice * quantity);
+    });
+
+    return { baseAmount: totalBaseAmount, markupAmount: totalMarkupAmount };
+  };
+
   if (loading) {
     return (
       <>
@@ -242,6 +260,8 @@ const OrderHistoryPage = () => {
                 <th>Order ID</th>
                 <th>Customer</th>
                 <th>Items</th>
+                <th>Base Amount</th>
+                <th>Markup</th>
                 <th>Total Amount</th>
                 <th>Payment Method</th>
                 <th>Date & Time</th>
@@ -252,74 +272,88 @@ const OrderHistoryPage = () => {
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="no-orders">
+                  <td colSpan="10" className="no-orders">
                     {searchTerm || filterStatus !== 'all' ? 'No orders found matching your criteria' : 'No orders found'}
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order.id} className="order-row">
-                    <td className="order-id">
-                      <strong>#{order.id}</strong>
-                    </td>
-                    <td className="customer-info">
-                      <div className="customer-details">
-                        <strong>{order.customerName || 'Walk-in Customer'}</strong>
-                        {order.customerPhone && (
-                          <small>{order.customerPhone}</small>
+                filteredOrders.map((order) => {
+                  const { baseAmount, markupAmount } = calculateOrderMarkup(order);
+                  return (
+                    <tr key={order.id} className="order-row">
+                      <td className="order-id">
+                        <strong>#{order.id}</strong>
+                      </td>
+                      <td className="customer-info">
+                        <div className="customer-details">
+                          <strong>{order.customerName || 'Walk-in Customer'}</strong>
+                          {order.customerPhone && (
+                            <small>{order.customerPhone}</small>
+                          )}
+                        </div>
+                      </td>
+                      <td className="order-items">
+                        <div className="items-summary">
+                          {order.items && order.items.length > 0 ? (
+                            <>
+                              <span className="item-count">{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
+                              <small className="items-preview">
+                                {getOrderItems(order)}
+                              </small>
+                            </>
+                          ) : (
+                            <span>No items</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="order-base">
+                        <MoneyValue amount={baseAmount} sensitive={false} />
+                      </td>
+                      <td className="order-markup">
+                        <span className="markup-amount"><MoneyValue amount={markupAmount} sensitive={false} /></span>
+                        {markupAmount > 0 && (
+                          <small className="markup-by">
+                            {order.items?.find(item => item.markupBy)?.markupBy ? 'By Staff' : 'By System'}
+                          </small>
                         )}
-                      </div>
-                    </td>
-                    <td className="order-items">
-                      <div className="items-summary">
-                        {order.items && order.items.length > 0 ? (
-                          <>
-                            <span className="item-count">{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
-                            <small className="items-preview">
-                              {getOrderItems(order)}
-                            </small>
-                          </>
-                        ) : (
-                          <span>No items</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="order-total">
-                      <strong className="amount"><MoneyValue amount={order.total || 0} sensitive={false} /></strong>
-                    </td>
-                    <td className="payment-method">
-                      <span className={`payment-badge payment-${(order.paymentMethod || 'cash').toLowerCase()}`}>
-                        {order.paymentMethod || 'Cash'}
-                      </span>
-                    </td>
-                    <td className="order-date">
-                      {formatDateTime(order.createdAt || order.saleDate)}
-                    </td>
-                    <td className="order-status">
-                      <span className={`status-badge status-${(order.status || 'completed').toLowerCase()}`}>
-                        {order.status === 'partially_returned' ? 'Partially Returned' : (order.status || 'Completed')}
-                      </span>
-                    </td>
-                    <td className="order-actions">
-                      <div className="action-buttons">
-                        <button
-                          className="action-btn reprint-btn"
-                          onClick={() => handleReprintReceipt(order)}
-                          title="Reprint Receipt"
-                        >
-                          🖨️ Receipt
-                        </button>
-                        <button
-                          className="action-btn return-btn"
-                          onClick={() => handleProcessReturn(order)}
-                          title="Process Return"
-                        >
-                          ↩️ Return
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="order-total">
+                        <strong className="amount"><MoneyValue amount={order.total || 0} sensitive={false} /></strong>
+                      </td>
+                      <td className="payment-method">
+                        <span className={`payment-badge payment-${(order.paymentMethod || 'cash').toLowerCase()}`}>
+                          {order.paymentMethod || 'Cash'}
+                        </span>
+                      </td>
+                      <td className="order-date">
+                        {formatDateTime(order.createdAt || order.saleDate)}
+                      </td>
+                      <td className="order-status">
+                        <span className={`status-badge status-${(order.status || 'completed').toLowerCase()}`}>
+                          {order.status === 'partially_returned' ? 'Partially Returned' : (order.status || 'Completed')}
+                        </span>
+                      </td>
+                      <td className="order-actions">
+                        <div className="action-buttons">
+                          <button
+                            className="action-btn reprint-btn"
+                            onClick={() => handleReprintReceipt(order)}
+                            title="Reprint Receipt"
+                          >
+                            🖨️ Receipt
+                          </button>
+                          <button
+                            className="action-btn return-btn"
+                            onClick={() => handleProcessReturn(order)}
+                            title="Process Return"
+                          >
+                            ↩️ Return
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
