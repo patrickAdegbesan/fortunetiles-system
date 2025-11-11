@@ -309,6 +309,13 @@ app.get('/system*', (req, res) => {
   res.redirect(301, newPath);
 });
 
+// Redirect password reset URLs to inventory app
+app.get('/reset-password*', (req, res) => {
+  const newPath = '/inventory' + req.path;
+  console.log(`Redirecting password reset from ${req.path} to ${newPath}`);
+  res.redirect(301, newPath);
+});
+
 // Add clear systems access page
 app.get('/systems', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'systems.html'));

@@ -8,14 +8,12 @@ const BACKGROUND_SYNC_TAG = 'background-sync-v1';
 // Static assets to cache with intelligent prioritization
 const CRITICAL_ASSETS = [
   '/',
-  '/manifest.json',
-  '/static/css/main.css'
+  '/manifest.json'
 ];
 
 const IMPORTANT_ASSETS = [
-  '/static/js/bundle.js',
-  '/static/js/vendor.js',
-  '/static/js/common.js'
+  // Note: Asset paths with hashes change on each build
+  // We'll cache them dynamically when they're requested
 ];
 
 const WEBP_IMAGES = [
@@ -59,14 +57,8 @@ self.addEventListener('install', (event) => {
       // Cache critical assets first for faster initial load
       caches.open(CACHE_NAME).then(cache => {
         console.log('📦 Caching critical assets...');
-        return cache.addAll(CRITICAL_ASSETS);
-      }),
-      
-      // Cache important assets in background
-      caches.open(CACHE_NAME).then(cache => {
-        console.log('📦 Caching important assets...');
-        return cache.addAll(IMPORTANT_ASSETS).catch(err => {
-          console.warn('Some important assets failed to cache:', err);
+        return cache.addAll(CRITICAL_ASSETS).catch(err => {
+          console.warn('Some critical assets failed to cache:', err);
         });
       }),
 
@@ -168,7 +160,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Handle static assets with cache-first strategy
-  if (CRITICAL_ASSETS.some(staticUrl => url.pathname === staticUrl)) {
+  if (CRITICAL_ASSETS.some(staticUrl => url.pathname === staticUrl) ||
+      url.pathname.startsWith('/static/') ||
+      url.pathname.startsWith('/assets/') ||
+      url.pathname === '/manifest.json') {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
@@ -176,12 +171,17 @@ self.addEventListener('fetch', (event) => {
         }
 
         return fetch(request).then((response) => {
-          // Cache the response for future use
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
+          // Cache successful responses for static assets
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
           return response;
+        }).catch(() => {
+          // If fetch fails, try cache anyway
+          return caches.match(request);
         });
       })
     );
