@@ -6,14 +6,22 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const receiptData = sale || {};
   
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-NG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    if (!dateString) return 'Invalid Date';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleString('en-NG', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Invalid Date';
+    }
   };
 
   const handlePrint = () => {
@@ -592,9 +600,13 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
             <div className="bank-details">
               <h3>Bank Details</h3>
               <div className="bank-info">
-                <p>Bank: First Bank Nigeria</p>
-                <p>Account Name: Fortune Tiles Ltd</p>
-                <p>Account No: XXXX-XXXX-XXXX</p>
+                <p><strong>Access Bank</strong></p>
+                <p>Account No: 0021456920</p>
+                <p>Account Name: Fortune et Fever Nig LTD</p>
+                
+                <p style={{ marginTop: '10px' }}><strong>Zenith Bank</strong></p>
+                <p>Account No: 1012473059</p>
+                <p>Account Name: Fortune et Fever Nig LTD</p>
               </div>
             </div>
           </div>
