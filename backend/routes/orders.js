@@ -90,8 +90,8 @@ router.get('/', async (req, res) => {
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
         status: 'completed', // Default to completed since we can't check returns right now
-        createdAt: saleData.createdAt,
-        saleDate: saleData.createdAt, // Use createdAt as saleDate
+        createdAt: saleData.createdAt || new Date().toISOString(), // Fallback to current date if missing
+        saleDate: saleData.createdAt || new Date().toISOString(), // Use createdAt as saleDate with fallback
         items: formattedItems,
         cashier: saleData.cashier ? {
           id: saleData.cashier.id,

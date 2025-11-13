@@ -6,11 +6,22 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const receiptData = sale || {};
   
   const formatDate = (dateString) => {
-    if (!dateString) return 'Invalid Date';
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return date.toLocaleString('en-NG', {
+      // If no date provided, use current date
+      let dateToFormat = dateString;
+      if (!dateToFormat) {
+        dateToFormat = new Date();
+      } else {
+        dateToFormat = new Date(dateString);
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateToFormat.getTime())) {
+        // If invalid, use current date as fallback
+        dateToFormat = new Date();
+      }
+      
+      return dateToFormat.toLocaleString('en-NG', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -20,7 +31,15 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
       });
     } catch (error) {
       console.error('Date formatting error:', error);
-      return 'Invalid Date';
+      // Return current date as final fallback
+      return new Date().toLocaleString('en-NG', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     }
   };
 
