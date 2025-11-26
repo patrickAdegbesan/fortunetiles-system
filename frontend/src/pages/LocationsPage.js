@@ -60,21 +60,30 @@ const LocationsPage = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       if (editingLocation) {
         await updateLocation(editingLocation.id, newLocation);
         setSuccess('Location updated successfully');
+        // Update the location in state
+        setLocations(prev => prev.map(loc =>
+          loc.id === editingLocation.id ? { ...loc, ...newLocation } : loc
+        ));
       } else {
-        await createLocation(newLocation);
+        const response = await createLocation(newLocation);
         setSuccess('Location created successfully');
+        // Add new location to state immediately
+        setLocations(prev => [...prev, response.location]);
+        // Load inventory for the new location
+        loadInventoryForLocation(response.location.id);
       }
-      
-      // Reset form and refresh locations
+
+      // Reset form
       setNewLocation({ name: '', address: '' });
       setEditingLocation(null);
-      await loadLocations();
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to save location');
+      // Refresh locations on error to ensure consistency
+      await loadLocations();
     } finally {
       setLoading(false);
     }
@@ -95,11 +104,23 @@ const LocationsPage = () => {
 
     try {
       setLoading(true);
+      console.log('Deleting location:', id);
       await deleteLocation(id);
+      console.log('Location deleted successfully on backend');
       setSuccess('Location deleted successfully');
-      await loadLocations();
+      // Remove location from state immediately
+      setLocations(prev => prev.filter(loc => loc.id !== id));
+      // Remove inventory data for deleted location
+      setInventoryData(prev => {
+        const newData = { ...prev };
+        delete newData[id];
+        return newData;
+      });
     } catch (error) {
+      console.error('Delete location error:', error);
       setError(error.response?.data?.message || 'Failed to delete location');
+      // Refresh locations on error to ensure consistency
+      await loadLocations();
     } finally {
       setLoading(false);
     }
@@ -270,11 +291,11 @@ const LocationsPage = () => {
                   <button onClick={() => handleEdit(location)} className="edit-btn">
                     <span>✏️</span> Edit
                   </button>
-                  <button 
-                    onClick={() => handleDelete(location.id)} 
+                  <button
+                    onClick={() => handleDelete(location.id)}
                     className="delete-btn"
-                    disabled={inventoryData[location.id]?.length > 0}
-                    title={inventoryData[location.id]?.length > 0 ? 'Cannot delete location with products' : 'Delete location'}
+                    disabled={inventoryData[location.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0)}
+                    title={inventoryData[location.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0) ? 'Cannot delete location with products' : 'Delete location'}
                   >
                     <span>🗑️</span> Delete
                   </button>

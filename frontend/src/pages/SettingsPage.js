@@ -17,7 +17,6 @@ import {
   fetchCategories,
   createCategory,
   deleteCategory,
-  renameCategory,
   fetchGlobalAttributes,
   createGlobalAttribute,
   deleteGlobalAttribute,
@@ -33,17 +32,12 @@ import {
   MdAdd,
   MdEdit,
   MdDelete,
-  MdVisibility,
-  MdVisibilityOff,
-  MdCheck,
-  MdClose,
   MdInventory,
   MdCategory,
   MdPersonAdd,
   MdStore,
   MdAdminPanelSettings
 } from 'react-icons/md';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import '../styles/SettingsPage.css';
 
 const createEmptyAttrState = () => ({
@@ -121,7 +115,6 @@ const SettingsPage = () => {
   const [editingGlobalAttribute, setEditingGlobalAttribute] = useState(null);
   const [newAttr, setNewAttr] = useState(createEmptyAttrState);
   const [editingProductType, setEditingProductType] = useState(null);
-  const [attrInputs, setAttrInputs] = useState({});
 
   const getCategoryName = (category) => {
     if (typeof category === 'string') return category;
@@ -147,9 +140,37 @@ const SettingsPage = () => {
   const isOwner = user?.role === 'owner';
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
-  useEffect(() => {
-    loadInitialData();
-  }, [activeTab]);
+  // Locations Methods
+  const loadInventoryForLocation = useCallback(async (locationId) => {
+    try {
+      const response = await fetchInventory({ locationId });
+      setInventoryData(prev => ({
+        ...prev,
+        [locationId]: response.inventory
+      }));
+    } catch (error) {
+      console.error('Load inventory error:', error);
+    }
+  }, []);
+
+  const loadLocations = useCallback(async () => {
+    try {
+      console.log('loadLocations called');
+      const response = await fetchLocations();
+      const locationsData = response.locations || [];
+      console.log('Fetched locations from API:', locationsData.length, 'locations');
+      setLocations(locationsData);
+      console.log('Set locations state to:', locationsData.length, 'locations');
+
+      // Fetch inventory for all locations
+      for (const location of locationsData) {
+        loadInventoryForLocation(location.id);
+      }
+    } catch (error) {
+      console.error('Load locations error:', error);
+      setLocations([]); // Set empty array on error
+    }
+  }, [loadInventoryForLocation]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -186,34 +207,11 @@ const SettingsPage = () => {
     }
   };
 
-  // Locations Methods
-  const loadInventoryForLocation = useCallback(async (locationId) => {
-    try {
-      const response = await fetchInventory({ locationId });
-      setInventoryData(prev => ({
-        ...prev,
-        [locationId]: response.inventory
-      }));
-    } catch (error) {
-      console.error('Load inventory error:', error);
-    }
-  }, []);
+  useEffect(() => {
+    console.log('SettingsPage useEffect triggered, activeTab:', activeTab);
+    loadInitialData();
+  }, [activeTab]);
 
-  const loadLocations = useCallback(async () => {
-    try {
-      const response = await fetchLocations();
-      const locationsData = response.locations || [];
-      setLocations(locationsData);
-
-      // Fetch inventory for all locations
-      for (const location of locationsData) {
-        loadInventoryForLocation(location.id);
-      }
-    } catch (error) {
-      console.error('Load locations error:', error);
-      setLocations([]); // Set empty array on error
-    }
-  }, [loadInventoryForLocation]);
 
   const handleLocationSubmit = async (e) => {
     e.preventDefault();
@@ -256,11 +254,31 @@ const SettingsPage = () => {
 
     try {
       setLoading(true);
+      console.log('Deleting location:', id, 'type:', typeof id);
+      console.log('Current locations before delete:', locations.length);
       await deleteLocation(id);
+      console.log('Location deleted successfully on backend');
       setSuccess('Location deleted successfully');
-      await loadLocations();
+      // Update UI after successful deletion
+      setLocations(prev => {
+        const filtered = prev.filter(loc => {
+          console.log('Comparing loc.id:', loc.id, 'type:', typeof loc.id, 'with id:', id, 'type:', typeof id, 'parseInt(id):', parseInt(id));
+          return loc.id !== parseInt(id);
+        });
+        console.log('Locations after filter:', filtered.length);
+        return filtered;
+      });
+      // Remove inventory data for deleted location
+      setInventoryData(prev => {
+        const newData = { ...prev };
+        delete newData[id];
+        return newData;
+      });
+      // Cache will be invalidated on backend
     } catch (error) {
+      console.log('Delete location error');
       setError(error.response?.data?.message || 'Failed to delete location');
+      // Don't refresh on error to avoid cache issues
     } finally {
       setLoading(false);
     }
@@ -1020,7 +1038,8 @@ const SettingsPage = () => {
               </div>
 
               <div className="locations-grid">
-                {locations.map(location => (
+                 {console.log('Rendering locations grid with', locations.length, 'locations:', locations.map(l => ({id: l.id, name: l.name})))}
+                 {locations.map(location => (
                   <div key={location.id} className="location-card">
                     <div className="location-header">
                       <h3>{location.name}</h3>

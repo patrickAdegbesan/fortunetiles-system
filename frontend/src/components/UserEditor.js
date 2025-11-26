@@ -62,8 +62,20 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
     // Password validation only for new users or when password is provided
     if (!user && !formData.password) {
       newErrors.password = 'Password is required for new users';
-    } else if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password) {
+      if (formData.password.length < 12) {
+        newErrors.password = 'Password must be at least 12 characters';
+      } else {
+        // Check for required character types
+        const hasLowercase = /[a-z]/.test(formData.password);
+        const hasUppercase = /[A-Z]/.test(formData.password);
+        const hasNumber = /\d/.test(formData.password);
+        const hasSpecial = /[@$!%*?&]/.test(formData.password);
+
+        if (!hasLowercase || !hasUppercase || !hasNumber || !hasSpecial) {
+          newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)';
+        }
+      }
     }
 
     if (!formData.role) {
