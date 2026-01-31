@@ -20,7 +20,8 @@ import {
   fetchGlobalAttributes,
   createGlobalAttribute,
   deleteGlobalAttribute,
-  setAdminPin
+  setAdminPin,
+  manualSyncNow
 } from '../services/api';
 import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
@@ -39,6 +40,7 @@ import {
   MdAdminPanelSettings
 } from 'react-icons/md';
 import '../styles/SettingsPage.css';
+import { listConflicts, removeFromOutbox, replayOutbox } from '../lib/offlineQueue';
 
 const createEmptyAttrState = () => ({
   required: [],
@@ -115,6 +117,9 @@ const SettingsPage = () => {
   const [editingGlobalAttribute, setEditingGlobalAttribute] = useState(null);
   const [newAttr, setNewAttr] = useState(createEmptyAttrState);
   const [editingProductType, setEditingProductType] = useState(null);
+  // Offline controls
+  const [deviceId, setDeviceId] = useState(() => localStorage.getItem('device_id') || '');
+  const [conflicts, setConflicts] = useState([]);
 
   const getCategoryName = (category) => {
     if (typeof category === 'string') return category;
@@ -210,6 +215,7 @@ const SettingsPage = () => {
   useEffect(() => {
     console.log('SettingsPage useEffect triggered, activeTab:', activeTab);
     loadInitialData();
+    setConflicts(listConflicts());
   }, [activeTab]);
 
 
@@ -814,6 +820,51 @@ const SettingsPage = () => {
     }
   };
 
+  // Offline handlers
+  const saveDeviceId = () => {
+    if (deviceId && deviceId.trim()) {
+      localStorage.setItem('device_id', deviceId.trim());
+      setSuccess('Device ID saved');
+      setTimeout(() => setSuccess(''), 2000);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    try {
+      const res = await manualSyncNow();
+      const replayed = res?.replayed ?? 0;
+      const remaining = res?.remaining ?? 0;
+      setSuccess(`Sync complete. Replayed: ${replayed}, Remaining: ${remaining}`);
+      setConflicts(listConflicts());
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (e) {
+      setError('Sync failed. Please try again later.');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleRefreshConflicts = () => setConflicts(listConflicts());
+  const handleRemoveConflict = (idx) => {
+    removeFromOutbox((it, i) => it.conflict && i === idx);
+    setConflicts(listConflicts());
+  };
+  const handleViewServer = async (conf) => {
+    try {
+      // Basic inspector for product updates as MVP
+      if (conf.url && conf.method?.toLowerCase() === 'put' && conf.url.includes('/products/')) {
+        const id = conf.url.split('/').pop();
+        const token = localStorage.getItem('token');
+        const resp = await fetch(`/api/products/${id}`, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const data = await resp.json();
+        alert(`Server product:\n${JSON.stringify(data.product || data, null, 2)}\n\nLocal payload:\n${JSON.stringify(JSON.parse(conf.data || '{}'), null, 2)}`);
+      } else {
+        alert('Server view not implemented for this request type yet.');
+      }
+    } catch (e) {
+      alert('Failed to fetch server data.');
+    }
+  };
+
   // Tab configuration
   const tabs = [
     { id: 'overview', label: 'Overview', icon: <MdDashboard />, available: true },
@@ -1020,6 +1071,55 @@ const SettingsPage = () => {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Offline Mode Controls */}
+              <div className="admin-section" style={{ marginTop: '24px' }}>
+                <h3>Offline Mode</h3>
+                <p className="section-description">Use IMS offline; queued changes sync when back online.</p>
+                <div className="create-form">
+                  <div className="form-row">
+                    <input
+                      type="text"
+                      placeholder="Device ID (e.g., LAG-STORE-1)"
+                      value={deviceId}
+                      onChange={(e) => setDeviceId(e.target.value)}
+                    />
+                    <button type="button" className="secondary-button" onClick={saveDeviceId}>
+                      Save Device ID
+                    </button>
+                    <button type="button" className="primary-button" onClick={handleSyncNow}>
+                      Sync Now
+                    </button>
+                  </div>
+                </div>
+                <small>Writes while offline are queued and replayed when online. Conflicts return 409 and will need review.</small>
+              </div>
+
+              {/* Conflict Center */}
+              <div className="admin-section" style={{ marginTop: '16px' }}>
+                <h3>Conflict Center</h3>
+                <p className="section-description">Items that failed to sync due to version conflicts.</p>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <button className="secondary-button" onClick={handleRefreshConflicts}>Refresh</button>
+                  <button className="primary-button" onClick={handleSyncNow}>Retry All</button>
+                </div>
+                {conflicts.length === 0 ? (
+                  <p>No conflicts 🎉</p>
+                ) : (
+                  <div className="items-grid">
+                    {conflicts.map((c, idx) => (
+                      <div key={`conf-${idx}`} className="admin-item-card">
+                        <h4>{(c.method || 'REQ').toUpperCase()} {c.url}</h4>
+                        <p style={{ fontSize: 12, color: '#666' }}>Status: 409 conflict</p>
+                        <div className="admin-item-actions">
+                          <button className="action-btn edit" onClick={() => handleViewServer(c)}>View Server vs Local</button>
+                          <button className="action-btn delete" onClick={() => handleRemoveConflict(idx)}>Remove</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,10 +1,66 @@
 const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
+const { spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
 // Keep a global reference of the window object
 let mainWindow;
+let backendProcess = null;
+let backendPort = process.env.FORTUNE_TILES_PORT ? parseInt(process.env.FORTUNE_TILES_PORT, 10) : 5175;
+
+async function waitForBackendReady(url, timeoutMs = 20000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`${url}/api/health`);
+      if (res.ok) return true;
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 500));
+  }
+  return false;
+}
+
+function getBackendEntry() {
+  // Packaged: resourcesPath/backend/server.js
+  const packagedPath = path.join(process.resourcesPath, 'backend', 'server.js');
+  if (fs.existsSync(packagedPath)) return { entry: packagedPath, mode: 'packaged' };
+  // Dev fallback: repo backend/server.js
+  const devPath = path.join(__dirname, '..', 'backend', 'server.js');
+  if (fs.existsSync(devPath)) return { entry: devPath, mode: 'dev' };
+  return null;
+}
+
+function startBackend() {
+  const backend = getBackendEntry();
+  if (!backend) {
+    console.warn('Backend entry not found. Falling back to remote web app.');
+    return null;
+  }
+
+  const userDataDir = app.getPath('userData');
+  const env = {
+    ...process.env,
+    OFFLINE_MODE: '1',
+    NODE_ENV: process.env.NODE_ENV || 'production',
+    PORT: `${backendPort}`,
+    SQLITE_PATH: path.join(userDataDir, 'offline.sqlite')
+  };
+
+  const nodeExec = process.execPath; // electron as node runtime
+  console.log('Starting backend:', backend.entry, 'port:', backendPort, 'db:', env.SQLITE_PATH);
+  backendProcess = spawn(nodeExec, [backend.entry], {
+    env,
+    stdio: 'inherit',
+    windowsHide: true
+  });
+
+  backendProcess.on('exit', (code) => {
+    console.log('Backend process exited with code', code);
+  });
+
+  return `http://localhost:${backendPort}`;
+}
 
 function createWindow() {
   // Create the browser window
@@ -22,9 +78,21 @@ function createWindow() {
     show: false
   });
 
-  // Load the app - change this URL to your deployed Heroku app
-  const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
-  mainWindow.loadURL(appUrl);
+  // Try local offline backend first; fallback to remote URL if not available
+  const remoteUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
+  const localBase = startBackend();
+
+  (async () => {
+    if (localBase) {
+      const ok = await waitForBackendReady(localBase, 20000);
+      if (ok) {
+        mainWindow.loadURL(`${localBase}`);
+        return;
+      }
+      console.warn('Local backend not responding, falling back to remote.');
+    }
+    mainWindow.loadURL(remoteUrl);
+  })();
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
@@ -301,4 +369,11 @@ app.on('web-contents-created', (event, contents) => {
     event.preventDefault();
     shell.openExternal(navigationUrl);
   });
+});
+
+// Ensure backend is terminated on quit
+app.on('before-quit', () => {
+  try {
+    if (backendProcess && !backendProcess.killed) backendProcess.kill();
+  } catch (_) {}
 });

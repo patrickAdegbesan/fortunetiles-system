@@ -8,6 +8,8 @@
     "frontend": "cd frontend && npm start",
     "build": "npm run build:frontend",
     "build:frontend": "npm --prefix frontend run build",
+    "build:website": "npm --prefix website run build",
+    "build:vercel-static": "npm run build:website && npm run build:frontend && node scripts/vercel-copy-static.js",
   "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && rm -rf ./public && mkdir -p ./public && cp -a ../frontend/build/. ./public/",
     "compress-images": "node scripts/compress-images.js",
     "seed-types": "node seed-product-types.js"

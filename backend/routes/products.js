@@ -89,14 +89,20 @@ router.get('/', async (req, res) => {
 
     // Build optimized where clause
     if (category) {
-      // For category filtering, check if the category exists in the categories array
-      whereClause[Op.and] = whereClause[Op.and] || [];
-      whereClause[Op.and].push(
-        sequelize.where(
-          sequelize.fn('array_position', sequelize.col('categories'), category),
-          { [Op.ne]: null }
-        )
-      );
+      const isSqlite = sequelize.getDialect() === 'sqlite';
+      if (isSqlite) {
+        // SQLite fallback: server-side JSON array search not supported in same way; let client filter
+        console.warn('SQLite: category filter skipped in GET /products; client-side filter recommended');
+      } else {
+        // For Postgres, check if the category exists in the categories array
+        whereClause[Op.and] = whereClause[Op.and] || [];
+        whereClause[Op.and].push(
+          sequelize.where(
+            sequelize.fn('array_position', sequelize.col('categories'), category),
+            { [Op.ne]: null }
+          )
+        );
+      }
     }
     if (search) {
       whereClause[Op.or] = [
@@ -279,13 +285,34 @@ router.put('/:id', async (req, res) => {
       unitOfMeasure,
       imageUrl,
       description,
-      isActive
+      isActive,
+      lastUpdatedAt,
+      version
     } = req.body;
 
     const product = await Product.findByPk(id);
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Conflict detection: prefer optimistic locking via version; fallback to updated_at
+    if (typeof version === 'number') {
+      if (version !== (product.version || 0)) {
+        return res.status(409).json({
+          message: 'Conflict: version mismatch',
+          server: { id: product.id, version: product.version, updatedAt: product.updated_at || product.updatedAt }
+        });
+      }
+    } else if (lastUpdatedAt) {
+      const clientTime = new Date(lastUpdatedAt).getTime();
+      const serverTime = new Date(product.updated_at || product.updatedAt).getTime();
+      if (isFinite(clientTime) && isFinite(serverTime) && clientTime < serverTime) {
+        return res.status(409).json({
+          message: 'Conflict: record has been updated by another device',
+          serverUpdatedAt: product.updated_at || product.updatedAt
+        });
+      }
     }
 
     // Ensure categories is an array if provided
@@ -302,7 +329,8 @@ router.put('/:id', async (req, res) => {
       unitOfMeasure: unitOfMeasure || product.unitOfMeasure,
       imageUrl: imageUrl !== undefined ? imageUrl : product.imageUrl,
       description: description !== undefined ? description : product.description,
-      isActive: isActive !== undefined ? isActive : product.isActive
+      isActive: isActive !== undefined ? isActive : product.isActive,
+      version: (product.version || 0) + 1
     });
 
     res.json({

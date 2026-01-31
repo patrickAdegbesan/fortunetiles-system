@@ -1,5 +1,10 @@
+// Ensure dialect drivers are discoverable by Vercel's dependency tracer.
+// Sequelize loads 'pg' dynamically; without an explicit require, serverless bundles can miss it.
+require('pg');
+
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
 // Load env from backend/.env explicitly first, then fallback to project root .env
@@ -8,8 +13,21 @@ dotenv.config();
 
 let sequelize;
 
-if (process.env.DATABASE_URL) {
-  // Production (e.g., Heroku) using single DATABASE_URL
+const isOffline = process.env.OFFLINE_MODE === '1' || process.env.DB_DIALECT === 'sqlite';
+
+if (isOffline) {
+  // Offline mode using SQLite file DB
+  const dataDir = path.join(__dirname, '..', 'data');
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const storage = process.env.SQLITE_PATH || path.join(dataDir, 'offline.sqlite');
+
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage,
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  });
+} else if (process.env.DATABASE_URL) {
+  // Production (e.g., Heroku/Railway) using single DATABASE_URL
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
@@ -20,15 +38,15 @@ if (process.env.DATABASE_URL) {
       },
     } : {},
     pool: {
-      max: 25,        // Increase max connections for higher concurrency
-      min: 8,         // Keep more connections ready (reduces cold connection time)
-      acquire: 60000, // Increase acquire timeout (60s)
-      idle: 20000,    // Increase idle time (20s)
-      evict: 30000,   // Connection eviction time
+      max: 25,
+      min: 8,
+      acquire: 60000,
+      idle: 20000,
+      evict: 30000,
     },
     retry: {
-      max: 3,         // Retry failed connections
-      match: [        // Retry on specific errors
+      max: 3,
+      match: [
         /ETIMEDOUT/,
         /EHOSTUNREACH/,
         /ECONNRESET/,
@@ -38,7 +56,7 @@ if (process.env.DATABASE_URL) {
     },
   });
 } else {
-  // Local development using discrete env vars
+  // Local development using discrete env vars (Postgres)
   sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
@@ -62,7 +80,7 @@ if (process.env.DATABASE_URL) {
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connection established successfully.');
+    console.log(`✅ Database connection established successfully (${isOffline ? 'sqlite' : 'postgres'}).`);
   } catch (error) {
     console.error('❌ Unable to connect to the database:', error);
   }

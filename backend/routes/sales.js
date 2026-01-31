@@ -328,7 +328,17 @@ router.post('/', authenticateToken, async (req, res) => {
           newQuantity
         });
         
-        await inventory.update({ quantitySqm: newQuantity }, { transaction });
+        // Optional optimistic concurrency: if client provides inventoryVersion per item, enforce
+        if (typeof item.inventoryVersion === 'number' && item.inventoryVersion !== (inventory.version || 0)) {
+          await transaction.rollback();
+          return res.status(409).json({
+            message: 'Inventory conflict for product during sale: version mismatch',
+            productId: item.productId,
+            server: { version: inventory.version }
+          });
+        }
+
+        await inventory.update({ quantitySqm: newQuantity, version: (inventory.version || 0) + 1 }, { transaction });
 
         // Log inventory change
         await InventoryLog.create({

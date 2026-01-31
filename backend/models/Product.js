@@ -7,6 +7,17 @@ const Product = sequelize.define('Product', {
     primaryKey: true,
     autoIncrement: true,
   },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true
+  },
+  version: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -30,12 +41,12 @@ const Product = sequelize.define('Product', {
     },
   },
   attributes: {
-    type: DataTypes.JSONB,
+    type: DataTypes.JSON,
     allowNull: true,
     defaultValue: {},
   },
   categories: {
-    type: DataTypes.JSONB,
+    type: DataTypes.JSON,
     allowNull: true,
     defaultValue: ['General'],
   },

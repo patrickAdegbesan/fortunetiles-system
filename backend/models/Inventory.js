@@ -7,6 +7,17 @@ const Inventory = sequelize.define('Inventory', {
     primaryKey: true,
     autoIncrement: true,
   },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true
+  },
+  version: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
   productId: {
     type: DataTypes.INTEGER,
     allowNull: false,

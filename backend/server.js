@@ -399,8 +399,13 @@ const initializeDatabase = async () => {
     // Test database connection
     await testConnection();
     
-    // Temporarily disable sync to avoid timestamp schema conflicts - using migrations instead
-    console.log('ℹ️ Skipping sequelize.sync; relying on existing database schema and migrations.');
+    // Use migrations for Postgres; for SQLite offline mode, bootstrap schema with sync
+    if (sequelize.getDialect() === 'sqlite') {
+      console.log('ℹ️ SQLite detected: running sequelize.sync() to bootstrap local schema');
+      await sequelize.sync();
+    } else {
+      console.log('ℹ️ Skipping sequelize.sync; relying on existing database schema and migrations.');
+    }
     
     // Create default location if none exists
     const locationCount = await Location.count();

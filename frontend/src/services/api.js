@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { enqueue, replayOutbox } from '../lib/offlineQueue';
 
 const resolveBaseUrl = () => {
   const envBase = process.env.REACT_APP_API_BASE_URL;
@@ -13,6 +14,13 @@ const API = axios.create({
   baseURL: resolveBaseUrl(),
 });
 
+// Try to replay queued requests when connection is restored
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    replayOutbox(API).catch(() => {});
+  });
+}
+
 // Add request interceptor to include token in headers
 API.interceptors.request.use(
   (config) => {
@@ -22,6 +30,13 @@ API.interceptors.request.use(
     }
     // Always include Content-Type for JSON
     config.headers['Content-Type'] = 'application/json';
+    const deviceId = localStorage.getItem('device_id');
+    if (deviceId) {
+      config.headers['x-device-id'] = deviceId;
+    }
+    // Mark mutating requests for potential queueing in offline mode
+    const method = (config.method || '').toLowerCase();
+    config.metadata = { enqueueable: ['post', 'put', 'patch', 'delete'].includes(method) };
     return config;
   },
   (error) => {
@@ -40,6 +55,23 @@ API.interceptors.response.use(
       method: error.config?.method,
       message: error.message
     });
+
+    // Network/offline handling: queue mutating requests for later replay
+    const cfg = error.config || {};
+    const isNetwork = error.code === 'ERR_NETWORK' || !error.response;
+    if (isNetwork && cfg.metadata?.enqueueable) {
+      enqueue({
+        url: cfg.url,
+        method: cfg.method,
+        baseURL: cfg.baseURL,
+        headers: cfg.headers,
+        data: cfg.data,
+        params: cfg.params,
+        withCredentials: cfg.withCredentials
+      });
+      // Return a synthetic 202 response to let UI proceed optimistically
+      return Promise.resolve({ data: { queued: true }, status: 202, config: cfg });
+    }
 
     if (error.response?.status === 401 || error.response?.status === 403) {
       // Clear auth data
@@ -104,7 +136,16 @@ export const createProduct = async (productData) => {
 
 export const updateProduct = async (id, productData) => {
   try {
-    const response = await API.put(`/products/${id}`, productData);
+    const payload = { ...productData };
+    if (typeof productData?.version === 'number') {
+      payload.version = productData.version;
+    }
+    if (productData?.updatedAt && !productData.lastUpdatedAt) {
+      payload.lastUpdatedAt = productData.updatedAt;
+    } else if (productData?.updated_at && !productData.lastUpdatedAt) {
+      payload.lastUpdatedAt = productData.updated_at;
+    }
+    const response = await API.put(`/products/${id}`, payload);
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to update product' };
@@ -195,6 +236,11 @@ export const deleteProductType = async (id) => {
   } catch (error) {
     throw error.response?.data || { message: 'Failed to delete product type' };
   }
+};
+
+// Manual sync trigger to replay queued requests
+export const manualSyncNow = async () => {
+  return replayOutbox(API);
 };
 
 

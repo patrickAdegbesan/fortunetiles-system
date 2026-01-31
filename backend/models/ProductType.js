@@ -24,7 +24,7 @@ const ProductType = sequelize.define('ProductType', {
     },
   },
   attributes: {
-    type: DataTypes.JSONB,
+    type: DataTypes.JSON,
     allowNull: true,
     defaultValue: {},
   },

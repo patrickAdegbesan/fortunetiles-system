@@ -23,9 +23,15 @@ router.get('/', async (req, res) => {
     // Build product include with category filtering
     const productWhereClause = {};
     if (category && category !== 'all') {
-      // Since categories is a JSONB array, we need to check if the category exists in the array
-      const { Op } = require('sequelize');
-      productWhereClause.categories = { [Op.contains]: [category] };
+      const isSqlite = sequelize.getDialect() === 'sqlite';
+      if (isSqlite) {
+        // SQLite fallback: server-side JSON array contains not supported; skip here
+        console.warn('SQLite: category filter skipped in GET /inventory; client-side filter recommended');
+      } else {
+        // Postgres: JSONB array contains
+        const { Op } = require('sequelize');
+        productWhereClause.categories = { [Op.contains]: [category] };
+      }
     }
     
     const { count, rows: inventory } = await Inventory.findAndCountAll({
@@ -90,7 +96,8 @@ router.post('/log', async (req, res) => {
       changeType, 
       changeAmount, 
       notes, 
-      userId 
+      userId,
+      version // optional optimistic concurrency check for Inventory row
     } = req.body;
 
     if (!productId || !locationId || !changeType || !changeAmount || !userId) {
@@ -118,7 +125,12 @@ router.post('/log', async (req, res) => {
 
     // Update or create inventory record
     if (inventory) {
-      await inventory.update({ quantitySqm: newQuantity }, { transaction });
+      // If client provided version, enforce it
+      if (typeof version === 'number' && version !== (inventory.version || 0)) {
+        await transaction.rollback();
+        return res.status(409).json({ message: 'Inventory conflict: version mismatch', server: { version: inventory.version } });
+      }
+      await inventory.update({ quantitySqm: newQuantity, version: (inventory.version || 0) + 1 }, { transaction });
     } else {
       inventory = await Inventory.create({
         productId,

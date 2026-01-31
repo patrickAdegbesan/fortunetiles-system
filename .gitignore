@@ -104,3 +104,5 @@ ADDITIONAL-OPTIMIZATIONS.md
 *.db
 *.sqlite
 *.sqlite3
+
+.vercel

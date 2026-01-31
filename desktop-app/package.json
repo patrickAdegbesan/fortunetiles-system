@@ -17,7 +17,8 @@
   },
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "electron-rebuild": "^3.6.1"
   },
   "build": {
     "appId": "com.fortunetiles.inventory",
@@ -30,6 +31,24 @@
       "preload.js",
       "assets/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!**/.git/**",
+          "!**/.cache/**",
+          "!**/tests/**",
+          "!**/test/**",
+          "!**/*.map"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "backend/node_modules/**"
+    ],
+    "afterPack": "node ./afterPack.js",
     "win": {
       "target": "nsis",
       "verifyUpdateCodeSignature": false
