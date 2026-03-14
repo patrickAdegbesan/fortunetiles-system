@@ -4,7 +4,13 @@
 
 const pg = require('pg');
 
-const DATABASE_URL = "postgresql://postgres:FcfkEXFYenNmQJFKuTsAFwbTPXuoTmLQ@postgres.railway.internal:5432/railway";
+const DATABASE_URL = process.env.DATABASE_URL || process.env.RAILWAY_DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.error('❌ ERROR: DATABASE_URL not set');
+  console.error('Set DATABASE_URL (or RAILWAY_DATABASE_URL) before running this script.');
+  process.exit(1);
+}
 
 async function resetMigrations() {
   const client = new pg.Client(DATABASE_URL);

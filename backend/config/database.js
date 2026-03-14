@@ -14,6 +14,7 @@ dotenv.config();
 let sequelize;
 
 const isOffline = process.env.OFFLINE_MODE === '1' || process.env.DB_DIALECT === 'sqlite';
+const sslRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
 
 if (isOffline) {
   // Offline mode using SQLite file DB
@@ -34,7 +35,7 @@ if (isOffline) {
     dialectOptions: process.env.NODE_ENV === 'production' ? {
       ssl: {
         require: true,
-        rejectUnauthorized: false,
+        rejectUnauthorized: sslRejectUnauthorized,
       },
     } : {},
     pool: {

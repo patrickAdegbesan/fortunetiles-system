@@ -15,3 +15,10 @@ npm-debug.log
 !README.md
 !backend/
 backend/node_modules
+
+# Keep dumps/exports in repo, but do not ship them in images
+backend/exports
+backend/exports/**
+backend/scripts/heroku-dump-*.sql
+heroku-data-collection
+heroku-data-collection/**

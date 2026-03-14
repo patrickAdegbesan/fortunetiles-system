@@ -34,7 +34,7 @@ MANUAL COMMANDS (if batch files don't work):
 ==========================================
 
 Export data:
-set "HEROKU_DATABASE_URL=postgres://ubhppt3pap3o0q:p69c1bd2eae1918b258b7bc726455d8ac2f19f8b5506a4db39d2d7eda77d4c875@cee3ebbhveeoab.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d2frkrcsqbjuah"
+set "HEROKU_DATABASE_URL=REDACTED"
 cd backend
 node scripts\heroku-data-export.js
 
@@ -50,4 +50,4 @@ TROUBLESHOOTING:
 - Check that local database exists: fortunetiles_db
 
 Your production DATABASE_URL:
-postgres://ubhppt3pap3o0q:p69c1bd2eae1918b258b7bc726455d8ac2f19f8b5506a4db39d2d7eda77d4c875@cee3ebbhveeoab.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d2frkrcsqbjuah
+REDACTED

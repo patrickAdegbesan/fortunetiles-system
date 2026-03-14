@@ -3,8 +3,21 @@ const { User } = require('../models');
 const { Op } = require('sequelize');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { createRateLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
+
+const forgotPasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many password reset requests. Please try again later.',
+});
+
+const resetTokenLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: 'Too many requests. Please try again later.',
+});
 
 // Configure nodemailer with better error handling
 let transporter;
@@ -12,8 +25,10 @@ let emailServiceAvailable = false;
 
 async function initializeEmailService() {
   try {
+    const emailPassword = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
+
     // Check if email credentials are available
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    if (!process.env.EMAIL_USER || !emailPassword) {
       console.warn('⚠️ Email credentials not configured in environment variables');
       return false;
     }
@@ -24,7 +39,7 @@ async function initializeEmailService() {
       secure: false,
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
+        pass: emailPassword
       },
       tls: {
         rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false
@@ -57,9 +72,9 @@ async function initializeEmailService() {
 initializeEmailService();
 
 // POST /api/auth/forgot-password
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
@@ -86,8 +101,6 @@ router.post('/forgot-password', async (req, res) => {
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
-
-    console.log('🔑 Generated reset token for user:', user.email);
 
     // Save reset token and expiry to user
     await user.update({
@@ -156,7 +169,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // GET /api/auth/verify-reset-token/:token
-router.get('/verify-reset-token/:token', async (req, res) => {
+router.get('/verify-reset-token/:token', resetTokenLimiter, async (req, res) => {
   try {
     const { token } = req.params;
     
@@ -181,9 +194,14 @@ router.get('/verify-reset-token/:token', async (req, res) => {
 });
 
 // POST /api/auth/reset-password
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', resetTokenLimiter, async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
 
     const user = await User.findOne({
       where: {
@@ -198,15 +216,18 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
 
-    // Update password directly (bypass validation for password reset)
+    // Update password (do NOT bypass validation)
     user.password = newPassword;
     user.resetToken = null;
     user.resetTokenExpiry = null;
-    await user.save({ validate: false });
+    await user.save();
 
     res.json({ message: 'Password has been reset successfully' });
   } catch (error) {
     console.error('Password reset error:', error);
+    if (error?.name === 'SequelizeValidationError') {
+      return res.status(400).json({ message: error.errors?.[0]?.message || 'Invalid password' });
+    }
     res.status(500).json({ message: 'Error resetting password' });
   }
 });

@@ -3,13 +3,33 @@ const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const { User, Location } = require('../models');
 const { authenticateToken } = require('../middleware/auth');
+const { createRateLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
+const loginLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many login attempts. Please try again later.',
+});
+
+const pinLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: 'Too many PIN attempts. Please try again later.',
+});
+
+const registerLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: 'Too many registration attempts. Please try again later.',
+});
+
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
@@ -63,9 +83,18 @@ router.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role, locationId } = req.body;
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PUBLIC_REGISTRATION !== 'true') {
+      return res.status(403).json({ message: 'Registration is disabled' });
+    }
+
+    const firstName = typeof req.body?.firstName === 'string' ? req.body.firstName.trim() : '';
+    const lastName = typeof req.body?.lastName === 'string' ? req.body.lastName.trim() : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const role = req.body?.role;
+    const locationId = req.body?.locationId;
 
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ 
@@ -88,12 +117,13 @@ router.post('/register', async (req, res) => {
     }
 
     // Create new user
+    const publicRegistration = process.env.ALLOW_PUBLIC_REGISTRATION === 'true';
     const newUser = await User.create({
       firstName,
       lastName,
       email,
       password,
-      role: role || 'staff',
+      role: publicRegistration ? 'staff' : (role || 'staff'),
       locationId
     });
 
@@ -121,14 +151,15 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/verify-pin - Verify admin PIN and grant markup privileges
-router.post('/verify-pin', authenticateToken, async (req, res) => {
+router.post('/verify-pin', authenticateToken, pinLimiter, async (req, res) => {
   try {
-    const { pin } = req.body;
-    console.log('[PIN VERIFY] Request received:', { pin, userId: req.user?.id, userRole: req.user?.role });
+    const pin = typeof req.body?.pin === 'string' || typeof req.body?.pin === 'number' ? String(req.body.pin).trim() : '';
 
     if (!pin) {
-      console.log('[PIN VERIFY] PIN is missing');
       return res.status(400).json({ message: 'PIN is required' });
+    }
+    if (!/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ message: 'PIN must be 4 digits' });
     }
 
     // Get the first admin user (owner or manager) with a PIN set
@@ -137,23 +168,16 @@ router.post('/verify-pin', authenticateToken, async (req, res) => {
         role: {
           [Op.in]: ['owner', 'manager']
         },
-        pin: {
-          [Op.ne]: null,
-          [Op.ne]: ''
-        }
+        pin: { [Op.not]: null, [Op.ne]: '' }
       }
     });
 
-    console.log('[PIN VERIFY] Admin with PIN found:', { id: admin?.id, hasPin: !!admin?.pin });
-
     if (!admin) {
-      console.log('[PIN VERIFY] No admin user with PIN configured found');
       return res.status(400).json({ message: 'No admin PIN configured. Please contact an administrator to set up PIN verification.' });
     }
 
     // Verify PIN
     const pinMatch = admin.pin === pin.toString();
-    console.log('[PIN VERIFY] PIN comparison:', { provided: pin.toString(), stored: admin.pin, match: pinMatch });
 
     if (!pinMatch) {
       return res.status(401).json({ message: 'Invalid PIN' });
@@ -173,30 +197,27 @@ router.post('/verify-pin', authenticateToken, async (req, res) => {
 });
 
 // POST /api/auth/set-pin - Admin sets their PIN (owner/manager only)
-router.post('/set-pin', authenticateToken, async (req, res) => {
+router.post('/set-pin', authenticateToken, pinLimiter, async (req, res) => {
   try {
-    const { pin } = req.body;
+    const pin = typeof req.body?.pin === 'string' || typeof req.body?.pin === 'number' ? String(req.body.pin).trim() : '';
     const userId = req.user?.id;
 
-    console.log('[SET PIN] Request received:', { pin, userId, role: req.user?.role });
-
     if (!['owner', 'manager'].includes(req.user?.role)) {
-      console.log('[SET PIN] User is not admin');
       return res.status(403).json({ message: 'Only admins can set PIN' });
     }
 
-    if (!pin || pin.length !== 4 || !/^\d+$/.test(pin)) {
-      console.log('[SET PIN] PIN validation failed:', { pin, length: pin?.length });
+    if (!/^\d{4}$/.test(pin)) {
       return res.status(400).json({ message: 'PIN must be 4 digits' });
     }
 
     const user = await User.findByPk(userId);
-    console.log('[SET PIN] User found:', { id: user?.id, email: user?.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     user.pin = pin;
     await user.save();
 
-    console.log('[SET PIN] PIN saved successfully');
     res.json({ message: 'PIN set successfully' });
 
   } catch (error) {

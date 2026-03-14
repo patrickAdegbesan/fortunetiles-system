@@ -13,6 +13,11 @@ const { User } = require('../models');
  */
 class WebSocketService {
   constructor(server) {
+    this.jwtSecret = process.env.JWT_SECRET;
+    if (!this.jwtSecret) {
+      console.warn('⚠️ JWT_SECRET is not set. WebSocket authentication will reject all connections.');
+    }
+
     this.wss = new WebSocket.Server({ 
       server,
       path: '/ws',
@@ -44,7 +49,9 @@ class WebSocketService {
         return false;
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      if (!this.jwtSecret) return false;
+
+      const decoded = jwt.verify(token, this.jwtSecret);
       const user = await User.findByPk(decoded.userId);
       
       if (!user) {

@@ -82,9 +82,9 @@ A modern, full-stack inventory management and point-of-sale system built with Re
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
 
-### Default Login Credentials
-- **Email**: `admin@example.com`
-- **Password**: `admin123`
+### Login Credentials
+- No default production credentials are shipped.
+- For development seeding, set `SEED_ADMIN_USER=true` and `ADMIN_PASSWORD=...` in `backend/.env` (see `backend/.env.example`).
 
 ## 🏗️ Architecture
 

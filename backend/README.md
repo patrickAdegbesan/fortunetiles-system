@@ -44,8 +44,12 @@ A professional inventory and sales tracking system for tile importation business
 ## Default Admin Account
 
 - **Email**: [Contact system administrator for access]
-- **Password**: admin123
+- **Password**: [Set by administrator]
 - **Role**: owner
+
+Notes:
+- Default admin auto-creation is **disabled in production**.
+- For local development, you can seed an admin user by setting `SEED_ADMIN_USER=true` and `ADMIN_PASSWORD=...` (see `.env.example`).
 
 ## API Endpoints
 

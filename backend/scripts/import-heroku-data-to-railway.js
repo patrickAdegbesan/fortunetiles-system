@@ -16,11 +16,19 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Heroku production database URL (from collection)
-const HEROKU_DB_URL = process.env.HEROKU_DATABASE_URL || 'postgres://ubhppt3pap3o0q:p69c1bd2eae1918b258b7bc726455d8ac2f19f8b5506a4db39d2d7eda77d4c875@cee3ebbhveeoab.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d2frkrcsqbjuah';
+// Heroku production database URL
+const HEROKU_DB_URL = process.env.HEROKU_DATABASE_URL;
 
 // Railway database URL
-const RAILWAY_DB_URL = process.env.DATABASE_URL || process.env.DB_URL;
+const RAILWAY_DB_URL = process.env.DATABASE_URL || process.env.RAILWAY_DATABASE_URL || process.env.DB_URL;
+
+const sslRejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+
+if (!HEROKU_DB_URL) {
+  console.error('❌ ERROR: HEROKU_DATABASE_URL environment variable not set');
+  console.error('Set the Heroku database connection URL (do not hardcode credentials in git).');
+  process.exit(1);
+}
 
 if (!RAILWAY_DB_URL) {
   console.error('❌ ERROR: DATABASE_URL or DB_URL environment variable not set');
@@ -36,7 +44,7 @@ const herokuSequelize = new Sequelize(HEROKU_DB_URL, {
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false,
+      rejectUnauthorized: sslRejectUnauthorized,
     },
   },
 });
@@ -47,7 +55,7 @@ const railwaySequelize = new Sequelize(RAILWAY_DB_URL, {
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false,
+      rejectUnauthorized: sslRejectUnauthorized,
     },
   },
 });

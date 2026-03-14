@@ -4,6 +4,7 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const compression = require('compression');
+const { createWriteOriginGuard } = require('./middleware/originGuard');
 
 // Lazy load database to avoid initialization issues in serverless
 let sequelize;
@@ -15,6 +16,7 @@ try {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Middleware
 app.use((req, res, next) => {
@@ -38,14 +40,33 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:5000'];
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5000')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 // Vercel sets VERCEL_URL like "fortunetiles-system.vercel.app" (no protocol)
 if (process.env.VERCEL_URL) {
   allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
 }
+
+// Optional HTTPS enforcement (recommended behind a reverse proxy)
+if (process.env.ENFORCE_HTTPS === 'true') {
+  app.use((req, res, next) => {
+    const forwardedProto = req.get('x-forwarded-proto');
+    const isSecure = req.secure || forwardedProto === 'https';
+    if (isSecure) return next();
+
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+    }
+
+    return res.status(400).json({ message: 'HTTPS required' });
+  });
+}
+
+// Basic origin guard for browser-initiated write requests (CSRF mitigation)
+app.use('/api', createWriteOriginGuard(allowedOrigins));
 
 // Apply CORS ONLY to API routes (never to static assets)
 app.use('/api', cors({
@@ -84,7 +105,7 @@ if (sequelize) {
     const performanceRoutes = require('./routes/performance');
 
     app.use('/api/auth', authRoutes);
-    app.use('/api/password-reset', passwordResetRoutes);
+    app.use('/api/auth', passwordResetRoutes);
     app.use('/api/products', productRoutes);
     app.use('/api/contact', contactRoutes);
     app.use('/api/product-types', productTypesRoutes);
@@ -97,8 +118,8 @@ if (sequelize) {
     app.use('/api/users', userRoutes);
     app.use('/api/returns', returnsRoutes);
     app.use('/api/orders', ordersRoutes);
-    app.use('/api/health', healthRoutes);
-    app.use('/api/performance', performanceRoutes);
+    app.use('/api', healthRoutes);
+    app.use('/api', performanceRoutes);
   } catch (error) {
     console.warn('⚠️ API routes not mounted:', error.message);
     app.all('/api/*', (req, res) => {
@@ -116,11 +137,6 @@ if (sequelize) {
     });
   });
 }
-
-// Health check endpoint
-app.get('/api/ping', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // Inventory (served from backend/public)
 app.use('/inventory', express.static(path.join(__dirname, 'public')));
@@ -158,8 +174,12 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
+  const message =
+    process.env.NODE_ENV === 'development'
+      ? (err.message || 'Internal Server Error')
+      : 'Internal server error';
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error'
+    error: message
   });
 });
 

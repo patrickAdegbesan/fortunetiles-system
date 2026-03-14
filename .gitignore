@@ -105,4 +105,9 @@ ADDITIONAL-OPTIMIZATIONS.md
 *.sqlite
 *.sqlite3
 
+# Data exports / dumps (keep private; do not deploy)
+backend/exports/
+backend/scripts/heroku-dump-*.sql
+heroku-data-collection/
+
 .vercel

@@ -4,9 +4,12 @@ require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const compression = require('compression');
+const crypto = require('crypto');
+const { exec } = require('child_process');
 
 const { sequelize, testConnection } = require('./config/database');
 const { User, Location, Category, GlobalAttribute } = require('./models');
+const { createWriteOriginGuard } = require('./middleware/originGuard');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -40,6 +43,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Middleware
 // Add security headers
@@ -97,11 +101,21 @@ const setCache = function (req, res, next) {
 app.use(setCache);
 
 // Increase limits to accommodate base64 images from camera/file uploads
-app.use(express.json({ limit: '25mb' }));
+app.use(express.json({
+  limit: '25mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/webhook/website-update')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Configure CORS with origin whitelist
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5000').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5000')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 app.use(cors({
   origin: function(origin, callback) {
     const normalizedOrigin = origin ? origin.replace(/\/$/, '') : origin;
@@ -116,6 +130,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Optional HTTPS enforcement (recommended behind a reverse proxy)
+if (process.env.ENFORCE_HTTPS === 'true') {
+  app.use((req, res, next) => {
+    const forwardedProto = req.get('x-forwarded-proto');
+    const isSecure = req.secure || forwardedProto === 'https';
+    if (isSecure) return next();
+
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+    }
+
+    return res.status(400).json({ message: 'HTTPS required' });
+  });
+}
+
+// Basic origin guard for browser-initiated write requests (CSRF mitigation)
+app.use('/api', createWriteOriginGuard(allowedOrigins));
+
 // Logging middleware - only log in development mode
 app.use((req, res, next) => {
   if (process.env.NODE_ENV !== 'production') {
@@ -123,6 +155,10 @@ app.use((req, res, next) => {
     if (req.body && Object.keys(req.body).length > 0) {
       try {
         const bodyForLog = { ...req.body };
+        const sensitiveFields = ['password', 'newPassword', 'token', 'resetToken', 'pin'];
+        for (const field of sensitiveFields) {
+          if (field in bodyForLog) bodyForLog[field] = '[redacted]';
+        }
         if (typeof bodyForLog.imageUrl === 'string' && bodyForLog.imageUrl.startsWith('data:image')) {
           bodyForLog.imageUrl = '[base64 image omitted]';
         }
@@ -156,10 +192,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
 
 // Webhook endpoint for automatic website updates with HMAC signature verification
-const { exec } = require('child_process');
-const crypto = require('crypto');
-
-app.post('/webhook/website-update', express.raw({type: 'application/json'}), (req, res) => {
+app.post('/webhook/website-update', (req, res) => {
   console.log('📡 Website update webhook received');
   
   // Verify GitHub webhook signature
@@ -177,10 +210,18 @@ app.post('/webhook/website-update', express.raw({type: 'application/json'}), (re
   }
   
   // Verify HMAC signature
-  const hash = crypto.createHmac('sha256', webhookSecret).update(req.body).digest('hex');
+  const rawBody = req.rawBody;
+  if (!rawBody) {
+    console.error('❌ Missing raw request body for signature verification');
+    return res.status(400).json({ error: 'Bad Request' });
+  }
+
+  const hash = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
   const expectedSignature = `sha256=${hash}`;
   
-  if (!crypto.timingSafeEqual(signature, expectedSignature)) {
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expectedSignature);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
     console.error('❌ Invalid webhook signature');
     return res.status(401).json({ error: 'Unauthorized: invalid signature' });
   }
@@ -466,6 +507,11 @@ const PORT = process.env.PORT || 5000;
 
 // Start server
 const startServer = async () => {
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    console.error('❌ Missing JWT_SECRET in production environment');
+    process.exit(1);
+  }
+
   await initializeDatabase();
 
   const server = app.listen(PORT, () => {

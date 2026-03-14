@@ -62,7 +62,7 @@ src/
 
 ### Default Login Credentials
 - **Email**: [Contact system administrator for access]
-- **Password**: admin123
+- **Password**: [Set by administrator]
 
 ## Available Scripts
 

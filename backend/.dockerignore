@@ -6,3 +6,7 @@ tmp
 public/static
 frontend/build
 website-build
+
+# Keep dumps/exports in repo, but do not ship them in images
+exports
+scripts/heroku-dump-*.sql

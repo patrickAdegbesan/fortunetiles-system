@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "start": "node scripts/dev-start.js",
     "backend": "cd backend && npm start",
     "frontend": "cd frontend && npm start",
     "build": "npm run build:frontend",
