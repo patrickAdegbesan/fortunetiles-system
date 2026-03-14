@@ -110,6 +110,10 @@ function validate(rules = [], options = {}) {
 
       let coerced = value;
       if (type === 'string') {
+        if (typeof value === 'object') {
+          errors.push({ field, message: `${field} must be a string` });
+          continue;
+        }
         coerced = toLower ? toLowerTrimmedString(value) : (trim ? toTrimmedString(value) : String(value));
         if (maxLen !== undefined && coerced.length > maxLen) {
           errors.push({ field, message: `${field} must be at most ${maxLen} characters` });
@@ -203,4 +207,3 @@ module.exports = {
   toLowerTrimmedString,
   isPlainObject,
 };
-

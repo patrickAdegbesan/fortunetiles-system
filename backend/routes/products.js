@@ -204,7 +204,8 @@ router.post('/', writeRoles, validate([
   { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
   { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
   { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
-  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 20000 },
+  // Supports both regular URLs and base64 data URLs from the camera uploader
+  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 5000000 },
   { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
   { in: 'body', field: 'isActive', required: false, type: 'boolean' },
   { in: 'body', field: 'initialLocation', required: true, type: 'integer', min: 1 },
@@ -304,7 +305,8 @@ router.put('/:id', writeRoles, validate([
   { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
   { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
   { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
-  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 20000 },
+  // Supports both regular URLs and base64 data URLs from the camera uploader
+  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 5000000 },
   { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
   { in: 'body', field: 'isActive', required: false, type: 'boolean' },
   { in: 'body', field: 'lastUpdatedAt', required: false, type: 'string', trim: true, maxLen: 64 },
