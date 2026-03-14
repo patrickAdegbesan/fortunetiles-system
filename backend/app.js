@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const compression = require('compression');
 const { createWriteOriginGuard } = require('./middleware/originGuard');
+const { securityHeaders } = require('./middleware/securityHeaders');
 
 // Lazy load database to avoid initialization issues in serverless
 let sequelize;
@@ -19,13 +20,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Middleware
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
+app.use(securityHeaders());
 
 app.use(compression({ 
   level: 9,

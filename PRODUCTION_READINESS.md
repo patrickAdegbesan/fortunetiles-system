@@ -48,4 +48,3 @@ Frontend (typical):
 
 - Add CI to run: install, build, unit tests, and basic smoke checks on PRs.
 - Use `npm ci` for reproducible installs (requires up-to-date lockfiles).
-

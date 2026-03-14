@@ -1,8 +1,14 @@
 const express = require('express');
 const { Location, User, Inventory, Product } = require('../models');
 const cache = require('../middleware/enhancedCache');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
 
 const router = express.Router();
+const writeRoles = requireRole(['owner', 'manager']);
+
+// Require authentication for all location routes
+router.use(authenticateToken);
 
 // GET /api/locations - Get all locations (smart cached)
 router.get('/', async (req, res) => {
@@ -11,10 +17,14 @@ router.get('/', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=300'); // 5 minutes client cache
     res.set('ETag', `"locations-v1"`);
 
-    console.log('Fetching locations, checking cache...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Fetching locations, checking cache...');
+    }
 
     const locations = await cache.getOrSetSmart('locations:all', async () => {
-      console.log('Cache miss, fetching from database...');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Cache miss, fetching from database...');
+      }
       return await Location.findAll({
         attributes: ['id', 'name', 'created_at'], // Use snake_case as defined in model
         include: [
@@ -28,7 +38,9 @@ router.get('/', async (req, res) => {
       });
     }, 600000); // Base 10 minutes (enhanced cache will extend to 20 minutes)
 
-    console.log('Locations fetched, count:', locations.length);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Locations fetched, count:', locations.length);
+    }
 
     res.json({
       message: 'Locations retrieved successfully',
@@ -44,7 +56,9 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/locations/:id - Get single location with inventory
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+]), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -79,22 +93,23 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/locations - Create new location
-router.post('/', async (req, res) => {
+router.post('/', writeRoles, validate([
+  { in: 'body', field: 'name', required: true, type: 'string', trim: true, maxLen: 255, minLen: 1 },
+  { in: 'body', field: 'address', required: true, type: 'string', trim: true, maxLen: 1000, minLen: 1 },
+]), async (req, res) => {
   try {
     const { name, address } = req.body;
 
-    console.log('Creating location with name:', name, 'address:', address);
-
-    if (!name || !address) {
-      return res.status(400).json({
-        message: 'Name and address are required'
-      });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Creating location:', { name });
     }
 
     // Check if location with this name already exists
     const existingLocation = await Location.findOne({ where: { name } });
     if (existingLocation) {
-      console.log('Location with name already exists:', existingLocation.id);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Location with name already exists:', existingLocation.id);
+      }
       return res.status(400).json({
         message: 'Location with this name already exists'
       });
@@ -105,7 +120,9 @@ router.post('/', async (req, res) => {
       address
     });
 
-    console.log('Location created successfully with id:', newLocation.id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Location created successfully with id:', newLocation.id);
+    }
 
     // Invalidate cache to ensure fresh data on next fetch
     cache.delete('locations:all');
@@ -122,7 +139,11 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/locations/:id - Update location
-router.put('/:id', async (req, res) => {
+router.put('/:id', writeRoles, validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'name', required: false, type: 'string', trim: true, maxLen: 255 },
+  { in: 'body', field: 'address', required: false, type: 'string', trim: true, maxLen: 1000 },
+]), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, address } = req.body;
@@ -150,17 +171,23 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/locations/:id - Delete location
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', writeRoles, validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+]), async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log('Attempting to delete location with id:', id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Attempting to delete location with id:', id);
+    }
 
     const location = await Location.findByPk(id, {
       include: [{ model: Inventory, as: 'inventory' }]
     });
 
-    console.log('Location found:', location ? location.name : 'null');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Location found:', location ? location.name : 'null');
+    }
 
     if (!location) {
       console.log('Location not found, returning 404');
@@ -172,7 +199,9 @@ router.delete('/:id', async (req, res) => {
       parseFloat(item.quantitySqm) > 0
     );
 
-    console.log('Location has inventory with products:', hasActualInventory);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Location has inventory with products:', hasActualInventory);
+    }
 
     if (hasActualInventory) {
       console.log('Cannot delete due to inventory');
@@ -183,7 +212,9 @@ router.delete('/:id', async (req, res) => {
 
     // Check if location has users assigned
     const userCount = await User.count({ where: { locationId: id } });
-    console.log('Location has users assigned:', userCount);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Location has users assigned:', userCount);
+    }
 
     if (userCount > 0) {
       console.log('Cannot delete due to users');
@@ -202,9 +233,13 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    console.log('Deleting location...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Deleting location...');
+    }
     await location.destroy();
-    console.log('Location deleted successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Location deleted successfully');
+    }
 
     // Invalidate cache
     cache.delete('locations:all');

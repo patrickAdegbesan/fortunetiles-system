@@ -109,10 +109,13 @@ router.post('/', authenticateToken, async (req, res) => {
   const transaction = await sequelize.transaction();
   
   try {
-    // Debug logging
-    console.log('Headers:', req.headers);
-    console.log('Raw body:', req.body);
-    console.log('Received sale request:', JSON.stringify(req.body, null, 2));
+    // Debug logging (development only; never log Authorization tokens)
+    if (process.env.NODE_ENV === 'development') {
+      const safeHeaders = { ...req.headers };
+      if (safeHeaders.authorization) safeHeaders.authorization = '[redacted]';
+      console.log('Sale request headers:', safeHeaders);
+      console.log('Sale request body:', JSON.stringify(req.body, null, 2));
+    }
     
     const { customerName, customerPhone, discountType, discountValue, subtotalAmount } = req.body;
     // Accept string or number for locationId, coerce to number if possible

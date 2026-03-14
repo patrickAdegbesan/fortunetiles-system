@@ -30,8 +30,19 @@ jobs:
           node --check backend/server.js
           node --check backend/app.js
           node --check backend/config/database.js
+          node --check backend/middleware/securityHeaders.js
+          node --check backend/middleware/validate.js
           node --check backend/routes/auth.js
+          node --check backend/routes/contact.js
+          node --check backend/routes/inventory.js
+          node --check backend/routes/locations.js
           node --check backend/routes/passwordReset.js
+          node --check backend/routes/products.js
+          node --check backend/routes/returns.js
+
+      - name: Smoke test (backend)
+        working-directory: backend
+        run: node scripts/smoke-ci.js
 
   frontend:
     runs-on: ubuntu-latest
@@ -62,4 +73,3 @@ jobs:
         env:
           CI: "true"
         run: npm run build
-

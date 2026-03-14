@@ -10,6 +10,7 @@ const { exec } = require('child_process');
 const { sequelize, testConnection } = require('./config/database');
 const { User, Location, Category, GlobalAttribute } = require('./models');
 const { createWriteOriginGuard } = require('./middleware/originGuard');
+const { securityHeaders } = require('./middleware/securityHeaders');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -46,28 +47,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Middleware
-// Add security headers
-app.use((req, res, next) => {
-  // Prevent MIME type sniffing
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  
-  // Prevent clickjacking
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  
-  // Enable XSS protection
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  
-  // Prevent referrer leakage
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
-  // Content Security Policy
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'");
-  
-  // Permissions Policy
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=()');
-  
-  next();
-});
+app.use(securityHeaders());
 
 // Enable aggressive compression for all responses
 app.use(compression({ 

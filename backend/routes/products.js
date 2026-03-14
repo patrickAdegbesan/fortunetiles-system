@@ -3,8 +3,14 @@ const { Product, Inventory, InventoryLog, ProductType } = require('../models');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 const cache = require('../middleware/cache');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
 
 const router = express.Router();
+const writeRoles = requireRole(['owner', 'manager']);
+
+// Require authentication for all product routes
+router.use(authenticateToken);
 
 // GET /api/products/categories - Get product categories (MUST be before /:id route) (cached)
 router.get('/categories', async (req, res) => {
@@ -41,7 +47,9 @@ router.get('/categories', async (req, res) => {
       return categoriesArray.length > 0 ? categoriesArray : defaultCategories;
     }, 300000); // Cache for 5 minutes
 
-    console.log('Products/categories - Returning cached categories:', finalCategories.length);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Products/categories - Returning cached categories:', finalCategories.length);
+    }
 
     res.json({
       message: 'Categories retrieved successfully',
@@ -165,7 +173,9 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/products/:id - Get single product
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 }
+]), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -187,11 +197,22 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/products - Create new product
-router.post('/', async (req, res) => {
+router.post('/', writeRoles, validate([
+  { in: 'body', field: 'name', required: true, type: 'string', trim: true, maxLen: 255, minLen: 1 },
+  { in: 'body', field: 'price', required: true, type: 'number', min: 0 },
+  { in: 'body', field: 'attributes', required: false, type: 'object' },
+  { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
+  { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
+  { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
+  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 20000 },
+  { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
+  { in: 'body', field: 'isActive', required: false, type: 'boolean' },
+  { in: 'body', field: 'initialLocation', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'initialQuantity', required: true, type: 'number', min: 0.01 }
+]), async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    console.log('Received request body:', req.body);
     const {
       name,
       price,
@@ -224,7 +245,9 @@ router.post('/', async (req, res) => {
     }
 
     // Ensure categories is an array
-    const productCategories = Array.isArray(categories) ? categories : ['General'];
+    const productCategories = Array.isArray(categories)
+      ? categories.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean)
+      : ['General'];
 
     // Create product
     const newProduct = await Product.create({
@@ -255,7 +278,7 @@ router.post('/', async (req, res) => {
       previousQuantity: 0,
       newQuantity: initialQuantity,
       notes: 'Initial inventory on product creation',
-      userId: req.user?.id || null // Make userId optional
+      userId: req.user?.id || null
     }, { transaction });
 
     await transaction.commit();
@@ -273,7 +296,20 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/products/:id - Update product
-router.put('/:id', async (req, res) => {
+router.put('/:id', writeRoles, validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'name', required: false, type: 'string', trim: true, maxLen: 255 },
+  { in: 'body', field: 'price', required: false, type: 'number', min: 0 },
+  { in: 'body', field: 'attributes', required: false, type: 'object' },
+  { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
+  { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
+  { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
+  { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 20000 },
+  { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
+  { in: 'body', field: 'isActive', required: false, type: 'boolean' },
+  { in: 'body', field: 'lastUpdatedAt', required: false, type: 'string', trim: true, maxLen: 64 },
+  { in: 'body', field: 'version', required: false, type: 'integer', min: 0 },
+]), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -318,6 +354,8 @@ router.put('/:id', async (req, res) => {
     // Ensure categories is an array if provided
     const productCategories = categories !== undefined
       ? (Array.isArray(categories) ? categories : [categories])
+          .map((c) => (typeof c === 'string' ? c.trim() : ''))
+          .filter(Boolean)
       : product.categories;
 
     await product.update({
@@ -345,7 +383,9 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/products/:id - Soft delete product
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', writeRoles, validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+]), async (req, res) => {
   try {
     const { id } = req.params;
     

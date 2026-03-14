@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { Return, ReturnItem, Sale, SaleItem, Product, User, Location, sequelize } = require('../models');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { Op } = require('sequelize');
+const { validate, toInteger, toNumber } = require('../middleware/validate');
+
+const writeRoles = requireRole(['owner', 'manager']);
 
 // Get all returns
 router.get('/', authenticateToken, async (req, res) => {
@@ -87,29 +90,39 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create a new return
-router.post('/', authenticateToken, async (req, res) => {
-  console.log('====== RETURNS POST ROUTE ENTRY ======');
-  console.log('🚨 RETURNS ROUTE HIT - POST /');
-  console.log('Request body:', req.body);
-  console.log('User from auth:', req.user);
-  
+router.post('/', authenticateToken, validate([
+  { in: 'body', field: 'saleId', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'items', required: true, type: 'array' },
+  { in: 'body', field: 'reason', required: false, type: 'string', trim: true, maxLen: 2000 },
+  { in: 'body', field: 'refundMethod', required: false, type: 'string', trim: true, maxLen: 64 },
+  { in: 'body', field: 'notes', required: false, type: 'string', trim: true, maxLen: 20000 },
+]), async (req, res) => {
   const t = await sequelize.transaction();
   
   try {
-    const {
-      saleId,
-      type: returnType,
-      reason,
-      items,
-      refundMethod,
-      notes
-    } = req.body;
+    const saleId = req.body.saleId;
+    const reason = req.body.reason;
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+    const refundMethod = req.body.refundMethod;
+    const notes = req.body.notes;
 
-    // Convert returnType to uppercase to match ENUM values
-    const normalizedReturnType = returnType?.toUpperCase();
-    const normalizedRefundMethod = refundMethod?.toUpperCase();
+    const returnTypeRaw = typeof req.body.returnType === 'string'
+      ? req.body.returnType
+      : (typeof req.body.type === 'string' ? req.body.type : '');
+
+    // Convert returnType to uppercase to match stored values
+    const normalizedReturnType = String(returnTypeRaw).trim().toUpperCase();
+    const normalizedRefundMethod = refundMethod ? String(refundMethod).trim().toUpperCase() : null;
     
-    console.log('Return request data:', { saleId, returnType, normalizedReturnType, refundMethod, normalizedRefundMethod, reason, userId: req.user?.id });
+    if (!['REFUND', 'EXCHANGE'].includes(normalizedReturnType)) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Invalid return type. Must be REFUND or EXCHANGE.' });
+    }
+
+    if (items.length === 0) {
+      await t.rollback();
+      return res.status(400).json({ error: 'At least one return item is required' });
+    }
 
     // Validate the sale exists
     const sale = await Sale.findByPk(saleId);
@@ -118,7 +131,9 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Sale not found' });
     }
 
-    console.log('Found sale:', { id: sale.id, locationId: sale.locationId });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Found sale:', { id: sale.id, locationId: sale.locationId });
+    }
 
     // Create the return record
     const returnRecord = await Return.create({
@@ -136,22 +151,29 @@ router.post('/', authenticateToken, async (req, res) => {
     const returnItems = [];
 
     for (const item of items) {
-      const saleItem = await SaleItem.findByPk(item.saleItemId);
+      const saleItemId = toInteger(item?.saleItemId);
+      const quantity = toNumber(item?.quantity);
+      if (!saleItemId || !quantity || quantity <= 0) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Invalid return item. saleItemId and quantity are required.' });
+      }
+
+      const saleItem = await SaleItem.findByPk(saleItemId);
       if (!saleItem) {
         await t.rollback();
-        return res.status(404).json({ error: `Sale item not found: ${item.saleItemId}` });
+        return res.status(404).json({ error: `Sale item not found: ${saleItemId}` });
       }
 
       // Validate return quantity
-      if (item.quantity > saleItem.quantity) {
+      if (quantity > saleItem.quantity) {
         await t.rollback();
         return res.status(400).json({ 
-          error: `Cannot return more items than purchased. Requested: ${item.quantity}, Purchased: ${saleItem.quantity}`
+          error: `Cannot return more items than purchased. Requested: ${quantity}, Purchased: ${saleItem.quantity}`
         });
       }
 
       // Calculate refund amount
-      const refundAmount = (item.quantity / saleItem.quantity) * saleItem.unitPrice;
+      const refundAmount = (quantity / saleItem.quantity) * saleItem.unitPrice;
       totalRefundAmount += refundAmount;
 
       // Create return item
@@ -160,7 +182,7 @@ router.post('/', authenticateToken, async (req, res) => {
         saleItemId: saleItem.id,
         productId: saleItem.productId,
         locationId: sale.locationId, // Use the location from the sale
-        quantity: item.quantity,
+        quantity,
         returnReason: item.returnReason,
         condition: item.condition?.toUpperCase() || 'PERFECT',
         refundAmount,
@@ -168,14 +190,14 @@ router.post('/', authenticateToken, async (req, res) => {
       }, { transaction: t });
 
       // If it's not an exchange, return items to inventory
-      if (returnType === 'REFUND') {
+      if (normalizedReturnType === 'REFUND') {
         await sequelize.query(
-          `UPDATE "Inventory" 
+          `UPDATE "inventory" 
            SET "quantitySqm" = "quantitySqm" + :quantity 
            WHERE "productId" = :productId AND "locationId" = :locationId`,
           {
             replacements: {
-              quantity: item.quantity,
+              quantity,
               productId: saleItem.productId,
               locationId: sale.locationId // Use the location from the sale
             },
@@ -214,7 +236,9 @@ router.post('/', authenticateToken, async (req, res) => {
       ]
     });
 
-    console.log('✅ Return processed successfully:', returnRecord.id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Return processed successfully:', returnRecord.id);
+    }
     res.status(201).json({ return: completeReturn });
   } catch (error) {
     // Only rollback if transaction is still pending
@@ -227,7 +251,10 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update return status
-router.patch('/:id/status', authenticateToken, async (req, res) => {
+router.patch('/:id/status', authenticateToken, writeRoles, validate([
+  { in: 'params', field: 'id', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'status', required: true, type: 'string', trim: true, oneOf: ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'] },
+]), async (req, res) => {
   const t = await sequelize.transaction();
   
   try {
@@ -249,7 +276,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
       // If rejecting a refund, remove items from inventory
       for (const item of returnRecord.items) {
         await sequelize.query(
-          `UPDATE "Inventory" 
+          `UPDATE "inventory" 
            SET "quantitySqm" = "quantitySqm" - :quantity 
            WHERE "productId" = :productId AND "locationId" = :locationId`,
           {

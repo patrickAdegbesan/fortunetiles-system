@@ -1,8 +1,14 @@
 const express = require('express');
 const { Inventory, Product, Location, InventoryLog, User, ProductType } = require('../models');
 const { sequelize } = require('../config/database');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
 
 const router = express.Router();
+const inventoryWriteRoles = requireRole(['owner', 'manager']);
+
+// Require authentication for all inventory routes
+router.use(authenticateToken);
 
 // GET /api/inventory - Get all inventory levels with pagination
 router.get('/', async (req, res) => {
@@ -61,9 +67,11 @@ router.get('/', async (req, res) => {
     const validInventory = inventory.filter(item => item && item.id);
     const totalPages = Math.ceil(count / limitNum);
     
-    console.log(`Inventory query result: ${inventory.length} items on page ${pageNum}, ${count} total, ${validInventory.length} valid items`);
-    if (validInventory.length !== inventory.length) {
-      console.log('Some inventory items were filtered out due to null values');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Inventory query result: ${inventory.length} items on page ${pageNum}, ${count} total, ${validInventory.length} valid items`);
+      if (validInventory.length !== inventory.length) {
+        console.log('Some inventory items were filtered out due to null values');
+      }
     }
 
     res.json({
@@ -86,7 +94,14 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/inventory/log - Log inventory change
-router.post('/log', async (req, res) => {
+router.post('/log', inventoryWriteRoles, validate([
+  { in: 'body', field: 'productId', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'locationId', required: true, type: 'integer', min: 1 },
+  { in: 'body', field: 'changeType', required: true, type: 'string', trim: true, oneOf: ['sale', 'broken', 'received', 'adjusted', 'initial'] },
+  { in: 'body', field: 'changeAmount', required: true, type: 'number' },
+  { in: 'body', field: 'notes', required: false, type: 'string', trim: true, maxLen: 2000 },
+  { in: 'body', field: 'version', required: false, type: 'integer', min: 0 },
+]), async (req, res) => {
   const transaction = await sequelize.transaction();
   
   try {
@@ -96,16 +111,10 @@ router.post('/log', async (req, res) => {
       changeType, 
       changeAmount, 
       notes, 
-      userId,
       version // optional optimistic concurrency check for Inventory row
     } = req.body;
 
-    if (!productId || !locationId || !changeType || !changeAmount || !userId) {
-      await transaction.rollback();
-      return res.status(400).json({ 
-        message: 'Product ID, location ID, change type, change amount, and user ID are required' 
-      });
-    }
+    const userId = req.user?.id || null;
 
     // Find or create inventory record
     let inventory = await Inventory.findOne({
