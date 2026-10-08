@@ -15,3 +15,4 @@ FIRST-RUN-ADMIN.txt
 .env
 *.log
 .DS_Store
+FortuneTilesData/

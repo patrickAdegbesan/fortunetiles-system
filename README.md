@@ -62,4 +62,4 @@ npm run install:all
 npm run dist            # output: desktop-app/dist/FortuneTiles-<version>-portable.exe
 ```
 
-Copy the `.exe` to the flash drive. The `FortuneTilesData` folder is created next to it on first launch.
+Or skip building: double-click `START.bat` (see START-HERE.md) - it sets everything up and runs the app.
