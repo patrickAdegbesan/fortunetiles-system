@@ -65,6 +65,12 @@
       "icon": "assets/icon.ico"
     },
     "forceCodeSigning": false,
-    "npmRebuild": false
+    "npmRebuild": false,
+    "extraFiles": [
+      {
+        "from": "extras",
+        "to": "."
+      }
+    ]
   }
 }

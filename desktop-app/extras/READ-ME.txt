@@ -1,0 +1,26 @@
+FORTUNE TILES - offline inventory & sales
+
+HOW TO RUN
+  Double-click "Fortune Tiles.exe". Nothing needs to be installed and no internet is needed.
+  (If Windows says "Windows protected your PC": click "More info", then "Run anyway".)
+
+DESKTOP ICON
+  Double-click "Create Desktop Shortcut.bat" once to put a Fortune Tiles icon on your Desktop.
+
+FIRST SIGN-IN
+  Email:    admin@fortunetiles.local
+  Password: open the file  FortuneTilesData\FIRST-RUN-ADMIN.txt  (created the first time the app starts).
+  Sign in, go to Settings > Users > Add User to create your staff, then delete FIRST-RUN-ADMIN.txt.
+
+YOUR DATA
+  Everything is saved in the folder "FortuneTilesData" next to Fortune Tiles.exe.
+  To use the system on another computer, copy this WHOLE folder (including FortuneTilesData).
+  Use only one copy at a time. Close the app before unplugging a flash drive.
+  Use File > Backup Data regularly.
+
+FORGOT A PASSWORD
+  An owner can set a new one under Settings > Users > Edit.
+
+IF THE APP WILL NOT START
+  A box will show the reason. A copy of the messages is also saved in FortuneTilesData\server.log -
+  send that file (or a photo of the box) to get it fixed.
