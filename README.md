@@ -34,14 +34,13 @@ copy of the data at a time. Use *File → Backup Data* regularly.
 On first run the app creates a built-in owner account, `admin@fortunetiles.local`.
 
 - If `backend/config/defaultAdmin.json` has a `passwordHash`, that password is used. Create the hash with
-  `npm --prefix backend run admin:hash -- "<a password of 12+ characters>"` and paste it into the file.
+  `npm --prefix backend run admin:hash -- "<a password of 6+ characters>"` and paste it into the file.
   Only the hash is stored in the code; the password stays known only to you.
 - If no hash is set, a random one-time password is written to `FIRST-RUN-ADMIN.txt` in the data folder.
   Delete that file after signing in.
 
 The account is re-created (and kept an active owner) if it is ever deleted. Use it to create your
-users under *Settings → Users*. Passwords need 12+ characters with upper, lower, a number and one of
-`@$!%*?&`.
+users under *Settings → Users*. Passwords only need to be at least 6 characters.
 
 **Forgotten password:** there is no email reset. An owner sets a new one under *Settings → Users → Edit*.
 

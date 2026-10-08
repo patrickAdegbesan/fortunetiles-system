@@ -12,7 +12,6 @@ if (config.passwordHash) {
   process.exit(0);
 }
 
-const STRONG = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
 
 function ask(question) {
   return new Promise((resolve) => {
@@ -47,11 +46,11 @@ function ask(question) {
 
 (async () => {
   console.log('Choose the password for the built-in admin account (admin@fortunetiles.local).');
-  console.log('At least 12 characters with an uppercase letter, a lowercase letter, a number and one of @$!%*?&');
+  console.log('At least 6 characters.');
   for (;;) {
     const first = await ask('Password: ');
-    if (!STRONG.test(first)) {
-      console.log('Too weak or contains unsupported characters. Try again.\n');
+    if (first.length < 6) {
+      console.log('Too short (minimum 6 characters). Try again.\n');
       continue;
     }
     const second = await ask('Repeat password: ');

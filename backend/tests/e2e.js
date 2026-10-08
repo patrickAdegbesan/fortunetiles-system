@@ -196,6 +196,18 @@ function check(name, cond, extra) {
   r = await call('DELETE', `/users/${staffId}`);
   check('deactivate/delete user', r.status === 200, r);
 
+  // ---- simple passwords + clear errors
+  r = await call('POST', '/users', { firstName: 'Simple', lastName: 'Pw', email: 'simple@shop.com', password: 'abc123', role: 'staff' });
+  check('create user with simple 6-char password', r.status === 201, r);
+  r = await call('POST', '/auth/login', { email: 'simple@shop.com', password: 'abc123' });
+  check('login with simple password', r.status === 200, r);
+  r = await call('POST', '/users', { firstName: 'Short', lastName: 'Pw', email: 'short@shop.com', password: 'abc', role: 'staff' });
+  check('too-short password -> 400 with clear message', r.status === 400 && /at least 6/.test(r.data.message), r);
+  r = await call('POST', '/users', { firstName: 'Dup', lastName: 'User', email: 'simple@shop.com', password: 'abc123', role: 'staff' });
+  check('duplicate email -> 409', r.status === 409, r);
+  r = await call('POST', '/users', { firstName: 'Bad', lastName: 'Email', email: 'not-an-email', password: 'abc123', role: 'staff' });
+  check('invalid email -> 400 (not 500)', r.status === 400, r);
+
   // ---- built-in admin protection
   r = await call('POST', '/users', { firstName: 'Second', lastName: 'Owner', email: 'owner2@shop.com', password: 'Owner2!Passw0rd', role: 'owner' });
   check('create second owner', r.status === 201, r);

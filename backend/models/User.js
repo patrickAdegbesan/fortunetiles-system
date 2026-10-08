@@ -27,7 +27,7 @@ const User = sequelize.define('User', {
     allowNull: false,
     unique: true,
     validate: {
-      isEmail: true,
+      isEmail: { msg: 'Please enter a valid email address' },
       notEmpty: true,
     },
   },
@@ -36,10 +36,7 @@ const User = sequelize.define('User', {
     allowNull: false,
     validate: {
       notEmpty: true,
-      len: [12, 255],
-      isStrongPassword(value) {
-        User.assertStrongPassword(value);
-      }
+      len: { args: [6, 255], msg: 'Password must be at least 6 characters long' },
     },
   },
   role: {
@@ -95,11 +92,10 @@ const User = sequelize.define('User', {
   },
 });
 
-// Require at least 12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-User.assertStrongPassword = function(value) {
-  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
-  if (typeof value !== 'string' || !strongRegex.test(value)) {
-    throw new Error('Password must be at least 12 characters and contain uppercase, lowercase, number, and special character');
+// Passwords only need to be at least 6 characters long.
+User.assertValidPassword = function(value) {
+  if (typeof value !== 'string' || value.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
   }
 };
 

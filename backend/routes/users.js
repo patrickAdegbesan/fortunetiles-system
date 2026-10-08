@@ -8,6 +8,19 @@ const cache = require('../middleware/enhancedCache');
 const { Op } = require('sequelize');
 const { email: SYSTEM_ADMIN_EMAIL } = require('../config/defaultAdmin.json');
 
+
+// Turn Sequelize validation/uniqueness errors into clear 4xx responses instead of a generic 500.
+function sendUserError(res, error, fallback) {
+  if (error.name === 'SequelizeValidationError') {
+    return res.status(400).json({ message: error.errors.map((e) => e.message).join(', ') });
+  }
+  if (error.name === 'SequelizeUniqueConstraintError') {
+    return res.status(409).json({ message: 'A user with this email already exists' });
+  }
+  console.error(fallback, error);
+  return res.status(500).json({ message: 'Internal server error' });
+}
+
 // The built-in admin is only visible to and manageable by itself, so owners
 // created later cannot lock it out, delete it or reset its password.
 const protectSystemAdmin = async (req, res, next) => {
@@ -201,8 +214,7 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
     });
 
   } catch (error) {
-    console.error('Create user error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    sendUserError(res, error, 'Create user error:');
   }
 });
 
@@ -214,7 +226,7 @@ router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), pr
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    User.assertStrongPassword(password);
+    User.assertValidPassword(password);
     // Sequelize would re-validate the hash after the model hook, so hash here and skip hooks.
     user.password = await bcrypt.hash(password, 12);
     await user.save({ hooks: false, validate: false });
