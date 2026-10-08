@@ -4,6 +4,7 @@ import './index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { installScrollToErrors } from './utils/scrollToErrors';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -11,6 +12,8 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+installScrollToErrors();
 
 // This is an offline desktop app served from a local server: remove any
 // service worker left behind by earlier PWA builds so it cannot serve stale files.
