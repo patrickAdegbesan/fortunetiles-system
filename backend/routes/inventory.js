@@ -1,5 +1,6 @@
 const express = require('express');
 const { Inventory, Product, Location, InventoryLog, User, ProductType } = require('../models');
+const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -28,16 +29,11 @@ router.get('/', async (req, res) => {
     
     // Build product include with category filtering
     const productWhereClause = {};
-    if (category && category !== 'all') {
-      const isSqlite = sequelize.getDialect() === 'sqlite';
-      if (isSqlite) {
-        // SQLite fallback: server-side JSON array contains not supported; skip here
-        console.warn('SQLite: category filter skipped in GET /inventory; client-side filter recommended');
-      } else {
-        // Postgres: JSONB array contains
-        const { Op } = require('sequelize');
-        productWhereClause.categories = { [Op.contains]: [category] };
-      }
+    const filterByCategory = Boolean(category && category !== 'all');
+    if (filterByCategory) {
+      productWhereClause[Op.and] = [
+        sequelize.where(sequelize.fn('instr', sequelize.col('categories'), JSON.stringify(category)), { [Op.gt]: 0 })
+      ];
     }
     
     const { count, rows: inventory } = await Inventory.findAndCountAll({
@@ -47,8 +43,8 @@ router.get('/', async (req, res) => {
           model: Product, 
           as: 'product',
           attributes: ['id', 'name', 'categories', 'productTypeId'], // Only select needed fields
-          where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
-          required: Object.keys(productWhereClause).length > 0 // Required if filtering by category
+          where: filterByCategory ? productWhereClause : undefined,
+          required: filterByCategory // Required if filtering by category
         },
         { 
           model: Location, 
@@ -194,7 +190,6 @@ router.get('/logs', async (req, res) => {
     
     // Add date range filtering
     if (startDate && endDate) {
-      const { Op } = require('sequelize');
       const startDateTime = new Date(startDate + 'T00:00:00.000Z');
       const endDateTime = new Date(endDate + 'T23:59:59.999Z');
       whereClause[Op.and] = [

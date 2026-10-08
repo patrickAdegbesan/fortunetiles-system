@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { enqueue, replayOutbox } from '../lib/offlineQueue';
 
 const resolveBaseUrl = () => {
   const envBase = process.env.REACT_APP_API_BASE_URL;
@@ -14,13 +13,6 @@ const API = axios.create({
   baseURL: resolveBaseUrl(),
 });
 
-// Try to replay queued requests when connection is restored
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    replayOutbox(API).catch(() => {});
-  });
-}
-
 // Add request interceptor to include token in headers
 API.interceptors.request.use(
   (config) => {
@@ -34,9 +26,6 @@ API.interceptors.request.use(
     if (deviceId) {
       config.headers['x-device-id'] = deviceId;
     }
-    // Mark mutating requests for potential queueing in offline mode
-    const method = (config.method || '').toLowerCase();
-    config.metadata = { enqueueable: ['post', 'put', 'patch', 'delete'].includes(method) };
     return config;
   },
   (error) => {
@@ -55,23 +44,6 @@ API.interceptors.response.use(
       method: error.config?.method,
       message: error.message
     });
-
-    // Network/offline handling: queue mutating requests for later replay
-    const cfg = error.config || {};
-    const isNetwork = error.code === 'ERR_NETWORK' || !error.response;
-    if (isNetwork && cfg.metadata?.enqueueable) {
-      enqueue({
-        url: cfg.url,
-        method: cfg.method,
-        baseURL: cfg.baseURL,
-        headers: cfg.headers,
-        data: cfg.data,
-        params: cfg.params,
-        withCredentials: cfg.withCredentials
-      });
-      // Return a synthetic 202 response to let UI proceed optimistically
-      return Promise.resolve({ data: { queued: true }, status: 202, config: cfg });
-    }
 
     if (error.response?.status === 401 || error.response?.status === 403) {
       // Clear auth data
@@ -94,15 +66,6 @@ export const loginUser = async (userData) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Login failed' };
-  }
-};
-
-export const registerUser = async (userData) => {
-  try {
-    const response = await API.post('/auth/register', userData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Registration failed' };
   }
 };
 
@@ -238,12 +201,6 @@ export const deleteProductType = async (id) => {
   }
 };
 
-// Manual sync trigger to replay queued requests
-export const manualSyncNow = async () => {
-  return replayOutbox(API);
-};
-
-
 // User API calls
 export const fetchUsers = async (params = {}) => {
   try {
@@ -278,6 +235,15 @@ export const updateUser = async (id, userData) => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to update user' };
+  }
+};
+
+export const resetUserPassword = async (id, password) => {
+  try {
+    const response = await API.post(`/users/${id}/reset-password`, { password });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to reset password' };
   }
 };
 

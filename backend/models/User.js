@@ -38,11 +38,7 @@ const User = sequelize.define('User', {
       notEmpty: true,
       len: [12, 255],
       isStrongPassword(value) {
-        // Require at least 12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-        const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
-        if (!strongRegex.test(value)) {
-          throw new Error('Password must be at least 12 characters and contain uppercase, lowercase, number, and special character');
-        }
+        User.assertStrongPassword(value);
       }
     },
   },
@@ -98,6 +94,14 @@ const User = sequelize.define('User', {
     },
   },
 });
+
+// Require at least 12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+User.assertStrongPassword = function(value) {
+  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+  if (typeof value !== 'string' || !strongRegex.test(value)) {
+    throw new Error('Password must be at least 12 characters and contain uppercase, lowercase, number, and special character');
+  }
+};
 
 // Instance method to check password
 User.prototype.checkPassword = async function(password) {

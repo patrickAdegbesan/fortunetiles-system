@@ -3,9 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav_fixed';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
 import Login from './pages/Login';
-import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import SalePage from './pages/SalePage';
 import ProductsPage from './pages/ProductsPage';
@@ -19,7 +17,7 @@ function MainLayout({ children }) {
   const location = useLocation();
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isAuthPage = location.pathname === '/login' || location.pathname.startsWith('/reset-password/');
+  const isAuthPage = location.pathname === '/login';
 
   // Remove automatic PWA prompt - let PWAInstallPrompt component handle it
   // This prevents the "prompt() method must be called with a user gesture" error
@@ -52,7 +50,6 @@ function App() {
         <MainLayout>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route
               path="/dashboard"
               element={
@@ -113,7 +110,6 @@ function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </MainLayout>
-        <PWAInstallPrompt />
       </Router>
     </AuthProvider>
   );

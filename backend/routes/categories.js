@@ -67,11 +67,10 @@ const updateProductCategories = async (fromName, toName, transaction) => {
 
   const products = await Product.findAll({
     attributes: ['id', 'categories'],
-    where: {
-      categories: {
-        [Op.contains]: [normalizedFrom],
-      },
-    },
+    where: sequelize.where(
+      sequelize.fn('instr', sequelize.col('categories'), JSON.stringify(normalizedFrom)),
+      { [Op.gt]: 0 }
+    ),
     transaction,
   });
 

@@ -40,9 +40,11 @@ router.get('/', async (req, res) => {
     // Build product filter for category
     const productWhereClause = {};
     if (category && category !== 'all') {
-      // Since categories is a JSONB array, we need to check if the category exists in the array
+      // categories is a JSON array stored as text in SQLite; match the quoted element
       const { Op } = require('sequelize');
-      productWhereClause.categories = { [Op.contains]: [category] };
+      productWhereClause[Op.and] = [
+        sequelize.where(sequelize.fn('instr', sequelize.col('categories'), JSON.stringify(category)), { [Op.gt]: 0 })
+      ];
     }
     console.log('Product where clause:', productWhereClause);
     console.log('Will filter by category:', category && category !== 'all' ? 'YES' : 'NO');
@@ -125,8 +127,8 @@ router.get('/', async (req, res) => {
       include: [{ 
         model: Product, 
         as: 'product',
-        where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
-        required: Object.keys(productWhereClause).length > 0 ? true : false,
+        where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
+        required: Reflect.ownKeys(productWhereClause).length > 0 ? true : false,
         attributes: ['id', 'name', 'price']
       }],
       group: ['productId', 'product.id'],
@@ -149,7 +151,7 @@ router.get('/', async (req, res) => {
 
     // Get ALL products first, then check their inventory levels
     const allProducts = await Product.findAll({
-      where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
+      where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
       attributes: ['id', 'name', 'price', 'attributes']
     });
 
@@ -165,7 +167,7 @@ router.get('/', async (req, res) => {
         {
           model: Product,
           as: 'product',
-          where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
+          where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
           required: true,
           attributes: ['id', 'name', 'price', 'attributes']
         }
@@ -238,8 +240,8 @@ router.get('/', async (req, res) => {
         { 
           model: Product, 
           as: 'product',
-          where: Object.keys(productWhereClause).length > 0 ? productWhereClause : undefined,
-          required: Object.keys(productWhereClause).length > 0
+          where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
+          required: Reflect.ownKeys(productWhereClause).length > 0
         },
         { model: Location, as: 'location' },
         { model: User, as: 'user', attributes: ['firstName', 'lastName'] }

@@ -19,12 +19,6 @@ const pinLimiter = createRateLimiter({
   message: 'Too many PIN attempts. Please try again later.',
 });
 
-const registerLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  message: 'Too many registration attempts. Please try again later.',
-});
-
 // POST /api/auth/login
 router.post('/login', loginLimiter, async (req, res) => {
   try {
@@ -45,13 +39,20 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ message: 'This account has been deactivated' });
+    }
+
     // Check password
     const isValidPassword = await user.checkPassword(password);
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token with shorter expiry (2 hours)
+    user.lastLoginAt = new Date();
+    await user.save({ hooks: false, validate: false });
+
+    // Generate JWT token (long enough to cover a working shift)
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -60,7 +61,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         locationId: user.locationId 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      { expiresIn: '12h' }
     );
 
     res.json({
@@ -78,74 +79,6 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// POST /api/auth/register
-router.post('/register', registerLimiter, async (req, res) => {
-  try {
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PUBLIC_REGISTRATION !== 'true') {
-      return res.status(403).json({ message: 'Registration is disabled' });
-    }
-
-    const firstName = typeof req.body?.firstName === 'string' ? req.body.firstName.trim() : '';
-    const lastName = typeof req.body?.lastName === 'string' ? req.body.lastName.trim() : '';
-    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    const password = typeof req.body?.password === 'string' ? req.body.password : '';
-    const role = req.body?.role;
-    const locationId = req.body?.locationId;
-
-    if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({ 
-        message: 'First name, last name, email, and password are required' 
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({ message: 'User with this email already exists' });
-    }
-
-    // Validate location if provided
-    if (locationId) {
-      const location = await Location.findByPk(locationId);
-      if (!location) {
-        return res.status(400).json({ message: 'Invalid location ID' });
-      }
-    }
-
-    // Create new user
-    const publicRegistration = process.env.ALLOW_PUBLIC_REGISTRATION === 'true';
-    const newUser = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      role: publicRegistration ? 'staff' : (role || 'staff'),
-      locationId
-    });
-
-    // Get user with location for response
-    const userWithLocation = await User.findByPk(newUser.id, {
-      include: [{ model: Location, as: 'location' }]
-    });
-
-    res.status(201).json({
-      message: 'User created successfully',
-      user: {
-        id: userWithLocation.id,
-        firstName: userWithLocation.firstName,
-        lastName: userWithLocation.lastName,
-        email: userWithLocation.email,
-        role: userWithLocation.role,
-        location: userWithLocation.location
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

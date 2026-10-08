@@ -12,17 +12,12 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker for PWA functionality
+// This is an offline desktop app served from a local server: remove any
+// service worker left behind by earlier PWA builds so it cannot serve stale files.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration);
-      })
-      .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
-      });
-  });
+  navigator.serviceWorker.getRegistrations()
+    .then((regs) => regs.forEach((r) => r.unregister()))
+    .catch(() => {});
 }
 
 // If you want to start measuring performance in your app, pass a function

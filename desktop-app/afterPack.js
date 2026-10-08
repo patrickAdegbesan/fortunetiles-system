@@ -16,7 +16,7 @@ exports.default = async function afterPack(context) {
   try {
     await run('npm', ['ci', '--omit=dev'], { cwd: backendPath });
   } catch (e) {
-    console.warn('[afterPack] npm ci failed for backend. The app may fall back to remote mode.', e.message);
+    throw new Error('npm ci failed for backend: ' + e.message);
   }
 
   // Rebuild sqlite3 for the packaged Electron runtime
@@ -25,7 +25,7 @@ exports.default = async function afterPack(context) {
     console.log('[afterPack] Rebuilding sqlite3 for Electron', electronVersion, 'on', electronPlatformName);
     await run('npx', ['electron-rebuild', '-f', '-w', 'sqlite3', '-v', electronVersion], { cwd: backendPath });
   } catch (e) {
-    console.warn('[afterPack] electron-rebuild failed for sqlite3. If sqlite3 cannot load, app will use remote backend.', e.message);
+    throw new Error('electron-rebuild failed for sqlite3: ' + e.message);
   }
 
   // Rebuild usb module for printer support

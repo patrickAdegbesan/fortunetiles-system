@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const router = express.Router();
 const { User, Location } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
@@ -40,9 +41,9 @@ router.get('/', authenticateToken, requireRole(['owner']), activityLogger('view_
     if (search) {
       const { Op } = require('sequelize');
       where[Op.or] = [
-        { firstName: { [Op.iLike]: `%${search}%` } },
-        { lastName: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
+        { firstName: { [Op.like]: `%${search}%` } },
+        { lastName: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
       ];
     }
 
@@ -106,7 +107,9 @@ router.get('/:id', authenticateToken, requireRole(['owner']), async (req, res) =
 // POST /api/users - Create new user (admin only)
 router.post('/', authenticateToken, requireRole(['owner']), activityLogger('create_user', 'users'), async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role, locationId, isActive } = req.body;
+    const { firstName, lastName, password, role, locationId, isActive } = req.body;
+    // Login looks users up by lowercased email, so store it that way.
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
     // Validation
     if (!firstName || !lastName || !email || !password) {
@@ -186,6 +189,28 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
   }
 });
 
+// POST /api/users/:id/reset-password - Owner sets a new password (offline replacement for email reset)
+router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), activityLogger('reset_password', 'users'), async (req, res) => {
+  try {
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    User.assertStrongPassword(password);
+    // Sequelize would re-validate the hash after the model hook, so hash here and skip hooks.
+    user.password = await bcrypt.hash(password, 12);
+    await user.save({ hooks: false, validate: false });
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    if (/^Password must be/.test(error.message)) {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // PUT /api/users/:id - Update user roles/permissions (admin only)
 router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) => {
   try {
@@ -198,7 +223,7 @@ router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) =
     }
 
     // Prevent admin from deactivating themselves
-    if (req.user.userId === parseInt(id) && isActive === false) {
+    if (req.user.id === parseInt(id) && isActive === false) {
       return res.status(400).json({ 
         message: 'You cannot deactivate your own account' 
       });
@@ -292,7 +317,7 @@ router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger(
     }
 
     // Prevent admin from deleting themselves
-    if (req.user.userId === parseInt(id)) {
+    if (req.user.id === parseInt(id)) {
       return res.status(400).json({ 
         message: 'You cannot delete your own account' 
       });

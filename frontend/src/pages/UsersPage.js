@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { fetchUsers, createUser, updateUser, deactivateUser, activateUser, fetchUserRoles, fetchLocations } from '../services/api';
+import { fetchUsers, createUser, updateUser, resetUserPassword, deactivateUser, activateUser, fetchUserRoles, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
 import UserEditor from '../components/UserEditor';
@@ -92,7 +92,9 @@ const UsersPage = () => {
       setError('');
 
       if (editingUser) {
-        await updateUser(editingUser.id, userData);
+        const { password, ...profile } = userData;
+        await updateUser(editingUser.id, profile);
+        if (password) await resetUserPassword(editingUser.id, password);
         setSuccess('User updated successfully');
       } else {
         await createUser(userData);

@@ -97,25 +97,15 @@ router.get('/', async (req, res) => {
 
     // Build optimized where clause
     if (category) {
-      const isSqlite = sequelize.getDialect() === 'sqlite';
-      if (isSqlite) {
-        // SQLite fallback: server-side JSON array search not supported in same way; let client filter
-        console.warn('SQLite: category filter skipped in GET /products; client-side filter recommended');
-      } else {
-        // For Postgres, check if the category exists in the categories array
-        whereClause[Op.and] = whereClause[Op.and] || [];
-        whereClause[Op.and].push(
-          sequelize.where(
-            sequelize.fn('array_position', sequelize.col('categories'), category),
-            { [Op.ne]: null }
-          )
-        );
-      }
+      whereClause[Op.and] = whereClause[Op.and] || [];
+      whereClause[Op.and].push(
+        sequelize.where(sequelize.fn('instr', sequelize.col('categories'), JSON.stringify(category)), { [Op.gt]: 0 })
+      );
     }
     if (search) {
       whereClause[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } }
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
       ];
     }
 

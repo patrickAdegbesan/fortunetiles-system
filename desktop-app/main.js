@@ -1,28 +1,48 @@
 const { app, BrowserWindow, Menu, dialog, shell, session, ipcMain } = require('electron');
 const { spawn } = require('child_process');
-const { autoUpdater } = require('electron-updater');
+const net = require('net');
 const path = require('path');
 const fs = require('fs');
 const PrinterService = require('./printer/PrinterService');
 
-// Keep a global reference of the window object
+// All data (database, JWT secret, Electron profile) lives in one folder.
+// The portable build keeps it next to the .exe so the whole app can be moved
+// between computers on a flash drive; otherwise it goes in the user profile.
+const dataDir = process.env.FORTUNE_TILES_DATA
+  || (process.env.PORTABLE_EXECUTABLE_DIR
+    ? path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'FortuneTilesData')
+    : path.join(app.getPath('appData'), 'FortuneTiles', 'data'));
+fs.mkdirSync(dataDir, { recursive: true });
+app.setPath('userData', path.join(dataDir, 'electron'));
+
 let mainWindow;
 let testWindow = null;
 let backendProcess = null;
-let backendPort = process.env.FORTUNE_TILES_PORT ? parseInt(process.env.FORTUNE_TILES_PORT, 10) : 5175;
+let quitting = false;
 
-// Initialize printer service
 const printerService = new PrinterService();
 let printerInitialized = false;
 
-async function waitForBackendReady(url, timeoutMs = 20000) {
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
+
+async function waitForBackendReady(url, timeoutMs = 30000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    if (!backendProcess) return false; // exited while starting
     try {
       const res = await fetch(`${url}/api/health`);
       if (res.ok) return true;
     } catch (_) {}
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 300));
   }
   return false;
 }
@@ -30,58 +50,52 @@ async function waitForBackendReady(url, timeoutMs = 20000) {
 function getBackendEntry() {
   // Packaged: resourcesPath/backend/server.js
   const packagedPath = path.join(process.resourcesPath, 'backend', 'server.js');
-  if (fs.existsSync(packagedPath)) return { entry: packagedPath, mode: 'packaged' };
-  // Dev fallback: repo backend/server.js
+  if (fs.existsSync(packagedPath)) return packagedPath;
+  // Dev: repo backend/server.js
   const devPath = path.join(__dirname, '..', 'backend', 'server.js');
-  if (fs.existsSync(devPath)) return { entry: devPath, mode: 'dev' };
+  if (fs.existsSync(devPath)) return devPath;
   return null;
 }
 
-function startBackend() {
-  const backend = getBackendEntry();
-  if (!backend) {
-    console.warn('Backend entry not found. Falling back to remote web app.');
-    return null;
-  }
+async function startBackend() {
+  const entry = getBackendEntry();
+  if (!entry) throw new Error('Backend files are missing from the application package.');
 
-  const userDataDir = app.getPath('userData');
-  const env = {
-    ...process.env,
-    OFFLINE_MODE: '1',
-    NODE_ENV: process.env.NODE_ENV || 'production',
-    PORT: `${backendPort}`,
-    SQLITE_PATH: path.join(userDataDir, 'offline.sqlite')
-  };
-
-  const nodeExec = process.execPath; // electron as node runtime
-  console.log('Starting backend:', backend.entry, 'port:', backendPort, 'db:', env.SQLITE_PATH);
-  backendProcess = spawn(nodeExec, [backend.entry], {
-    env,
+  const port = await getFreePort();
+  backendProcess = spawn(process.execPath, [entry], {
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1', // run Electron's bundled Node, not a second app
+      NODE_ENV: 'production',
+      PORT: `${port}`,
+      DATA_DIR: dataDir
+    },
     stdio: 'inherit',
     windowsHide: true
   });
-
   backendProcess.on('exit', (code) => {
     console.log('Backend process exited with code', code);
+    backendProcess = null;
+    if (!quitting) {
+      dialog.showErrorBox('Fortune Tiles', 'The local database service stopped unexpectedly. The application will close.');
+      app.quit();
+    }
   });
 
-  return `http://localhost:${backendPort}`;
+  return `http://127.0.0.1:${port}`;
 }
 
-function createWindow() {
-  // Initialize printer on first window creation
+async function createWindow() {
   if (!printerInitialized) {
     const useMock = process.env.PRINTER_MOCK === '1';
-    const userDataDir = app.getPath('userData');
     printerService.initialize({
       mock: useMock,
-      mockOutputPath: path.join(userDataDir, 'mock-receipts')
+      mockOutputPath: path.join(dataDir, 'mock-receipts')
     });
     printerInitialized = true;
     console.log('[Main] Printer service initialized. Status:', printerService.getStatus().status);
   }
 
-  // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -96,34 +110,30 @@ function createWindow() {
     show: false
   });
 
-  // Try local offline backend first; fallback to remote URL if not available
-  const remoteUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
-  const localBase = startBackend();
-
-  (async () => {
-    if (localBase) {
-      const ok = await waitForBackendReady(localBase, 20000);
-      if (ok) {
-        mainWindow.loadURL(`${localBase}`);
-        return;
-      }
-      console.warn('Local backend not responding, falling back to remote.');
-    }
-    mainWindow.loadURL(remoteUrl);
-  })();
-
-  // Show window when ready to prevent visual flash
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  // Handle window closed
+  mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
-
-  // Create application menu
   createMenu();
+
+  // Never leave the local app: block navigation and pop-ups to anything else.
+  let appOrigin = null;
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (appOrigin && new URL(url).origin !== appOrigin) event.preventDefault();
+  });
+
+  try {
+    const base = await startBackend();
+    appOrigin = new URL(base).origin;
+    if (!(await waitForBackendReady(base))) {
+      throw new Error('The local database service did not start. Check that the data folder is writable:\n' + dataDir);
+    }
+    mainWindow.loadURL(`${base}/inventory/`);
+  } catch (err) {
+    dialog.showErrorBox('Fortune Tiles failed to start', err.message);
+    app.quit();
+  }
 }
 
 function createTestWindow() {
@@ -236,24 +246,14 @@ function createMenu() {
               type: 'info',
               title: 'About Fortune Tiles',
               message: 'Fortune Tiles Desktop',
-              detail: 'Professional Inventory Management System\nVersion 1.0.0'
+              detail: `Offline Inventory Management System\nVersion ${app.getVersion()}`
             });
           }
         },
         {
-          label: 'Check for Updates',
+          label: 'Open Data Folder',
           click: () => {
-            autoUpdater.checkForUpdatesAndNotify();
-          }
-        },
-        {
-          type: 'separator'
-        },
-        {
-          label: 'Open Web Version',
-          click: () => {
-            const appUrl = process.env.FORTUNE_TILES_URL || 'https://fortune-tiles-inventory-9814bac053d4.herokuapp.com';
-            shell.openExternal(`${appUrl}/system`);
+            shell.openPath(dataDir);
           }
         }
       ]
@@ -323,96 +323,29 @@ async function downloadBackup() {
   }
 }
 
-// Configure auto-updater
-autoUpdater.checkForUpdatesAndNotify();
 
-// Auto-updater events
-autoUpdater.on('checking-for-update', () => {
-  console.log('Checking for update...');
-});
-
-autoUpdater.on('update-available', (info) => {
-  console.log('Update available.');
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update Available',
-    message: 'A new version is available. It will be downloaded in the background.',
-    detail: `Version ${info.version} is now available. The update will be installed when you restart the application.`
-  });
-});
-
-autoUpdater.on('update-not-available', (info) => {
-  console.log('Update not available.');
-});
-
-autoUpdater.on('error', (err) => {
-  console.log('Error in auto-updater. ' + err);
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = "Download speed: " + progressObj.bytesPerSecond;
-  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-  console.log(log_message);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-  console.log('Update downloaded');
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update Ready',
-    message: 'Update downloaded. The application will restart to apply the update.',
-    buttons: ['Restart Now', 'Later']
-  }).then((result) => {
-    if (result.response === 0) {
-      autoUpdater.quitAndInstall();
+// Only one instance may use the database at a time.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
     }
   });
-});
 
-// App event handlers
-app.whenReady().then(() => {
-  // Allow camera/microphone permissions in the desktop app
-  try {
-    const ses = session?.defaultSession;
-    if (ses && ses.setPermissionRequestHandler) {
-      ses.setPermissionRequestHandler((webContents, permission, callback) => {
-        if (permission === 'media') {
-          return callback(true);
-        }
-        return callback(false);
-      });
-    }
-  } catch (e) {
-    console.warn('Permission handler setup failed:', e?.message);
-  }
-
-  createWindow();
-  
-  // Check for updates after app is ready
-  setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify();
-  }, 3000);
-});
+  app.whenReady().then(() => {
+    // Allow camera access (product photos); deny everything else
+    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+      callback(permission === 'media');
+    });
+    createWindow();
+  });
+}
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
-// Security: Prevent new window creation
-app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (event, navigationUrl) => {
-    event.preventDefault();
-    shell.openExternal(navigationUrl);
-  });
+  app.quit();
 });
 
 // IPC handlers for printer
@@ -437,8 +370,10 @@ ipcMain.handle('printer:updateConfig', (event, config) => {
   return printerService.updateConfig(config);
 });
 
-// Ensure backend is terminated on quit
+
+// Ensure the backend is terminated on quit
 app.on('before-quit', () => {
+  quitting = true;
   try {
     if (backendProcess && !backendProcess.killed) backendProcess.kill();
   } catch (_) {}
