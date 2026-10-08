@@ -1,1 +1,0 @@
-ALTER TABLE products ALTER COLUMN image_url TYPE TEXT;

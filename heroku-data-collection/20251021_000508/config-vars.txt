@@ -1,8 +1,0 @@
-﻿=== fortune-tiles-inventory Config Vars
-
-CLIENT_URL:   https://fortune-tiles-inventory-9814bac053d4.herokuapp.com
-DATABASE_URL: REDACTED
-JWT_SECRET:   REDACTED
-NODE_ENV:     production
-PORT:         5000
-PROJECT_PATH: backend
