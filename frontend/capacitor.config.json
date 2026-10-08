@@ -1,0 +1,9 @@
+{
+  "appId": "com.fortunetiles.pos",
+  "appName": "FortuneTiles POS",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

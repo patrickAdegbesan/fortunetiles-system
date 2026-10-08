@@ -1,13 +1,19 @@
-const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, session, ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
+const PrinterService = require('./printer/PrinterService');
 
 // Keep a global reference of the window object
 let mainWindow;
+let testWindow = null;
 let backendProcess = null;
 let backendPort = process.env.FORTUNE_TILES_PORT ? parseInt(process.env.FORTUNE_TILES_PORT, 10) : 5175;
+
+// Initialize printer service
+const printerService = new PrinterService();
+let printerInitialized = false;
 
 async function waitForBackendReady(url, timeoutMs = 20000) {
   const start = Date.now();
@@ -63,6 +69,18 @@ function startBackend() {
 }
 
 function createWindow() {
+  // Initialize printer on first window creation
+  if (!printerInitialized) {
+    const useMock = process.env.PRINTER_MOCK === '1';
+    const userDataDir = app.getPath('userData');
+    printerService.initialize({
+      mock: useMock,
+      mockOutputPath: path.join(userDataDir, 'mock-receipts')
+    });
+    printerInitialized = true;
+    console.log('[Main] Printer service initialized. Status:', printerService.getStatus().status);
+  }
+
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -106,6 +124,32 @@ function createWindow() {
 
   // Create application menu
   createMenu();
+}
+
+function createTestWindow() {
+  if (testWindow) {
+    testWindow.focus();
+    return;
+  }
+
+  testWindow = new BrowserWindow({
+    width: 500,
+    height: 700,
+    parent: mainWindow,
+    modal: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    },
+    title: 'Printer Test'
+  });
+
+  testWindow.loadFile(path.join(__dirname, 'printer-test.html'));
+
+  testWindow.on('closed', () => {
+    testWindow = null;
+  });
 }
 
 function createMenu() {
@@ -369,6 +413,28 @@ app.on('web-contents-created', (event, contents) => {
     event.preventDefault();
     shell.openExternal(navigationUrl);
   });
+});
+
+// IPC handlers for printer
+ipcMain.handle('printer:getStatus', () => {
+  return printerService.getStatus();
+});
+
+ipcMain.handle('printer:printTestPage', async () => {
+  return printerService.printTestPage();
+});
+
+ipcMain.handle('printer:printReceipt', async (event, saleData) => {
+  return printerService.printReceipt(saleData);
+});
+
+ipcMain.handle('printer:detect', () => {
+  printerService.detectAndConnect();
+  return printerService.getStatus();
+});
+
+ipcMain.handle('printer:updateConfig', (event, config) => {
+  return printerService.updateConfig(config);
 });
 
 // Ensure backend is terminated on quit

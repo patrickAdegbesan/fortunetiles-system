@@ -1,11 +1,11 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-// Using logo from public/assets folder for better loading
-const logo = process.env.PUBLIC_URL + '/assets/logo.png';
-const logoCircle = process.env.PUBLIC_URL + '/assets/logo.png';
 import { AuthContext } from '../contexts/AuthContext';
 import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaClipboardList } from 'react-icons/fa';
 import '../styles/SidebarNav.css';
+
+const logo = process.env.PUBLIC_URL + '/assets/logo.png';
+const logoCircle = process.env.PUBLIC_URL + '/assets/logo.png';
 
 const SidebarNav = React.memo(({ isOpen, onToggle }) => {
   const { user, logout } = useContext(AuthContext);

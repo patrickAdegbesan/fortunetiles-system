@@ -27,4 +27,13 @@ exports.default = async function afterPack(context) {
   } catch (e) {
     console.warn('[afterPack] electron-rebuild failed for sqlite3. If sqlite3 cannot load, app will use remote backend.', e.message);
   }
+
+  // Rebuild usb module for printer support
+  try {
+    const electronVersion = context.packager.info._electronBuilderConfig.electronVersion || process.versions.electron;
+    console.log('[afterPack] Rebuilding usb for Electron', electronVersion, 'on', electronPlatformName);
+    await run('npx', ['electron-rebuild', '-f', '-w', 'usb', '-v', electronVersion], { cwd: appOutDir });
+  } catch (e) {
+    console.warn('[afterPack] electron-rebuild failed for usb. Printer may not work.', e.message);
+  }
 };

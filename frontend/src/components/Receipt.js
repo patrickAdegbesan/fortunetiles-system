@@ -620,11 +620,11 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               <h3>Bank Details</h3>
               <div className="bank-info">
                 <p><strong>Access Bank</strong></p>
-                <p>Account No: 0021456920</p>
+                <p>Account No: 0000000001</p>
                 <p>Account Name: Fortune et Fever Nig LTD</p>
                 
                 <p style={{ marginTop: '10px' }}><strong>Zenith Bank</strong></p>
-                <p>Account No: 1012473059</p>
+                <p>Account No: 0000000003</p>
                 <p>Account Name: Fortune et Fever Nig LTD</p>
               </div>
             </div>
