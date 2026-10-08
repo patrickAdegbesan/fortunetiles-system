@@ -32,7 +32,7 @@ router.get('/', authenticateToken, async (req, res) => {
           model: ReturnItem,
           as: 'items',
           include: [
-            { model: Product },
+            { model: Product, paranoid: false },
             { model: Location }
           ]
         },
@@ -66,7 +66,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
           model: ReturnItem,
           as: 'items',
           include: [
-            { model: Product },
+            { model: Product, paranoid: false },
             { model: Location }
           ]
         },
@@ -224,7 +224,7 @@ router.post('/', authenticateToken, validate([
           model: ReturnItem,
           as: 'items',
           include: [
-            { model: Product },
+            { model: Product, paranoid: false },
             { model: Location }
           ]
         },

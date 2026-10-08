@@ -200,7 +200,7 @@ router.get('/logs', async (req, res) => {
     const logs = await InventoryLog.findAll({
       where: whereClause,
       include: [
-        { model: Product, as: 'product' },
+        { model: Product, as: 'product', paranoid: false },
         { model: Location, as: 'location' },
         { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email'] }
       ],

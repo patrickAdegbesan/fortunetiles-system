@@ -215,6 +215,7 @@ router.get('/profit-margin', authenticateToken, requireRole(['owner', 'manager']
           include: [
             {
               model: Product,
+              paranoid: false,
               as: 'product',
               attributes: ['id', 'name', 'categories', 'price']
             }
@@ -371,6 +372,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       include: [
         {
           model: Product,
+          paranoid: false,
           as: 'product',
           attributes: ['id', 'name', 'categories', 'price']
         },
@@ -402,6 +404,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       include: [
         {
           model: Product,
+          paranoid: false,
           as: 'product',
           attributes: ['id', 'name', 'categories', 'price']
         },
@@ -444,6 +447,7 @@ router.get('/top-products', authenticateToken, requireRole(['owner', 'manager'])
       include: [
         {
           model: Product,
+          paranoid: false,
           as: 'product',
           attributes: ['categories']
         },

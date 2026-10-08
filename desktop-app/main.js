@@ -118,7 +118,13 @@ async function createWindow() {
 
   // Never leave the local app: block navigation and pop-ups to anything else.
   let appOrigin = null;
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // The only pop-up the app opens is the blank receipt window used for printing.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url === '' || url === 'about:blank') {
+      return { action: 'allow', overrideBrowserWindowOptions: { width: 420, height: 700, autoHideMenuBar: true } };
+    }
+    return { action: 'deny' };
+  });
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (appOrigin && new URL(url).origin !== appOrigin) event.preventDefault();
   });

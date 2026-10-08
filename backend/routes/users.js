@@ -5,6 +5,23 @@ const { User, Location } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { activityLogger } = require('../middleware/activityLogger');
 const cache = require('../middleware/enhancedCache');
+const { Op } = require('sequelize');
+const { email: SYSTEM_ADMIN_EMAIL } = require('../config/defaultAdmin.json');
+
+// The built-in admin is only visible to and manageable by itself, so owners
+// created later cannot lock it out, delete it or reset its password.
+const protectSystemAdmin = async (req, res, next) => {
+  try {
+    if (req.user.email === SYSTEM_ADMIN_EMAIL) return next();
+    const target = await User.findByPk(req.params.id, { attributes: ['id', 'email'] });
+    if (target && target.email === SYSTEM_ADMIN_EMAIL) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
 // GET /api/users/roles - Get available roles (MUST be before /:id route) (cached)
 router.get('/roles', authenticateToken, async (req, res) => {
@@ -36,10 +53,10 @@ router.get('/', authenticateToken, requireRole(['owner']), activityLogger('view_
 
     // Build where clause
     const where = {};
+    if (req.user.email !== SYSTEM_ADMIN_EMAIL) where.email = { [Op.ne]: SYSTEM_ADMIN_EMAIL };
     if (role) where.role = role;
     if (isActive !== undefined) where.isActive = isActive === 'true';
     if (search) {
-      const { Op } = require('sequelize');
       where[Op.or] = [
         { firstName: { [Op.like]: `%${search}%` } },
         { lastName: { [Op.like]: `%${search}%` } },
@@ -76,7 +93,7 @@ router.get('/', authenticateToken, requireRole(['owner']), activityLogger('view_
 });
 
 // GET /api/users/:id - Get single user (admin only)
-router.get('/:id', authenticateToken, requireRole(['owner']), async (req, res) => {
+router.get('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -190,7 +207,7 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
 });
 
 // POST /api/users/:id/reset-password - Owner sets a new password (offline replacement for email reset)
-router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), activityLogger('reset_password', 'users'), async (req, res) => {
+router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), protectSystemAdmin, activityLogger('reset_password', 'users'), async (req, res) => {
   try {
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
     const user = await User.findByPk(req.params.id);
@@ -212,7 +229,7 @@ router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), ac
 });
 
 // PUT /api/users/:id - Update user roles/permissions (admin only)
-router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { firstName, lastName, email, role, locationId, isActive } = req.body;
@@ -306,7 +323,7 @@ router.put('/:id', authenticateToken, requireRole(['owner']), async (req, res) =
 });
 
 // DELETE /api/users/:id - Delete or deactivate user (admin only)
-router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger('delete_user', 'users'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin, activityLogger('delete_user', 'users'), async (req, res) => {
   try {
     const { id } = req.params;
     const { hardDelete } = req.query; // ?hardDelete=true for permanent deletion
@@ -394,7 +411,7 @@ router.delete('/:id', authenticateToken, requireRole(['owner']), activityLogger(
 });
 
 // PUT /api/users/:id/activate - Reactivate user (admin only)
-router.put('/:id/activate', authenticateToken, requireRole(['owner']), activityLogger('activate_user', 'users'), async (req, res) => {
+router.put('/:id/activate', authenticateToken, requireRole(['owner']), protectSystemAdmin, activityLogger('activate_user', 'users'), async (req, res) => {
   try {
     const { id } = req.params;
 

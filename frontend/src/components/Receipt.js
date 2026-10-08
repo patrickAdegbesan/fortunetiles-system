@@ -46,6 +46,10 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const handlePrint = () => {
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Unable to open the print window.');
+      return;
+    }
     const receiptElement = document.getElementById('receipt-content');
     
     // Sanitize content to prevent XSS - use textContent for text-only, or clone and sanitize for HTML

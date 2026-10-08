@@ -37,6 +37,7 @@ router.get('/', async (req, res) => {
           include: [
             {
               model: Product,
+              paranoid: false,
               as: 'product',
               attributes: ['id', 'name', 'categories', 'description', 'price']
             }
@@ -137,6 +138,7 @@ router.get('/:id', async (req, res) => {
           include: [
             {
               model: Product,
+              paranoid: false,
               as: 'product',
               attributes: ['id', 'name', 'categories', 'description', 'price']
             }
@@ -145,7 +147,7 @@ router.get('/:id', async (req, res) => {
         {
           model: User,
           as: 'cashier',
-          attributes: ['id', 'username', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'email']
         }
       ]
     });
@@ -188,7 +190,7 @@ router.get('/:id', async (req, res) => {
       items: formattedItems,
       cashier: saleData.cashier ? {
         id: saleData.cashier.id,
-        username: saleData.cashier.username,
+        name: `${saleData.cashier.firstName} ${saleData.cashier.lastName}`,
         email: saleData.cashier.email
       } : null,
       location: saleData.location || 'Main Store',
@@ -216,8 +218,7 @@ router.get('/search/:term', async (req, res) => {
         [Op.or]: [
           { id: { [Op.like]: `%${term}%` } },
           { customerName: { [Op.like]: `%${term}%` } },
-          { customerPhone: { [Op.like]: `%${term}%` } },
-          { customerEmail: { [Op.like]: `%${term}%` } }
+          { customerPhone: { [Op.like]: `%${term}%` } }
         ]
       },
       include: [
@@ -228,6 +229,7 @@ router.get('/search/:term', async (req, res) => {
           include: [
             {
               model: Product,
+              paranoid: false,
               as: 'product',
               attributes: ['id', 'name', 'categories', 'description']
             }
@@ -236,7 +238,7 @@ router.get('/search/:term', async (req, res) => {
         {
           model: User,
           as: 'cashier',
-          attributes: ['id', 'username', 'email']
+          attributes: ['id', 'firstName', 'lastName', 'email']
         }
       ],
       order: [['created_at', 'DESC']],
@@ -277,7 +279,7 @@ router.get('/search/:term', async (req, res) => {
         items: formattedItems,
         cashier: saleData.cashier ? {
           id: saleData.cashier.id,
-          username: saleData.cashier.username,
+          name: `${saleData.cashier.firstName} ${saleData.cashier.lastName}`,
           email: saleData.cashier.email
         } : null,
         location: saleData.location || 'Main Store',

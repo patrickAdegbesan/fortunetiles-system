@@ -1,4 +1,5 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
@@ -14,11 +15,10 @@ router.get('/', authenticateToken, async (req, res) => {
     const whereClause = {};
     if (locationId) whereClause.locationId = locationId;
     if (startDate && endDate) {
-      whereClause[sequelize.Op.and] = [
-        sequelize.where(sequelize.col('created_at'), {
-          [sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
-        })
-      ];
+      // A bare date (YYYY-MM-DD) as end date should include that whole day
+      const end = new Date(endDate);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(endDate))) end.setUTCHours(23, 59, 59, 999);
+      whereClause.created_at = { [Op.between]: [new Date(startDate), end] };
     }
     
     const sales = await Sale.findAndCountAll({
@@ -39,7 +39,8 @@ router.get('/', authenticateToken, async (req, res) => {
           as: 'items',
           attributes: ['id', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
           include: [{ 
-            model: Product, 
+            model: Product,
+            paranoid: false,
             as: 'product',
             attributes: ['id', 'name', 'unitOfMeasure'] // Only fetch essential fields
           }]
@@ -84,7 +85,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         { 
           model: SaleItem, 
           as: 'items',
-          include: [{ model: Product, as: 'product' }]
+          include: [{ model: Product, as: 'product', paranoid: false }]
         }
       ]
     });
@@ -276,7 +277,7 @@ router.post('/', authenticateToken, async (req, res) => {
         return res.status(400).json({
           message: 'Validation failed',
           errors: [{ 
-            field: `items[${i}].productId`, 
+            field: `items.productId`, 
             message: `No inventory found for product ${product.name} at selected location`
           }]
         });
@@ -291,7 +292,7 @@ router.post('/', authenticateToken, async (req, res) => {
         return res.status(400).json({
           message: 'Validation failed',
           errors: [{ 
-            field: `items[${i}].quantity`, 
+            field: `items.quantity`, 
             message: `Insufficient inventory for product ${product.name}. Available: ${availableQty}, Requested: ${requestedQty}`
           }]
         });
@@ -381,7 +382,7 @@ router.post('/', authenticateToken, async (req, res) => {
           { 
             model: SaleItem, 
             as: 'items',
-            include: [{ model: Product, as: 'product' }]
+            include: [{ model: Product, as: 'product', paranoid: false }]
           }
         ]
       });

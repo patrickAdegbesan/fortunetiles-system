@@ -282,7 +282,7 @@ const UsersPage = () => {
                         {user.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td>{formatDate(user.createdAt)}</td>
+                    <td>{formatDate(user.createdAt || user.created_at)}</td>
                     <td>
                       <div className="user-actions">
                         <button 

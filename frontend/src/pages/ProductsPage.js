@@ -413,22 +413,23 @@ const ProductsPage = () => {
     loadLocations();
   }, []);
 
-  // Load inventory when location changes
-  useEffect(() => {
-    const loadInv = async () => {
-      try {
-        const params = !selectedLocation || selectedLocation === 'all'
-          ? {}
-          : { locationId: selectedLocation };
-        const data = await fetchInventory(params);
-        setInventory(data.inventory || []);
-      } catch (e) {
-        console.error('Load inventory error:', e);
-        setInventory([]);
-      }
-    };
-    loadInv();
+  // Load inventory when location changes; also called after product changes so stock shown stays current
+  const refreshInventory = useCallback(async () => {
+    try {
+      const params = !selectedLocation || selectedLocation === 'all'
+        ? {}
+        : { locationId: selectedLocation };
+      const data = await fetchInventory(params);
+      setInventory(data.inventory || []);
+    } catch (e) {
+      console.error('Load inventory error:', e);
+      setInventory([]);
+    }
   }, [selectedLocation]);
+
+  useEffect(() => {
+    refreshInventory();
+  }, [refreshInventory]);
 
   // Optimized inventory map for better performance
   const inventoryMap = useMemo(() => {
@@ -538,6 +539,7 @@ const ProductsPage = () => {
       setShowEditor(false);
       setEditingProduct(null);
       loadProducts();
+      refreshInventory();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
@@ -592,6 +594,7 @@ const ProductsPage = () => {
       );
 
       loadProducts();
+      refreshInventory();
       setShowDeleteModal(false);
       setProductToDelete(null);
     } catch (error) {
@@ -737,6 +740,7 @@ const ProductsPage = () => {
       
       setSuccess(`Successfully imported ${successful} Spanish tile products${failed > 0 ? ` (${failed} failed)` : ''}`);
       loadProducts();
+      refreshInventory();
       
     } catch (error) {
       console.error('Bulk import error:', error);

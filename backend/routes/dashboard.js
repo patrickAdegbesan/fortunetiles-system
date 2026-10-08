@@ -65,6 +65,7 @@ router.get('/', async (req, res) => {
           as: 'items',
           include: [{
             model: Product,
+            paranoid: false,
             as: 'product',
             where: productWhereClause,
             required: true
@@ -125,7 +126,7 @@ router.get('/', async (req, res) => {
       ],
       where: inventoryWhereFilter,
       include: [{ 
-        model: Product, 
+        model: Product,
         as: 'product',
         where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
         required: Reflect.ownKeys(productWhereClause).length > 0 ? true : false,
@@ -238,7 +239,8 @@ router.get('/', async (req, res) => {
       where: logWhereClause,
       include: [
         { 
-          model: Product, 
+          model: Product,
+          paranoid: false,
           as: 'product',
           where: Reflect.ownKeys(productWhereClause).length > 0 ? productWhereClause : undefined,
           required: Reflect.ownKeys(productWhereClause).length > 0
