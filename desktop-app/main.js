@@ -32,6 +32,25 @@ let mainWindow;
 let testWindow = null;
 let backendProcess = null;
 let quitting = false;
+let startupFailureShown = false;
+
+const logPath = path.join(dataDir, 'server.log');
+
+function logTail(lines = 15) {
+  try {
+    return fs.readFileSync(logPath, 'utf8').trim().split(/\r?\n/).slice(-lines).join('\n');
+  } catch (_) {
+    return '(no log available)';
+  }
+}
+
+function showStartupFailure(message) {
+  if (startupFailureShown) return;
+  startupFailureShown = true;
+  dialog.showErrorBox('Fortune Tiles failed to start',
+    `${message}\n\nDetails (also saved in ${logPath}):\n${logTail()}`);
+  app.quit();
+}
 
 const printerService = new PrinterService();
 let printerInitialized = false;
@@ -47,7 +66,7 @@ function getFreePort() {
   });
 }
 
-async function waitForBackendReady(url, timeoutMs = 30000) {
+async function waitForBackendReady(url, timeoutMs = 90000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (!backendProcess) return false; // exited while starting
@@ -75,6 +94,9 @@ async function startBackend() {
   if (!entry) throw new Error('Backend files are missing from the application package.');
 
   const port = await getFreePort();
+  // A double-clicked Windows app has no console, so write the service's output to a log file instead.
+  const logFd = fs.openSync(logPath, 'a');
+  fs.writeSync(logFd, `\n--- ${new Date().toISOString()} starting backend: ${entry} (port ${port}) ---\n`);
   backendProcess = spawn(process.execPath, [entry], {
     env: {
       ...process.env,
@@ -83,15 +105,19 @@ async function startBackend() {
       PORT: `${port}`,
       DATA_DIR: dataDir
     },
-    stdio: 'inherit',
+    stdio: ['ignore', logFd, logFd],
     windowsHide: true
+  });
+  backendProcess.on('error', (err) => {
+    fs.writeSync(logFd, `spawn error: ${err.message}\n`);
+    backendProcess = null;
+    showStartupFailure('The local database service could not be started.');
   });
   backendProcess.on('exit', (code) => {
     console.log('Backend process exited with code', code);
     backendProcess = null;
     if (!quitting) {
-      dialog.showErrorBox('Fortune Tiles', 'The local database service stopped unexpectedly. The application will close.');
-      app.quit();
+      showStartupFailure(`The local database service stopped (exit code ${code}).`);
     }
   });
 
@@ -146,12 +172,12 @@ async function createWindow() {
     const base = await startBackend();
     appOrigin = new URL(base).origin;
     if (!(await waitForBackendReady(base))) {
-      throw new Error('The local database service did not start. Check that the data folder is writable:\n' + dataDir);
+      showStartupFailure('The local database service did not start in time.\nData folder: ' + dataDir);
+      return;
     }
     mainWindow.loadURL(`${base}/inventory/`);
   } catch (err) {
-    dialog.showErrorBox('Fortune Tiles failed to start', err.message);
-    app.quit();
+    showStartupFailure(err.message);
   }
 }
 
