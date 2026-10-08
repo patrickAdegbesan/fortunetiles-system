@@ -8,32 +8,17 @@ function run(cmd, args, opts = {}) {
   });
 }
 
+// Installs the backend's production dependencies for the TARGET platform, so a Windows app
+// can be built from any computer. sqlite3 and usb ship N-API prebuilt binaries that work
+// inside Electron without recompiling.
 exports.default = async function afterPack(context) {
   const { appOutDir, electronPlatformName } = context;
   const backendPath = path.join(appOutDir, 'resources', 'backend');
+  const arch = process.env.TARGET_ARCH || 'x64';
 
-  console.log('[afterPack] Installing backend production deps at:', backendPath);
-  try {
-    await run('npm', ['ci', '--omit=dev'], { cwd: backendPath });
-  } catch (e) {
-    throw new Error('npm ci failed for backend: ' + e.message);
-  }
-
-  // Rebuild sqlite3 for the packaged Electron runtime
-  try {
-    const electronVersion = context.packager.info._electronBuilderConfig.electronVersion || process.versions.electron;
-    console.log('[afterPack] Rebuilding sqlite3 for Electron', electronVersion, 'on', electronPlatformName);
-    await run('npx', ['electron-rebuild', '-f', '-w', 'sqlite3', '-v', electronVersion], { cwd: backendPath });
-  } catch (e) {
-    throw new Error('electron-rebuild failed for sqlite3: ' + e.message);
-  }
-
-  // Rebuild usb module for printer support
-  try {
-    const electronVersion = context.packager.info._electronBuilderConfig.electronVersion || process.versions.electron;
-    console.log('[afterPack] Rebuilding usb for Electron', electronVersion, 'on', electronPlatformName);
-    await run('npx', ['electron-rebuild', '-f', '-w', 'usb', '-v', electronVersion], { cwd: appOutDir });
-  } catch (e) {
-    console.warn('[afterPack] electron-rebuild failed for usb. Printer may not work.', e.message);
-  }
+  console.log('[afterPack] Installing backend production deps for', electronPlatformName, arch);
+  await run('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], {
+    cwd: backendPath,
+    env: { ...process.env, npm_config_platform: electronPlatformName, npm_config_arch: arch }
+  });
 };

@@ -8,10 +8,23 @@ const PrinterService = require('./printer/PrinterService');
 // All data (database, JWT secret, Electron profile) lives in one folder.
 // The portable build keeps it next to the .exe so the whole app can be moved
 // between computers on a flash drive; otherwise it goes in the user profile.
-const dataDir = process.env.FORTUNE_TILES_DATA
-  || (process.env.PORTABLE_EXECUTABLE_DIR
-    ? path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'FortuneTilesData')
-    : path.join(app.getPath('appData'), 'FortuneTiles', 'data'));
+function chooseDataDir() {
+  if (process.env.FORTUNE_TILES_DATA) return process.env.FORTUNE_TILES_DATA;
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'FortuneTilesData');
+  if (app.isPackaged) {
+    // Packaged app folder: keep the data beside the .exe so the whole folder can be copied between computers.
+    const beside = path.join(path.dirname(process.execPath), 'FortuneTilesData');
+    try {
+      fs.mkdirSync(beside, { recursive: true });
+      fs.accessSync(beside, fs.constants.W_OK);
+      return beside;
+    } catch (_) {
+      // Not writable (e.g. installed under Program Files): fall back to the user profile.
+    }
+  }
+  return path.join(app.getPath('appData'), 'FortuneTiles', 'data');
+}
+const dataDir = chooseDataDir();
 fs.mkdirSync(dataDir, { recursive: true });
 app.setPath('userData', path.join(dataDir, 'electron'));
 

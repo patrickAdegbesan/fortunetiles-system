@@ -49,7 +49,7 @@
     "asarUnpack": [
       "backend/node_modules/**"
     ],
-    "afterPack": "node ./afterPack.js",
+    "afterPack": "./afterPack.js",
     "win": {
       "target": [
         {
@@ -59,8 +59,10 @@
           ]
         }
       ],
-      "artifactName": "FortuneTiles-${version}-portable.exe"
+      "artifactName": "FortuneTiles-${version}-portable.exe",
+      "signAndEditExecutable": false
     },
-    "forceCodeSigning": false
+    "forceCodeSigning": false,
+    "npmRebuild": false
   }
 }
