@@ -170,6 +170,24 @@ function check(name, cond, extra) {
   r = await call('POST', '/auth/verify-pin', { pin: '9999' });
   check('wrong pin -> 401', r.status === 401, r);
 
+
+  // ---- product photos: list carries a link, the link serves the image, saving keeps it
+  r = await call('GET', '/products?search=Granite');
+  const gp = r.data.products.find((p) => p.name === 'Granite Black');
+  check('list shows photo as a small link', gp && /^\/api\/products\/\d+\/image\?v=\d+$/.test(gp.imageUrl || ''), gp && gp.imageUrl && gp.imageUrl.slice(0, 80));
+  check('list does not embed the photo', JSON.stringify(r.data).length < 5000, JSON.stringify(r.data).length);
+  if (gp && gp.imageUrl) {
+    const img = await fetch(base + gp.imageUrl);
+    check('photo link serves an image without login', img.status === 200 && /^image\/png/.test(img.headers.get('content-type') || ''), img.status);
+    // saving the product with the link the list gave us must keep the stored photo
+    const sv = await call('PUT', `/products/${gp.id}`, { imageUrl: gp.imageUrl, price: 41 });
+    check('save with photo link succeeds', sv.status === 200, sv);
+    const after = await call('GET', `/products/${gp.id}`);
+    check('stored photo kept after save', /^data:image\/png;base64,/.test(after.data.product.imageUrl || ''), (after.data.product.imageUrl || '').slice(0, 40));
+  }
+  r = await call('GET', '/products?search=Carrara');
+  check('product without photo has no image link', r.data.products[0] && !r.data.products[0].imageUrl, r.data.products[0]);
+
   // ---- delete product (archive) + backup + users
   r = await call('DELETE', `/products/${p2.id}`);
   check('delete/archive product', r.status === 200, r);

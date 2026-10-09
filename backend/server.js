@@ -43,6 +43,7 @@ app.use('/api', require('./routes/health'));
 app.use('/api', require('./routes/performance'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/products', require('./routes/productImages')); // before the authenticated product routes
 app.use('/api/products', require('./routes/products'));
 app.use('/api/product-types', require('./routes/productTypes'));
 app.use('/api/categories', require('./routes/categories'));

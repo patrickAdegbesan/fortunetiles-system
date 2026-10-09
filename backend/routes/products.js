@@ -129,6 +129,11 @@ router.get('/', async (req, res) => {
       attributes: [
         'id', 'name', 'description', 'categories', 'price',
         'isActive', 'attributes', 'unitOfMeasure',
+        // Photos are stored as data URLs; send a small link instead (see routes/productImages.js)
+        [sequelize.literal(`CASE
+          WHEN "Product"."image_url" IS NULL OR "Product"."image_url" = '' THEN NULL
+          WHEN "Product"."image_url" LIKE 'data:%' THEN '/api/products/' || "Product"."id" || '/image?v=' || COALESCE("Product"."version", 0)
+          ELSE "Product"."image_url" END`), 'imageUrl'],
         // Map snake_case columns to camelCase fields for the response
         [sequelize.col('created_at'), 'createdAt'],
         [sequelize.col('updated_at'), 'updatedAt']
@@ -357,7 +362,8 @@ router.put('/:id', writeRoles, validate([
       supplierCode: supplierCode || product.supplierCode,
       categories: productCategories,
       unitOfMeasure: unitOfMeasure || product.unitOfMeasure,
-      imageUrl: imageUrl !== undefined ? imageUrl : product.imageUrl,
+      // The list sends a link in place of the photo; saving that link back must not wipe the photo.
+      imageUrl: imageUrl !== undefined && !/^\/api\/products\/\d+\/image/.test(imageUrl) ? imageUrl : product.imageUrl,
       description: description !== undefined ? description : product.description,
       isActive: isActive !== undefined ? isActive : product.isActive,
       version: (product.version || 0) + 1

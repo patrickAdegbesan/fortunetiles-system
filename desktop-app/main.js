@@ -33,6 +33,9 @@ let testWindow = null;
 let backendProcess = null;
 let quitting = false;
 let startupFailureShown = false;
+let backendPort = null;      // reused on restart so the window's address (and saved login) stays the same
+let backendReady = false;
+let backendRestarts = 0;
 
 const logPath = path.join(dataDir, 'server.log');
 
@@ -93,7 +96,7 @@ async function startBackend() {
   const entry = getBackendEntry();
   if (!entry) throw new Error('Backend files are missing from the application package.');
 
-  const port = await getFreePort();
+  const port = backendPort || (backendPort = await getFreePort());
   // A double-clicked Windows app has no console, so write the service's output to a log file instead.
   const logFd = fs.openSync(logPath, 'a');
   fs.writeSync(logFd, `\n--- ${new Date().toISOString()} starting backend: ${entry} (port ${port}) ---\n`);
@@ -116,12 +119,30 @@ async function startBackend() {
   backendProcess.on('exit', (code) => {
     console.log('Backend process exited with code', code);
     backendProcess = null;
-    if (!quitting) {
-      showStartupFailure(`The local database service stopped (exit code ${code}).`);
+    if (quitting) return;
+    if (backendReady && backendRestarts < 3) {
+      // Stopped while the app was in use: bring it back (all data is already safely on disk).
+      backendRestarts++;
+      backendReady = false;
+      fs.appendFileSync(logPath, `\n--- service stopped (exit code ${code}); restarting, attempt ${backendRestarts} ---\n`);
+      restartBackend();
+      return;
     }
+    showStartupFailure(`The local database service stopped (exit code ${code}).`);
   });
 
   return `http://127.0.0.1:${port}`;
+}
+
+async function restartBackend() {
+  try {
+    const base = await startBackend();
+    if (!(await waitForBackendReady(base, 30000))) throw new Error('The service did not come back.');
+    backendReady = true;
+    if (mainWindow) mainWindow.reload();
+  } catch (err) {
+    showStartupFailure(err.message);
+  }
 }
 
 async function createWindow() {
@@ -175,6 +196,7 @@ async function createWindow() {
       showStartupFailure('The local database service did not start in time.\nData folder: ' + dataDir);
       return;
     }
+    backendReady = true;
     mainWindow.loadURL(`${base}/inventory/`);
   } catch (err) {
     showStartupFailure(err.message);
