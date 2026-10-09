@@ -291,3 +291,88 @@ body .tab svg {
   fill: currentColor;
 }
 body .qty-btn.decrease:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ---------- Product Management header stats: four identical tiles ---------- */
+body .header-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+body .ft-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  padding: 8px 14px 8px 10px;
+  background: #fff;
+  border: 1px solid #d5dbe6;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+body .ft-stat-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: #fff;
+}
+body .ft-stat-icon svg { width: 1em; height: 1em; color: #fff; fill: currentColor; }
+body .ft-stat-icon.total { background: var(--ft-navy); }
+body .ft-stat-icon.categories { background: #5b3fa8; }
+body .ft-stat-icon.in-stock { background: var(--ft-green); }
+body .ft-stat-icon.low-stock { background: #c2410c; }
+body .ft-stat-text { display: flex; flex-direction: column; line-height: 1.15; }
+body .ft-stat-value { font-size: 20px; font-weight: 700; color: var(--ft-ink); }
+body .ft-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ft-muted);
+  white-space: nowrap;
+}
+
+/* ---------- Sales page: shopping cart rows must fit the cart card ---------- */
+body .cart-items-enhanced { overflow-x: hidden; }
+body .cart-item-enhanced {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "info remove"
+    "pricing quantity";
+  gap: 10px 12px;
+  align-items: start;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+body .cart-item-enhanced .item-info-section { grid-area: info; min-width: 0; overflow-wrap: anywhere; }
+body .cart-item-enhanced .item-pricing-section { grid-area: pricing; min-width: 0; flex-wrap: wrap; }
+body .cart-item-enhanced .item-quantity-section { grid-area: quantity; min-width: 0; justify-self: end; }
+body .cart-item-enhanced .remove-btn { grid-area: remove; margin-left: 0; justify-self: end; }
+
+/* ---------- Product Management toolbar on laptop-width windows ---------- */
+body .header-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+body .header-bottom .search-container {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 420px;
+}
+body .header-bottom .search-container .enhanced-search-input { width: 100%; }
+body .header-bottom .filter-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}

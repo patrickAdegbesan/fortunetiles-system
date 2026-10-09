@@ -830,30 +830,34 @@ const ProductsPage = () => {
             </div>
             
             <div className="header-stats">
-              <div className="stat-content">
-                <FaCube className="stat-ico" />
-                <span className="stat-value">{productStats.total}</span>
-                <span className="stat-label">Total Products</span>
+              <div className="ft-stat">
+                <span className="ft-stat-icon total"><FaCube aria-hidden="true" /></span>
+                <div className="ft-stat-text">
+                  <span className="ft-stat-value">{productStats.total}</span>
+                  <span className="ft-stat-label">Total Products</span>
+                </div>
               </div>
-              <div className="stat-content">
-                 <FaTags className="stat-ico" />
-                  <span className="stat-value">{productStats.categories}</span>
-                  <span className="stat-label">Categories</span>
+              <div className="ft-stat">
+                <span className="ft-stat-icon categories"><FaTags aria-hidden="true" /></span>
+                <div className="ft-stat-text">
+                  <span className="ft-stat-value">{productStats.categories}</span>
+                  <span className="ft-stat-label">Categories</span>
+                </div>
               </div>
               {hasInventoryData && (
                 <>
-                  <div className="stat-card">
-                    <FaCheckCircle className="stat-icon in-stock" />
-                    <div className="stat-content">
-                      <span className="stat-value">{productStats.inStock}</span>
-                      <span className="stat-label">In Stock</span>
+                  <div className="ft-stat">
+                    <span className="ft-stat-icon in-stock"><FaCheckCircle aria-hidden="true" /></span>
+                    <div className="ft-stat-text">
+                      <span className="ft-stat-value">{productStats.inStock}</span>
+                      <span className="ft-stat-label">In Stock</span>
                     </div>
                   </div>
-                  <div className="stat-card">
-                    <FaExclamationTriangle className="stat-icon low-stock" />
-                    <div className="stat-content">
-                      <span className="stat-value">{productStats.lowStock}</span>
-                      <span className="stat-label">Low Stock</span>
+                  <div className="ft-stat">
+                    <span className="ft-stat-icon low-stock"><FaExclamationTriangle aria-hidden="true" /></span>
+                    <div className="ft-stat-text">
+                      <span className="ft-stat-value">{productStats.lowStock}</span>
+                      <span className="ft-stat-label">Low Stock</span>
                     </div>
                   </div>
                 </>
