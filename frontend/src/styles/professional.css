@@ -128,3 +128,12 @@ body .cart-item-enhanced .remove-btn { grid-area: remove; }
 body .cart-item-enhanced .item-pricing-section { grid-area: price; }
 body .cart-item-enhanced .item-quantity-section { grid-area: qty; }
 body .cart-item-enhanced .price-display { flex-wrap: wrap; gap: 4px 8px; }
+
+/* bank account choice at checkout */
+body .bank-picker { display: grid; gap: 6px; }
+body .bank-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #cdd2db; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; }
+body .bank-option.on { border-color: var(--pro-navy); background: var(--pro-tint); }
+body .bank-option input { width: auto; margin: 0; }
+body .bank-option-name { font-weight: 700; flex: 1; }
+body .bank-option-number { color: var(--pro-muted); font-variant-numeric: tabular-nums; }
+body .bank-picker-help, body .bank-picker-empty { color: var(--pro-muted); font-size: 12px; margin: 2px 0 0; }

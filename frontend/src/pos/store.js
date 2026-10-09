@@ -1,6 +1,6 @@
 // Shared state for the POS interface: messages (toasts), catalogue (products, stock, categories, locations) and the cart.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchProducts, fetchInventory, fetchCategories, fetchLocations } from '../services/api';
+import { fetchProducts, fetchInventory, fetchCategories, fetchLocations, fetchBankAccounts } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { hasPack, roundMoney } from '../utils/units';
 
@@ -35,6 +35,7 @@ export function CatalogProvider({ children }) {
   const [locations, setLocations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [stock, setStock] = useState({}); // productId -> quantity at the selected location
   const [locationId, setLocationIdState] = useState(() => {
     try { return Number(localStorage.getItem(LOCATION_KEY)) || null; } catch (_) { return null; }
@@ -53,12 +54,13 @@ export function CatalogProvider({ children }) {
     setLoading(true);
     setError('');
     try {
-      const [loc, cat, prod] = await Promise.all([fetchLocations(), fetchCategories(), fetchProducts({ limit: 1000 })]);
+      const [loc, cat, prod, banks] = await Promise.all([fetchLocations(), fetchCategories(), fetchProducts({ limit: 1000 }), fetchBankAccounts().catch(() => ({ bankAccounts: [] }))]);
       if (run !== version.current) return;
       const locs = loc.locations || [];
       setLocations(locs);
       setCategories((cat.categories || []).map((c) => c.name || c));
       setProducts((prod.products || []).filter((p) => p.isActive !== false));
+      setBankAccounts(banks.bankAccounts || []);
       setLocationIdState((current) => {
         if (current && locs.some((l) => l.id === current)) return current;
         const mine = user && user.locationId && locs.find((l) => l.id === user.locationId);
@@ -87,11 +89,11 @@ export function CatalogProvider({ children }) {
   useEffect(() => { loadStock(locationId); }, [locationId, loadStock]);
 
   const value = useMemo(() => ({
-    locations, categories, products, stock, locationId, setLocationId, loading, error,
+    locations, categories, products, stock, bankAccounts, locationId, setLocationId, loading, error,
     location: locations.find((l) => l.id === locationId) || null,
     reload: async () => { await load(); await loadStock(locationId); },
     reloadStock: () => loadStock(locationId),
-  }), [locations, categories, products, stock, locationId, setLocationId, loading, error, load, loadStock]);
+  }), [locations, categories, products, stock, bankAccounts, locationId, setLocationId, loading, error, load, loadStock]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }

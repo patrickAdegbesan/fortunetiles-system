@@ -93,6 +93,7 @@ router.get('/', async (req, res) => {
         discountType: saleData.discountType,
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
+        bankDetails: Array.isArray(saleData.bankDetails) ? saleData.bankDetails : [],
         status: 'completed', // Default to completed since we can't check returns right now
         createdAt: saleData.created_at || saleData.createdAt || new Date().toISOString(),
         saleDate: saleData.created_at || saleData.createdAt || new Date().toISOString(),
@@ -190,6 +191,7 @@ router.get('/:id', async (req, res) => {
       discountType: saleData.discountType,
       discountValue: saleData.discountValue,
       paymentMethod: saleData.paymentMethod || 'cash',
+      bankDetails: Array.isArray(saleData.bankDetails) ? saleData.bankDetails : [],
       status: saleData.status || 'completed',
       createdAt: saleData.created_at || saleData.createdAt,
       saleDate: saleData.saleDate || saleData.created_at || saleData.createdAt,
@@ -282,6 +284,7 @@ router.get('/search/:term', async (req, res) => {
         discountType: saleData.discountType,
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
+        bankDetails: Array.isArray(saleData.bankDetails) ? saleData.bankDetails : [],
         status: saleData.status || 'completed',
         createdAt: saleData.created_at || saleData.createdAt,
         saleDate: saleData.saleDate || saleData.created_at || saleData.createdAt,

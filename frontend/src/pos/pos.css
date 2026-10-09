@@ -168,3 +168,12 @@
 .pos-note.bad { color: var(--red); }
 
 .pos-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* ---- bank account choice at checkout ---- */
+.pos-bank { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 10px; margin-bottom: 6px; border: 1.5px solid #7c8ba1; border-radius: 10px; background: #fff; text-align: left; }
+.pos-bank.on { border-color: var(--navy); background: var(--tint); }
+.pos-bank-check { flex: 0 0 24px; height: 24px; border: 1.5px solid #7c8ba1; border-radius: 6px; background: #fff; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+.pos-bank.on .pos-bank-check { background: var(--navy); border-color: var(--navy); }
+.pos-bank-main { display: flex; flex-direction: column; min-width: 0; }
+.pos-bank-main strong { font-size: 15px; }
+.pos-bank-main small { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

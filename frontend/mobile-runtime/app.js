@@ -22,6 +22,7 @@ router.use('/api/orders', require('../../backend/routes/orders'));
 router.use('/api/reports', require('../../backend/routes/reports'));
 router.use('/api/backup', require('../../backend/routes/backup'));
 router.use('/api/sync', require('../../backend/routes/sync'));
+router.use('/api/bank-accounts', require('../../backend/routes/bankAccounts'));
 
 /** Sends one request through the routes. Resolves {status, headers, data}. */
 function handle(request) {

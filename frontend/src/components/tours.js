@@ -81,6 +81,7 @@ const SALES = {
     { selector: '.customer-form-enhanced .form-group-enhanced:nth-child(1)', title: 'Customer name (optional)', ensure: [type('.customer-form-enhanced input[placeholder*="name"]', 'Ada Okafor')], text: 'Type the customer name if you want it on the receipt. We typed a sample name. Leave it empty for a walk-in customer.', placement: 'left' },
     { selector: '.customer-form-enhanced .form-group-enhanced:nth-child(2)', title: 'Phone number (optional)', ensure: [type('.customer-form-enhanced input[placeholder*="phone"]', '0801 234 5678')], text: 'Useful if the customer asks for a follow-up or a return later. You can search for orders by phone number in Transactions.', placement: 'left' },
     { selector: '.customer-form-enhanced .form-group-enhanced:nth-child(3)', title: 'Payment method', ensure: [select('.customer-form-enhanced select.enhanced-select', 'bank_transfer')], text: 'Choose how the customer is paying: cash, card, bank transfer or POS terminal. This is required before you can complete the sale. We picked bank transfer as an example, and the receipt will then show your bank details.', placement: 'left' },
+    { selector: '.bank-picker', title: 'Choose the bank account', ensure: [click('.bank-option input', { once: 'bankpick', unless: '.bank-option.on' })], text: 'When the customer pays by bank transfer, tick the account they will pay into. You can tick more than one. Only the accounts you tick are printed on the receipt, so the customer sees exactly where to send the money. The list comes from Settings, where the owner can add, change or hide accounts. The sale cannot be completed until an account is chosen.', placement: 'left' },
     { selector: '.discount-input-group', title: 'Discount', ensure: [select('.discount-type-select', 'percentage'), type('.discount-value-input', '10')], text: 'Give a discount either as a fixed amount or a percentage. We chose 10 percent, and the preview and the totals updated at once. The discount appears on the receipt.', placement: 'left' },
     { selector: '.complete-sale-btn', title: 'Complete the sale', text: 'This is the button that finishes the sale. It saves the order, reduces the stock at this location and opens the receipt. We will not press it now so that no real sale is recorded.', placement: 'left' },
     { selector: '.receipt-container', modal: 'receipt', title: 'The receipt', ensure: [demo('receipt'), waitFor('.receipt-container')], text: 'After a sale this is what opens. It shows the business details, the receipt number, date, customer, every item with its price, the discount and the total. This one uses sample data.' },
@@ -89,6 +90,7 @@ const SALES = {
   ],
   cleanup: [
     ...SALES_RESET,
+    { name: 'banks', selector: '.bank-option.on input', repeat: true, ifPresent: '.bank-option.on' },
     { name: 'cart', selector: '.cart-item-enhanced .remove-btn', repeat: true, ifPresent: '.cart-item-enhanced' },
     type('.customer-form-enhanced input[placeholder*="name"]', ''),
     type('.customer-form-enhanced input[placeholder*="phone"]', ''),
@@ -213,6 +215,7 @@ const SETTINGS = {
     { selector: '.overview-card:nth-child(2)', title: 'Users summary', text: 'How many people can sign in and how many are active.' },
     { selector: '.overview-card:nth-child(3)', title: 'System configuration', text: 'Product types, categories and global attributes used when you add items.' },
     { selector: '.pin-setup-section', title: 'Markup PIN', text: 'Set a 4-digit PIN here. Staff enter it at the till to unlock price changes on a sale. Anyone who does not know it can only sell at the listed price. Type it twice to confirm and press Set PIN.' },
+    { selector: '.bank-card', title: 'Bank Accounts', text: 'The shop\'s bank accounts. At checkout, when someone pays by transfer, the cashier ticks the account to use and only that account is printed on the receipt. Add an account, edit its name or number, hide it from checkout, or remove it. Receipts already printed keep the details they had.' },
     { selector: '.sync-card', title: 'Cloud Sync', text: 'Sync needs no setup and nothing to type. The first time this computer has internet it links itself to the shop\'s cloud, and from then on it shares products, stock, sales and users with the POS terminal automatically, and keeps working normally when the internet is down. This card shows how it is going. Sync now is only for when you are impatient, and if this computer and the cloud both already hold data, this is where the owner is asked which to keep.' },
     { selector: '.actions-grid', title: 'Quick actions', text: 'Shortcuts for the jobs you do most.' },
 

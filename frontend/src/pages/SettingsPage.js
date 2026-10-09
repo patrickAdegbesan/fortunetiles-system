@@ -1,4 +1,5 @@
 import SyncCard from '../components/SyncCard';
+import BankAccountsCard from '../components/BankAccountsCard';
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { FaLock } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
@@ -986,6 +987,7 @@ const SettingsPage = () => {
                 </div>
               )}
 
+              {(isAdmin || user?.role === 'manager') && <BankAccountsCard />}
               {isOwner && <SyncCard />}
 
               {/* Quick Actions */}

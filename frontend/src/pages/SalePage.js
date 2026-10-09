@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo, memo } from 'react';
 import { hasPack, packName, unitLabel, fmtSqm, fmtCount, cartonPrice, toBase, fromBase, quantityText, roundQty, roundMoney } from '../utils/units';
 import { AuthContext } from '../contexts/AuthContext';
-import { fetchProducts, fetchInventory, fetchLocations, createSale, verifyMarkupPin } from '../services/api';
+import { fetchProducts, fetchInventory, fetchLocations, createSale, verifyMarkupPin, fetchBankAccounts } from '../services/api';
 import Receipt from '../components/Receipt';
 import { 
   FaBox, 
@@ -367,6 +367,8 @@ const SalePage = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [selectedBankIds, setSelectedBankIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -408,10 +410,12 @@ const SalePage = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const [productsData, locationsData] = await Promise.all([
+      const [productsData, locationsData, bankData] = await Promise.all([
         fetchProducts(),
-        fetchLocations()
+        fetchLocations(),
+        fetchBankAccounts().catch(() => ({ bankAccounts: [] }))
       ]);
+      setBankAccounts(bankData.bankAccounts || []);
       setProducts(productsData.products || []);
       const locs = locationsData.locations || [];
       setLocations(locs);
@@ -596,6 +600,11 @@ const SalePage = () => {
       return;
     }
 
+    if (selectedPaymentMethod === 'bank_transfer' && bankAccounts.length > 0 && selectedBankIds.length === 0) {
+      setError('Choose the bank account the customer will pay into');
+      return;
+    }
+
     if (!selectedPaymentMethod) {
       setError('Please select a payment method');
       return;
@@ -610,6 +619,7 @@ const SalePage = () => {
         customerName: customerName || 'Walk-in Customer',
         customerPhone: customerPhone || '',
         paymentMethod: selectedPaymentMethod,
+        bankAccountIds: selectedPaymentMethod === 'bank_transfer' ? selectedBankIds : [],
         discountType: discountType || null,
         discountValue: discountValue ? parseFloat(discountValue) : 0,
         subtotalAmount: subtotalAmount,
@@ -634,6 +644,7 @@ const SalePage = () => {
       setCustomerName('');
       setCustomerPhone('');
       setSelectedPaymentMethod('');
+      setSelectedBankIds([]);
       setDiscountType('');
       setDiscountValue('');
       setSuccess('Sale completed successfully!');
@@ -980,6 +991,25 @@ const SalePage = () => {
                           <option value="pos">POS Terminal</option>
                         </select>
                       </div>
+
+                      {selectedPaymentMethod === 'bank_transfer' && (
+                        <div className="form-group-enhanced bank-picker">
+                          <label className="form-label-enhanced">Pay into which account? *</label>
+                          {bankAccounts.length === 0 && <p className="bank-picker-empty">No bank accounts are set up yet. Add them in Settings.</p>}
+                          {bankAccounts.map((a) => (
+                            <label key={a.id} className={`bank-option${selectedBankIds.includes(a.id) ? ' on' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={selectedBankIds.includes(a.id)}
+                                onChange={() => setSelectedBankIds((cur) => (cur.includes(a.id) ? cur.filter((x) => x !== a.id) : [...cur, a.id]))}
+                              />
+                              <span className="bank-option-name">{a.bankName}</span>
+                              <span className="bank-option-number">{a.accountNumber}</span>
+                            </label>
+                          ))}
+                          <small className="bank-picker-help">Only the accounts you tick are printed on the receipt.</small>
+                        </div>
+                      )}
 
                       <div className="form-group-enhanced">
                         <label className="form-label-enhanced">

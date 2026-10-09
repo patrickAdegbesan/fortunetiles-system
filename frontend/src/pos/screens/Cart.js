@@ -16,11 +16,12 @@ const PAYMENTS = [
 
 export default function Cart() {
   const cart = useCart();
-  const { locationId, location, stock, reloadStock } = useCatalog();
+  const { locationId, location, stock, reloadStock, bankAccounts } = useCatalog();
   const toast = useToast();
   const navigate = useNavigate();
   const [customer, setCustomer] = useState({ name: '', phone: '' });
   const [payment, setPayment] = useState('');
+  const [bankIds, setBankIds] = useState([]);
   const [discType, setDiscType] = useState('');
   const [discValue, setDiscValue] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,6 +40,7 @@ export default function Cart() {
   const charge = async () => {
     setError('');
     if (!payment) { setError('Choose how the customer is paying.'); return; }
+    if (payment === 'bank_transfer' && bankAccounts.length > 0 && bankIds.length === 0) { setError('Choose the bank account the customer will pay into.'); return; }
     setBusy(true);
     try {
       const result = await createSale({
@@ -46,6 +48,7 @@ export default function Cart() {
         customerName: customer.name.trim() || 'Walk-in Customer',
         customerPhone: customer.phone.trim(),
         paymentMethod: payment,
+        bankAccountIds: payment === 'bank_transfer' ? bankIds : [],
         discountType: discType || null,
         discountValue: dv,
         subtotalAmount: subtotal,
@@ -112,8 +115,8 @@ export default function Cart() {
   const footer = (
     <>
       {error && <div className="pos-field-error" role="alert" style={{ marginBottom: 6 }}>{error}</div>}
-      <Button kind="primary" block busy={busy} onClick={charge} disabled={!payment}>
-        {payment ? `Charge ${money(total)}` : 'Choose a payment method'}
+      <Button kind="primary" block busy={busy} onClick={charge} disabled={!payment || (payment === 'bank_transfer' && bankAccounts.length > 0 && bankIds.length === 0)}>
+        {!payment ? 'Choose a payment method' : (payment === 'bank_transfer' && bankAccounts.length > 0 && bankIds.length === 0) ? 'Choose the bank account' : `Charge ${money(total)}`}
       </Button>
     </>
   );
@@ -166,6 +169,24 @@ export default function Cart() {
         <h2>Payment</h2>
         <Chips options={PAYMENTS} value={payment} onChange={setPayment} />
       </Card>
+
+      {payment === 'bank_transfer' && (
+        <Card>
+          <h2>Pay into which account?</h2>
+          {bankAccounts.length === 0 && <div className="pos-row-sub">No bank accounts yet. The owner adds them in More, Bank accounts.</div>}
+          {bankAccounts.map((a) => {
+            const on = bankIds.includes(a.id);
+            return (
+              <button type="button" key={a.id} className={`pos-bank${on ? ' on' : ''}`} aria-pressed={on}
+                onClick={() => setBankIds((cur) => (cur.includes(a.id) ? cur.filter((x) => x !== a.id) : [...cur, a.id]))}>
+                <span className="pos-bank-check" aria-hidden="true">{on ? <FaCheck /> : null}</span>
+                <span className="pos-bank-main"><strong>{a.bankName}</strong><small>{a.accountNumber}{a.accountName ? ` · ${a.accountName}` : ''}</small></span>
+              </button>
+            );
+          })}
+          <div className="pos-row-sub" style={{ marginTop: 6 }}>Only the accounts you choose are printed on the receipt.</div>
+        </Card>
+      )}
 
       <Card>
         <h2>Customer (optional)</h2>

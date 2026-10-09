@@ -29,6 +29,7 @@ const TABLES = [
   { name: 'product_types', rank: 0, mode: 'lww' },
   { name: 'categories', rank: 0, mode: 'lww', naturalKey: 'name' },
   { name: 'global_attributes', rank: 0, mode: 'lww', naturalKey: 'name' },
+  { name: 'bank_accounts', rank: 0, mode: 'lww' },
   { name: 'users', rank: 1, mode: 'lww' },
   { name: 'products', rank: 1, mode: 'lww' },
   { name: 'sales', rank: 2, mode: 'append' },

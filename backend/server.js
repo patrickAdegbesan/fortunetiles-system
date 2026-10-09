@@ -20,6 +20,7 @@ process.env.JWT_SECRET = loadJwtSecret();
 
 const { Location, Category } = require('./models');
 const { ensureSchemaUpdates } = require('./utils/schemaUpdates');
+const { ensureDefaultBankAccounts } = require('./utils/bankAccounts');
 const { ensureDefaultAdmin } = require('./bootstrap');
 const { securityHeaders } = require('./middleware/securityHeaders');
 const WebSocketService = require('./services/WebSocketService');
@@ -58,6 +59,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/sync', require('./routes/sync'));
+app.use('/api/bank-accounts', require('./routes/bankAccounts'));
 app.use('/api', (req, res) => res.status(404).json({ message: 'Route not found' }));
 
 // The React app is built with homepage "/inventory"
@@ -82,6 +84,7 @@ async function initializeDatabase() {
   await testConnection();
   await sequelize.sync();
   await ensureSchemaUpdates(sequelize);
+  await ensureDefaultBankAccounts(sequelize);
 
   if ((await Location.count()) === 0) {
     await Location.create({ name: 'Main Warehouse', address: 'Default warehouse location' });

@@ -60,6 +60,21 @@ const Sale = sequelize.define('Sale', {
       isIn: [['cash', 'bank_transfer', 'pos', 'card']]
     }
   },
+  // The bank account(s) the customer was told to pay into (only for bank transfers), copied at the time of the sale so
+  // the receipt stays the same even if the account list changes later.
+  bankDetails: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'bank_details',
+    get() {
+      const raw = this.getDataValue('bankDetails');
+      if (!raw) return [];
+      try { return JSON.parse(raw); } catch (_) { return []; }
+    },
+    set(value) {
+      this.setDataValue('bankDetails', value && value.length ? JSON.stringify(value) : null);
+    },
+  },
   discountType: {
     type: DataTypes.ENUM('amount', 'percentage'),
     allowNull: true,

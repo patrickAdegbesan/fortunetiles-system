@@ -37,3 +37,19 @@
 
 .sync-meta { font-size: 13px; }
 .sync-warning .sync-btn { margin: 4px 8px 4px 0; }
+
+/* bank accounts card */
+.bank-list { display: grid; gap: 8px; margin: 10px 0 14px; }
+.bank-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #e2e5eb; border-radius: 8px; background: #fafbfc; }
+.bank-row.off { opacity: .6; }
+.bank-row-main { min-width: 0; }
+.bank-num { color: #475467; margin-left: 6px; font-variant-numeric: tabular-nums; }
+.bank-row-sub { font-size: 12.5px; color: #667085; }
+.bank-row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.bank-row-actions .sync-btn { height: 30px; padding: 0 12px; font-size: 13px; }
+.bank-form { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px; align-items: end; margin-top: 4px; }
+.bank-form .form-group { margin: 0; }
+.bank-form label { display: block; font-size: 13px; font-weight: 600; color: #667085; margin-bottom: 4px; }
+.bank-form input { width: 100%; height: 36px; padding: 0 10px; border: 1px solid #cdd2db; border-radius: 6px; font-size: 14px; }
+.bank-form-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+@media (max-width: 800px) { .bank-form { grid-template-columns: 1fr; } }

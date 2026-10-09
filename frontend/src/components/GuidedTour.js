@@ -16,6 +16,7 @@ const DEMO_SALE = {
   customerName: 'Ada Okafor',
   customerPhone: '0801 234 5678',
   paymentMethod: 'bank_transfer',
+  bankDetails: [{ bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: 'Fortune et Fever Nig LTD' }],
   discountType: 'percentage',
   discountValue: 10,
   subtotalAmount: 52500,

@@ -81,11 +81,19 @@ export async function buildReceiptItems(sale, { withLogo = true } = {}) {
     if (ret.reason) items.push({ type: 'text', text: `Reason: ${ret.reason}`, size: 'small' });
   });
 
-  items.push(rule);
-  items.push({ type: 'text', text: 'BANK DETAILS', bold: true, size: 'small' });
-  items.push({ type: 'text', text: 'Access Bank 0000000001', size: 'small' });
-  items.push({ type: 'text', text: 'Zenith Bank 0000000003', size: 'small' });
-  items.push({ type: 'text', text: 'Fortune et Fever Nig LTD', size: 'small' });
+  if (sale.paymentMethod === 'bank_transfer') {
+    // Receipts made before accounts could be chosen keep the two they always showed.
+    const banks = Array.isArray(sale.bankDetails) && sale.bankDetails.length ? sale.bankDetails : [
+      { bankName: 'Access Bank', accountNumber: '0000000001', accountName: 'Fortune et Fever Nig LTD' },
+      { bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: 'Fortune et Fever Nig LTD' },
+    ];
+    items.push(rule);
+    items.push({ type: 'text', text: 'BANK DETAILS', bold: true, size: 'small' });
+    banks.forEach((b) => {
+      items.push({ type: 'text', text: `${b.bankName} ${b.accountNumber}`, size: 'small' });
+      if (b.accountName) items.push({ type: 'text', text: b.accountName, size: 'small' });
+    });
+  }
   items.push(rule);
   items.push({ type: 'text', text: 'Returns within 7 days with this receipt. No refund after payment, exchange only.', size: 'small', align: 'center' });
   items.push({ type: 'space', px: 10 });

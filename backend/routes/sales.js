@@ -1,7 +1,7 @@
 const express = require('express');
 const { roundQty, roundMoney } = require('../utils/units');
 const { Op } = require('sequelize');
-const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog } = require('../models');
+const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog, BankAccount } = require('../models');
 const { sequelize } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -229,6 +229,19 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
+    // For a bank transfer the cashier chooses the account(s) the customer pays into; a copy of their details is kept on the sale.
+    const paymentMethod = req.body.paymentMethod || 'cash';
+    let bankDetails = [];
+    if (paymentMethod === 'bank_transfer' && Array.isArray(req.body.bankAccountIds) && req.body.bankAccountIds.length) {
+      const ids = req.body.bankAccountIds.map(Number).filter(Number.isInteger);
+      const accounts = await BankAccount.findAll({ where: { id: ids }, order: [['sortOrder', 'ASC'], ['id', 'ASC']], transaction });
+      if (!accounts.length) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Validation failed', errors: [{ field: 'bankAccountIds', message: 'The chosen bank account was not found' }] });
+      }
+      bankDetails = accounts.map((a) => ({ bankName: a.bankName, accountNumber: a.accountNumber, accountName: a.accountName || '' }));
+    }
+
     // Create sale
     const sale = await Sale.create({
       customerName,
@@ -239,7 +252,8 @@ router.post('/', authenticateToken, async (req, res) => {
       totalAmount,
       locationId,
       userId,
-      paymentMethod: req.body.paymentMethod || 'cash'
+      paymentMethod,
+      bankDetails
     }, { transaction });
 
     // Create sale items and update inventory

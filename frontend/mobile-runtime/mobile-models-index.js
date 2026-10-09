@@ -3,6 +3,7 @@
 const { sequelize } = require('./mobile-database');
 
 const models = {
+  BankAccount: require('../../backend/models/BankAccount'),
   Category: require('../../backend/models/Category'),
   GlobalAttribute: require('../../backend/models/GlobalAttribute'),
   Inventory: require('../../backend/models/Inventory'),

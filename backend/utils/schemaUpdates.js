@@ -7,6 +7,7 @@ const NEW_COLUMNS = [
   ['products', 'pack_unit', 'VARCHAR(32)'],
   ['sale_items', 'sold_quantity', 'DECIMAL(12,4)'],
   ['sale_items', 'sold_unit', 'VARCHAR(32)'],
+  ['sales', 'bank_details', 'TEXT'],
 ];
 
 async function ensureSchemaUpdates(sequelize) {

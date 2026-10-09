@@ -2,10 +2,12 @@
 const bcrypt = require('bcryptjs');
 const defaults = require('../../backend/config/defaultAdmin.json');
 const { ensureSchemaUpdates } = require('../../backend/utils/schemaUpdates');
+const { ensureDefaultBankAccounts } = require('../../backend/utils/bankAccounts');
 
 // Bump when the schema changes. Tables that already exist are never altered by sync, so changes to them need a
-// migration below (2: users.username; 3: products.pack_size/pack_unit, sale_items.sold_quantity/sold_unit).
-const SCHEMA_VERSION = 3;
+// migration below (2: users.username; 3: products.pack_size/pack_unit, sale_items.sold_quantity/sold_unit;
+// 4: sales.bank_details and the bank_accounts table with its default accounts).
+const SCHEMA_VERSION = 4;
 
 function randomPassword() {
   const bytes = new Uint8Array(9);
@@ -38,6 +40,7 @@ async function initLocalBackend(options = {}) {
 
   await sequelize.sync();
   await ensureSchemaUpdates(sequelize);
+  await ensureDefaultBankAccounts(sequelize);
   lap('sync');
 
   if ((await Location.count()) === 0) {

@@ -9,7 +9,7 @@ import Cart from './screens/Cart';
 import { ItemsList, ItemDetail, ItemForm, AdjustStock } from './screens/Items';
 import { OrdersList, OrderDetail, ReturnForm } from './screens/Orders';
 import Reports from './screens/Reports';
-import { MoreMenu, LocationsScreen, CategoriesScreen, UsersScreen, PrinterScreen, PinScreen, SyncScreen } from './screens/More';
+import { MoreMenu, LocationsScreen, CategoriesScreen, UsersScreen, PrinterScreen, PinScreen, SyncScreen, BankAccountsScreen } from './screens/More';
 import './pos.css';
 
 const TABS = [
@@ -46,6 +46,7 @@ function Shell() {
           <Route path="/more/printer" element={<PrinterScreen />} />
           <Route path="/more/pin" element={<PinScreen />} />
           <Route path="/more/sync" element={<SyncScreen />} />
+          <Route path="/more/banks" element={<BankAccountsScreen />} />
           <Route path="*" element={<Navigate to="/sell" replace />} />
         </Routes>
       </div>

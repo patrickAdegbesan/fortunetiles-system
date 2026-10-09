@@ -281,6 +281,49 @@ function check(name, cond, extra) {
   r = await call('POST', '/users', { firstName: 'Bad', lastName: 'Name', username: 'a b', password: 'abc123', role: 'staff' });
   check('invalid username -> 400 (not 500)', r.status === 400, r);
 
+  // ---- bank accounts: listed at checkout, chosen per sale, copied onto the receipt
+  r = await call('GET', '/bank-accounts');
+  check('the five accounts from the shop notice are there from the start', r.status === 200 && r.data.bankAccounts.length === 5 && r.data.bankAccounts[0].bankName === 'Access Bank' && r.data.bankAccounts.some((a) => a.accountNumber === '0000000005'), r.data);
+  const banks = r.data.bankAccounts;
+  r = await call('POST', '/bank-accounts', { bankName: 'UBA', accountNumber: '2012345678', accountName: 'Fortune et Fever Nig LTD' });
+  check('an account can be added', r.status === 201 && r.data.bankAccount.id, r);
+  const uba = r.data.bankAccount;
+  r = await call('PUT', `/bank-accounts/${uba.id}`, { accountName: 'Fortune et Feveur Nig LTD' });
+  check('an account can be edited', r.status === 200 && r.data.bankAccount.accountName === 'Fortune et Feveur Nig LTD', r);
+  r = await call('PUT', `/bank-accounts/${uba.id}`, { isActive: false });
+  r = await call('GET', '/bank-accounts');
+  check('a hidden account is not offered at checkout', !r.data.bankAccounts.some((a) => a.id === uba.id), r.data.bankAccounts.length);
+  r = await call('GET', '/bank-accounts?all=1');
+  check('managers can still see hidden accounts', r.data.bankAccounts.some((a) => a.id === uba.id), r.data.bankAccounts.length);
+  r = await call('POST', '/bank-accounts', { bankName: '', accountNumber: '1' });
+  check('an account needs a bank name -> 400', r.status === 400, r);
+  r = await call('POST', '/sales', { locationId: loc.id, customerName: 'Transfer buyer', paymentMethod: 'bank_transfer', subtotalAmount: 5250, bankAccountIds: [banks[2].id, banks[0].id],
+    items: [{ productId: tile.id, quantity: 1, unitPrice: 5250 }] });
+  check('a bank transfer sale with chosen accounts works', r.status === 201 || r.status === 200, r);
+  const transferSale = r.data.sale;
+  check('the sale returns the chosen accounts in list order (Access, then Zenith)', Array.isArray(transferSale.bankDetails) && transferSale.bankDetails.length === 2 && transferSale.bankDetails[0].bankName === 'Access Bank' && transferSale.bankDetails[1].accountNumber === '0000000003', transferSale.bankDetails);
+  r = await call('GET', `/orders/${transferSale.id}`);
+  check('the order carries the bank details for the receipt', (r.data.bankDetails || []).length === 2 && r.data.bankDetails[1].bankName === 'Zenith Bank', r.data.bankDetails);
+  r = await call('PUT', `/bank-accounts/${banks[0].id}`, { accountNumber: '0000000000', version: 0 });
+  r = await call('GET', `/orders/${transferSale.id}`);
+  check('later changes to an account do not alter an old receipt', r.data.bankDetails[0].accountNumber === '0000000001', r.data.bankDetails);
+  await call('PUT', `/bank-accounts/${banks[0].id}`, { accountNumber: '0000000001' });
+  r = await call('POST', '/sales', { locationId: loc.id, customerName: 'Cash buyer', paymentMethod: 'cash', subtotalAmount: 5250, bankAccountIds: [banks[0].id], items: [{ productId: tile.id, quantity: 1, unitPrice: 5250 }] });
+  check('a cash sale keeps no bank details', (r.status === 201 || r.status === 200) && (r.data.sale.bankDetails || []).length === 0, r.data.sale && r.data.sale.bankDetails);
+  r = await call('POST', '/sales', { locationId: loc.id, customerName: 'Bad account', paymentMethod: 'bank_transfer', subtotalAmount: 5250, bankAccountIds: [99999], items: [{ productId: tile.id, quantity: 1, unitPrice: 5250 }] });
+  check('an unknown account is refused', r.status === 400, r);
+  const adminTokenBank = token;
+  token = '';
+  const staffLogin = await call('POST', '/auth/login', { username: 'simple', password: 'abc123' });
+  token = staffLogin.data.token;
+  r = await call('POST', '/bank-accounts', { bankName: 'Sneaky', accountNumber: '1' });
+  check('staff cannot add accounts -> 403', r.status === 403, r);
+  r = await call('GET', '/bank-accounts');
+  check('staff can see the accounts to choose from at checkout', r.status === 200 && r.data.bankAccounts.length === 5, r);
+  token = adminTokenBank;
+  r = await call('DELETE', `/bank-accounts/${uba.id}`);
+  check('an account can be removed', r.status === 200, r);
+
   // ---- built-in admin protection
   r = await call('POST', '/users', { firstName: 'Second', lastName: 'Owner', username: 'owner2', email: 'owner2@shop.com', password: 'Owner2!Passw0rd', role: 'owner' });
   check('create second owner', r.status === 201, r);

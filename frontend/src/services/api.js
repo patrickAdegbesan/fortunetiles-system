@@ -626,3 +626,10 @@ export const fetchSyncStatus = async () => (await API.get('/sync/status')).data;
 export const runSyncNow = async () => (await API.post('/sync/run')).data;
 export const chooseSync = async (choice) => (await API.post('/sync/choose', { choice })).data;
 export const resyncAll = async () => (await API.post('/sync/resync')).data;
+
+// Bank accounts shown at checkout for transfers
+const bankError = (error) => error.response?.data || { message: 'Bank account request failed' };
+export const fetchBankAccounts = async (all = false) => (await API.get('/bank-accounts', { params: all ? { all: 1 } : {} })).data;
+export const createBankAccount = async (payload) => { try { return (await API.post('/bank-accounts', payload)).data; } catch (e) { throw bankError(e); } };
+export const updateBankAccount = async (id, payload) => { try { return (await API.put(`/bank-accounts/${id}`, payload)).data; } catch (e) { throw bankError(e); } };
+export const deleteBankAccount = async (id) => { try { return (await API.delete(`/bank-accounts/${id}`)).data; } catch (e) { throw bankError(e); } };

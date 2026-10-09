@@ -303,16 +303,23 @@
 
 .signature-section {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
-  margin: 30px 0;
+  gap: 60px;
+  margin: 34px 0 18px;
 }
 
 .signature-box {
+  flex: 1;
   text-align: center;
 }
 
 .signature-box .line {
+  border-top: 1px solid #333;
+  height: 0;
   margin-bottom: 5px;
+  overflow: hidden;
+  color: transparent;
 }
 
 .thank-you {

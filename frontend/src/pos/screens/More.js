@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaMapMarkerAlt, FaTags, FaUsers, FaPrint, FaKey, FaCloud, FaSignOutAlt, FaChevronRight, FaPlus, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaTags, FaUsers, FaPrint, FaKey, FaCloud, FaUniversity, FaSignOutAlt, FaChevronRight, FaPlus, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { Screen, Card, Field, Button, Chips, Empty, Loading, ErrorNote, Badge, ConfirmDialog, timeAgo } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCatalog, useToast } from '../store';
@@ -9,6 +9,7 @@ import {
   createCategory, deleteCategory,
   fetchUsers, createUser, updateUser, resetUserPassword, deactivateUser, activateUser,
   setAdminPin, fetchSyncStatus, runSyncNow, chooseSync, resyncAll,
+  fetchBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
 } from '../../services/api';
 import { printTestSlip, printerStatus, isPosTerminal } from '../../utils/posPrinter';
 
@@ -24,6 +25,7 @@ export function MoreMenu() {
     { to: '/more/categories', icon: <FaTags aria-hidden="true" />, label: 'Categories', show: canManage(user) },
     { to: '/more/users', icon: <FaUsers aria-hidden="true" />, label: 'Users', show: isOwner(user) },
     { to: '/more/printer', icon: <FaPrint aria-hidden="true" />, label: 'Receipt printer', show: true },
+    { to: '/more/banks', icon: <FaUniversity aria-hidden="true" />, label: 'Bank accounts', show: canManage(user) },
     { to: '/more/pin', icon: <FaKey aria-hidden="true" />, label: 'Price-edit PIN', show: canManage(user) },
     { to: '/more/sync', icon: <FaCloud aria-hidden="true" />, label: 'Cloud sync', show: true },
   ].filter((i) => i.show);
@@ -331,6 +333,75 @@ export function SyncScreen() {
           message={confirm === 'use-cloud' ? 'Its products, sales and users are replaced by what is in the cloud. This cannot be undone.' : 'Everything in the cloud is erased and replaced by this terminal\'s data. Reset other devices afterwards. This cannot be undone.'}
           confirmLabel="Yes, replace" onCancel={() => setConfirm(null)} onConfirm={() => act(() => chooseSync(confirm), 'Done.')} />
       )}
+    </Screen>
+  );
+}
+
+/* ---------------------------------------------------------- bank accounts */
+export function BankAccountsScreen() {
+  const toast = useToast();
+  const [rows, setRows] = useState(null);
+  const [edit, setEdit] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(null);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    try { setRows((await fetchBankAccounts(true)).bankAccounts || []); } catch (e) { setError((e && e.message) || 'Could not load the accounts'); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const open = (a) => { setErrors({}); setEdit(a ? { id: a.id, bankName: a.bankName, accountNumber: a.accountNumber, accountName: a.accountName || '', isActive: a.isActive } : { bankName: '', accountNumber: '', accountName: '', isActive: true }); };
+
+  const save = async () => {
+    const err = {};
+    if (!edit.bankName.trim()) err.bankName = 'Enter the bank';
+    if (!/^\d{6,20}$/.test(edit.accountNumber.trim())) err.accountNumber = 'Enter the account number (digits only)';
+    setErrors(err);
+    if (Object.keys(err).length) return;
+    setBusy(true);
+    try {
+      const body = { bankName: edit.bankName.trim(), accountNumber: edit.accountNumber.trim(), accountName: edit.accountName.trim(), isActive: edit.isActive };
+      if (edit.id) await updateBankAccount(edit.id, body); else await createBankAccount(body);
+      toast('Account saved'); setEdit(null); load();
+    } catch (e) { toast((e && e.message) || 'Could not save', 'error'); }
+    finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    const a = confirm; setConfirm(null);
+    try { await deleteBankAccount(a.id); toast('Account removed'); setEdit(null); load(); }
+    catch (e) { toast((e && e.message) || 'Could not remove', 'error'); }
+  };
+
+  if (edit) {
+    return (
+      <Screen title={edit.id ? 'Edit account' : 'New account'} back={false}
+        right={<button type="button" className="pos-icon-btn" style={{ width: 'auto', padding: '0 10px', fontSize: 14 }} onClick={() => setEdit(null)}>Cancel</button>}
+        footer={<Button kind="primary" block busy={busy} onClick={save}>Save account</Button>}>
+        <Field label="Bank" error={errors.bankName}><input value={edit.bankName} onChange={(e) => setEdit({ ...edit, bankName: e.target.value })} className={errors.bankName ? 'error' : ''} placeholder="e.g. Zenith Bank" /></Field>
+        <Field label="Account number" error={errors.accountNumber}><input inputMode="numeric" value={edit.accountNumber} onChange={(e) => setEdit({ ...edit, accountNumber: e.target.value.replace(/\D/g, '') })} className={errors.accountNumber ? 'error' : ''} /></Field>
+        <Field label="Account name"><input value={edit.accountName} onChange={(e) => setEdit({ ...edit, accountName: e.target.value })} placeholder="Name on the account" /></Field>
+        <Field label="Show at checkout"><Chips options={[{ value: true, label: 'Shown' }, { value: false, label: 'Hidden' }]} value={edit.isActive} onChange={(v) => setEdit({ ...edit, isActive: v })} /></Field>
+        {edit.id && <Button kind="danger" block onClick={() => setConfirm(edit)}>Remove account</Button>}
+        {confirm && <ConfirmDialog danger title="Remove this account?" message="Receipts already printed are not affected." confirmLabel="Remove" onCancel={() => setConfirm(null)} onConfirm={remove} />}
+      </Screen>
+    );
+  }
+  return (
+    <Screen title="Bank accounts" back="/more" right={<button type="button" className="pos-icon-btn" aria-label="Add account" onClick={() => open(null)}><FaPlus aria-hidden="true" /></button>} flush>
+      {error && <ErrorNote message={error} />}
+      {!rows && !error && <Loading />}
+      {rows && rows.length === 0 && <Empty title="No accounts yet" hint="Tap + to add the first one." />}
+      <div className="pos-list">
+        {(rows || []).map((a) => (
+          <button type="button" className="pos-row" key={a.id} onClick={() => open(a)}>
+            <div className="pos-row-main"><div className="pos-row-title">{a.bankName} · {a.accountNumber}</div><div className="pos-row-sub">{a.accountName || 'No account name yet'}</div></div>
+            <div className="pos-row-end">{!a.isActive && <Badge tone="grey">Hidden</Badge>}</div>
+          </button>
+        ))}
+      </div>
     </Screen>
   );
 }

@@ -277,6 +277,32 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               color: #1a3a52;
             }
             
+            .signature-section {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+              gap: 60px;
+              margin: 34px 0 18px;
+            }
+
+            .signature-box {
+              flex: 1;
+              text-align: center;
+            }
+
+            .signature-box .line {
+              border-top: 1px solid #333;
+              height: 0;
+              margin-bottom: 5px;
+              overflow: hidden;
+              color: transparent;
+            }
+
+            .signature-box .label {
+              font-size: 10px;
+              color: #333;
+            }
+
             .payment-info {
               display: grid;
               grid-template-columns: 1fr 1fr;
@@ -410,6 +436,15 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const cashier = receiptData.user || receiptData.cashier;
   const location = receiptData.location;
   const returns = receiptData.returns || [];
+  // Bank details are shown only for transfers, and only the accounts the cashier chose. Receipts made before this
+  // existed keep the two accounts they always showed.
+  const LEGACY_BANKS = [
+    { bankName: 'Access Bank', accountNumber: '0000000001', accountName: 'Fortune et Fever Nig LTD' },
+    { bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: 'Fortune et Fever Nig LTD' },
+  ];
+  const bankDetails = paymentMethod === 'bank_transfer'
+    ? (Array.isArray(receiptData.bankDetails) && receiptData.bankDetails.length ? receiptData.bankDetails : LEGACY_BANKS)
+    : [];
 
   // Calculate discount amount for display
   const discountAmount = (() => {
@@ -622,18 +657,20 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
               </div>
             </div>
 
-            <div className="bank-details">
-              <h3>Bank Details</h3>
-              <div className="bank-info">
-                <p><strong>Access Bank</strong></p>
-                <p>Account No: 0000000001</p>
-                <p>Account Name: Fortune et Fever Nig LTD</p>
-                
-                <p style={{ marginTop: '10px' }}><strong>Zenith Bank</strong></p>
-                <p>Account No: 0000000003</p>
-                <p>Account Name: Fortune et Fever Nig LTD</p>
+            {bankDetails.length > 0 && (
+              <div className="bank-details">
+                <h3>Bank Details</h3>
+                <div className="bank-info">
+                  {bankDetails.map((b, i) => (
+                    <div key={`${b.bankName}-${b.accountNumber}`} style={i ? { marginTop: '10px' } : undefined}>
+                      <p><strong>{b.bankName}</strong></p>
+                      <p>Account No: {b.accountNumber}</p>
+                      {b.accountName ? <p>Account Name: {b.accountName}</p> : null}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Terms and Conditions */}
