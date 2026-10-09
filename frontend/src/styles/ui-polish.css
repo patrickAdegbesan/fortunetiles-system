@@ -1,0 +1,293 @@
+/* ==========================================================================
+   UI polish - loaded last so it wins over the older, overlapping page styles.
+   Fixes: invisible input borders, buttons that read as plain text, and hover
+   states that made text unreadable (white text on a white background).
+   ========================================================================== */
+:root {
+  --ft-ink: #1f2937;
+  --ft-muted: #5b6678;
+  --ft-border: #7c8ba1;          /* visible (>= 3:1) against white */
+  --ft-navy: #1a2d66;
+  --ft-navy-dark: #12204d;
+  --ft-tint: #eaf0fb;            /* light hover background */
+  --ft-red: #b91c1c;
+  --ft-green: #15803d;
+  --ft-amber: #92400e;
+}
+
+/* ---------- Text fields, selects, search boxes: always a visible border ---------- */
+body .enhanced-search-input,
+body .search-input,
+body .enhanced-select,
+body .enhanced-location-select,
+body .sort-select,
+body .filter-select,
+body .discount-type-select,
+body .discount-value-input,
+body .enhanced-input,
+body .markup-input,
+body .date-input,
+body .settings-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body .settings-page select,
+body .settings-page textarea {
+  background: #fff;
+  color: var(--ft-ink);
+  border: 1.5px solid var(--ft-border);
+}
+
+body .enhanced-search-input::placeholder,
+body .search-input::placeholder,
+body .enhanced-input::placeholder,
+body .settings-page input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+body .enhanced-search-input:hover,
+body .search-input:hover,
+body .enhanced-select:hover,
+body .enhanced-location-select:hover,
+body .sort-select:hover,
+body .filter-select:hover,
+body .discount-type-select:hover,
+body .enhanced-input:hover,
+body .date-input:hover {
+  border-color: var(--ft-navy);
+}
+
+body .enhanced-search-input:focus,
+body .search-input:focus,
+body .enhanced-select:focus,
+body .enhanced-location-select:focus,
+body .sort-select:focus,
+body .filter-select:focus,
+body .discount-type-select:focus,
+body .discount-value-input:focus,
+body .enhanced-input:focus,
+body .markup-input:focus,
+body .date-input:focus,
+body .settings-page input:focus,
+body .settings-page select:focus,
+body .settings-page textarea:focus {
+  outline: none;
+  border-color: var(--ft-navy);
+  box-shadow: 0 0 0 3px rgba(26, 45, 102, 0.2);
+}
+
+/* Fields marked invalid by a form stay clearly red */
+body input.error,
+body select.error,
+body textarea.error {
+  border-color: var(--ft-red);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
+}
+
+/* ---------- Buttons that need to look like buttons ---------- */
+body .action-btn.secondary-action,
+body .refresh-btn,
+body .quick-action-btn,
+body .sort-order-btn,
+body .action-btn.reprint-btn,
+body .action-btn.return-btn,
+body .qty-btn.decrease {
+  background: #fff;
+  color: var(--ft-navy);
+  border: 1.5px solid var(--ft-navy);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+body .action-btn.secondary-action:hover,
+body .refresh-btn:hover,
+body .quick-action-btn:hover,
+body .sort-order-btn:hover,
+body .action-btn.reprint-btn:hover,
+body .action-btn.return-btn:hover,
+body .qty-btn.decrease:hover {
+  background: var(--ft-tint);
+  color: var(--ft-navy-dark);
+  border-color: var(--ft-navy-dark);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+body .action-btn.primary-action {
+  background: var(--ft-navy);
+  color: #fff;
+  border: 1.5px solid var(--ft-navy);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+body .action-btn.primary-action:hover {
+  background: var(--ft-navy-dark);
+  color: #fff;
+  border-color: var(--ft-navy-dark);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.3);
+}
+
+/* Grid / List / Table toggles: clear inactive, hover and selected states */
+body .view-btn {
+  background: #fff;
+  color: var(--ft-ink);
+  border: 1.5px solid var(--ft-border);
+  font-weight: 600;
+  cursor: pointer;
+  transform: none;
+}
+body .view-btn:hover:not(.active) {
+  background: var(--ft-tint);
+  color: var(--ft-navy);
+  border-color: var(--ft-navy);
+  transform: none;
+}
+body .view-btn.active,
+body .view-btn.active:hover {
+  background: var(--ft-navy);
+  color: #fff;
+  border-color: var(--ft-navy);
+}
+
+/* Tabs (Settings, Transactions) */
+body .tab-button,
+body .tab {
+  background: #f1f5f9;
+  color: var(--ft-ink);
+  border: 1.5px solid #94a3b8;
+  cursor: pointer;
+}
+body .tab-button:hover:not(.active),
+body .tab:hover:not(.active) {
+  background: var(--ft-tint);
+  color: var(--ft-navy);
+  border-color: var(--ft-navy);
+}
+body .tab-button.active,
+body .tab-button.active:hover,
+body .tab.active,
+body .tab.active:hover {
+  background: var(--ft-navy);
+  color: #fff;
+  border-color: var(--ft-navy);
+}
+
+/* ---------- Hover colors that were unreadable ---------- */
+body .edit-btn:hover {
+  background: linear-gradient(135deg, var(--ft-navy-dark), var(--ft-navy));
+  color: #fff;
+}
+body .delete-btn:hover {
+  background: linear-gradient(135deg, #991b1b, var(--ft-red));
+  color: #fff;
+}
+
+body .action-btn.edit {
+  color: var(--ft-amber);
+  border-color: #b45309;
+}
+body .action-btn.edit:hover {
+  background: #b45309;
+  color: #fff;
+  border-color: #b45309;
+}
+body .action-btn.activate {
+  color: var(--ft-green);
+  border-color: var(--ft-green);
+}
+body .action-btn.activate:hover {
+  background: var(--ft-green);
+  color: #fff;
+}
+body .action-button.view-button,
+body .action-button.view-button:hover {
+  background: var(--ft-green);
+  color: #fff;
+}
+body .action-button.view-button:hover {
+  background: #166534;
+}
+
+/* ---------- Keyboard focus: always visible ---------- */
+body button:focus-visible,
+body a:focus-visible,
+body [role="button"]:focus-visible {
+  outline: 3px solid rgba(26, 45, 102, 0.55);
+  outline-offset: 2px;
+}
+
+/* ---------- Icons that replaced emojis ---------- */
+.ui-icon { margin-right: 0.45em; vertical-align: -0.15em; flex-shrink: 0; }
+.ui-icon.spin { animation: ui-spin 1s linear infinite; }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+.perm-yes { color: var(--ft-green); }
+.perm-no { color: var(--ft-red); }
+.error-icon { margin-right: 0.5em; vertical-align: -0.15em; }
+.no-returns-icon { font-size: 2.5rem; color: var(--ft-muted); margin-bottom: 0.5rem; }
+.receipt-header-icons .icon svg, .icon svg { vertical-align: -0.15em; }
+
+/* ---------- Product Management toolbar alignment ---------- */
+body .filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+body .filter-controls .enhanced-select,
+body .filter-controls .enhanced-location-select {
+  width: auto;
+  min-width: 180px;
+  height: 40px;
+}
+body .stock-filter-enhanced {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ft-ink);
+  cursor: pointer;
+  font-weight: 500;
+}
+body .primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+body .primary-actions .action-btn {
+  white-space: nowrap;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+body .search-container {
+  position: relative;
+}
+body .search-container .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ft-muted);
+  pointer-events: none;
+}
+body .search-container .enhanced-search-input,
+body .search-container .search-input {
+  padding-left: 40px !important;  /* room for the magnifier icon (older rules force a small padding) */
+  height: 40px;
+}
+
+/* Icons inside the buttons restyled above must follow the button's text color */
+body .action-btn.secondary-action svg,
+body .refresh-btn svg,
+body .quick-action-btn svg,
+body .sort-order-btn svg,
+body .action-btn.reprint-btn svg,
+body .action-btn.return-btn svg,
+body .qty-btn.decrease svg,
+body .view-btn svg,
+body .tab-button svg,
+body .tab svg {
+  color: inherit;
+  fill: currentColor;
+}
+body .qty-btn.decrease:disabled { opacity: 0.55; cursor: not-allowed; }

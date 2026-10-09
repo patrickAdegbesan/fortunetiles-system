@@ -807,7 +807,7 @@ const ProductsPage = () => {
             onClick={() => handleDeleteProduct(product.id, product.name)}
             title="Archive Product"
           >
-            <span>🗑️</span>
+            <FaTrash aria-hidden="true" />
           </button>
         </div>
       </td>

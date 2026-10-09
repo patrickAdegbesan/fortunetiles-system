@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { FaBan, FaCheckCircle, FaEdit, FaPlus, FaUsers } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchUsers, createUser, updateUser, resetUserPassword, deactivateUser, activateUser, fetchUserRoles, fetchLocations } from '../services/api';
 import SidebarNav from '../components/SidebarNav';
@@ -166,7 +167,7 @@ const UsersPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="users-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
           <PageHeader
-            icon="👥"
+            icon={<FaUsers />}
             title="User Management"
             subtitle="Access Denied"
           />
@@ -186,7 +187,7 @@ const UsersPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="users-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
         <PageHeader
-          icon="👥"
+          icon={<FaUsers />}
           title="User Management"
           subtitle="Manage user accounts and permissions"
           stats={[
@@ -196,7 +197,7 @@ const UsersPage = () => {
           ]}
           actions={
             <button className="primary-button" onClick={handleCreateUser}>
-              ➕ Add User
+              <FaPlus className="ui-icon" />Add User
             </button>
           }
         />
@@ -290,14 +291,14 @@ const UsersPage = () => {
                           onClick={() => handleEditUser(user)}
                           title="Edit User"
                         >
-                          ✏️
+                          <FaEdit aria-hidden="true" />
                         </button>
                         <button 
                           className={`toggle-btn-small ${user.isActive ? 'deactivate' : 'activate'}`}
                           onClick={() => handleToggleUserStatus(user.id, user.isActive, `${user.firstName} ${user.lastName}`)}
                           title={user.isActive ? 'Deactivate User' : 'Activate User'}
                         >
-                          {user.isActive ? '🚫' : '✅'}
+                          {user.isActive ? <FaBan aria-hidden="true" /> : <FaCheckCircle aria-hidden="true" />}
                         </button>
                       </div>
                     </td>

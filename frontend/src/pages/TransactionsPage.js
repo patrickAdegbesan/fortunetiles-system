@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaTimes } from 'react-icons/fa';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRotate, faReceipt, faArrowRotateLeft, faSearch, faFilter } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -426,7 +427,7 @@ const TransactionsPage = () => {
                   className="close-btn"
                   onClick={() => setProcessingReturn(null)}
                 >
-                  ✕
+                  <FaTimes aria-label="Close" />
                 </button>
               </div>
               <div className="modal-body">

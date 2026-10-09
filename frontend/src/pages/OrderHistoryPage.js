@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaBoxOpen, FaPrint, FaSyncAlt, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import SidebarNav from '../components/SidebarNav_fixed';
@@ -189,7 +190,7 @@ const OrderHistoryPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
         <div className="order-history-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
           <PageHeader
-            icon="📦"
+            icon={<FaBoxOpen />}
             title="Order History"
             subtitle="Loading..."
           />
@@ -204,7 +205,7 @@ const OrderHistoryPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="order-history-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
         <PageHeader
-          icon="📦"
+          icon={<FaBoxOpen />}
           title="Order History"
           subtitle="View and manage all orders"
           stats={[
@@ -245,7 +246,7 @@ const OrderHistoryPage = () => {
             </select>
           </div>
           <button className="refresh-btn" onClick={fetchOrders}>
-            🔄 Refresh
+            <FaSyncAlt className="ui-icon" />Refresh
           </button>
         </div>
 
@@ -340,7 +341,7 @@ const OrderHistoryPage = () => {
                             onClick={() => handleReprintReceipt(order)}
                             title="Reprint Receipt"
                           >
-                            🖨️ Receipt
+                            <FaPrint className="ui-icon" />Receipt
                           </button>
                           <button
                             className="action-btn return-btn"
@@ -380,7 +381,7 @@ const OrderHistoryPage = () => {
                   className="close-btn"
                   onClick={() => setProcessingReturn(null)}
                 >
-                  ✕
+                  <FaTimes aria-label="Close" />
                 </button>
               </div>
               <div className="modal-body">

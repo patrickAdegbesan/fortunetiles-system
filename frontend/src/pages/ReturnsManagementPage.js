@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaCheck, FaClipboardList, FaExclamationTriangle, FaFlagCheckered, FaSpinner, FaTimes, FaUndo } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
@@ -113,7 +114,7 @@ const ReturnsManagementPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="returns-management-page">
         <PageHeader
-          icon="↩️"
+          icon={<FaUndo />}
           title="Returns Management"
           subtitle="Process and track return requests"
           stats={[
@@ -125,7 +126,7 @@ const ReturnsManagementPage = () => {
 
       {error && (
         <div className="error-message">
-          <span className="error-icon">⚠️</span>
+          <FaExclamationTriangle className="error-icon" />
           {error}
         </div>
       )}
@@ -139,7 +140,7 @@ const ReturnsManagementPage = () => {
 
         {pendingReturns.length === 0 ? (
           <div className="no-returns">
-            <div className="no-returns-icon">📋</div>
+            <div className="no-returns-icon"><FaClipboardList /></div>
             <h3>No Pending Returns</h3>
             <p>All returns have been processed</p>
           </div>
@@ -195,21 +196,21 @@ const ReturnsManagementPage = () => {
                     onClick={() => handleStatusUpdate(returnItem.id, 'APPROVED')}
                     disabled={processingIds.has(returnItem.id)}
                   >
-                    {processingIds.has(returnItem.id) ? '⏳ Processing...' : '✅ Approve'}
+                    {processingIds.has(returnItem.id) ? <><FaSpinner className="ui-icon spin" />Processing...</> : <><FaCheck className="ui-icon" />Approve</>}
                   </button>
                   <button 
                     className="action-btn complete-btn"
                     onClick={() => handleStatusUpdate(returnItem.id, 'COMPLETED')}
                     disabled={processingIds.has(returnItem.id)}
                   >
-                    {processingIds.has(returnItem.id) ? '⏳ Processing...' : '🎯 Complete'}
+                    {processingIds.has(returnItem.id) ? <><FaSpinner className="ui-icon spin" />Processing...</> : <><FaFlagCheckered className="ui-icon" />Complete</>}
                   </button>
                   <button 
                     className="action-btn reject-btn"
                     onClick={() => handleStatusUpdate(returnItem.id, 'REJECTED')}
                     disabled={processingIds.has(returnItem.id)}
                   >
-                    {processingIds.has(returnItem.id) ? '⏳ Processing...' : '❌ Reject'}
+                    {processingIds.has(returnItem.id) ? <><FaSpinner className="ui-icon spin" />Processing...</> : <><FaTimes className="ui-icon" />Reject</>}
                   </button>
                 </div>
               </div>

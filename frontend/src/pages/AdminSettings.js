@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { FaLock } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
 import SidebarNav from '../components/SidebarNav';
 import PageHeader from '../components/PageHeader';
@@ -82,7 +83,7 @@ const AdminSettings = () => {
           {success && <div className="success-message">{success}</div>}
 
           <div className="admin-section">
-            <h2>🔐 Markup Access PIN</h2>
+            <h2><FaLock className="ui-icon" />Markup Access PIN</h2>
             <p>Set a 4-digit PIN that staff members will use to unlock markup editing privileges.</p>
             <form onSubmit={handleSetPin} className="pin-setup-form">
               <div className="form-group">

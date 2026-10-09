@@ -114,7 +114,7 @@ const Dashboard = () => {
       <>
         <SidebarNav />
         <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="📊 Dashboard" />
+          <TopHeader title="Dashboard" />
           <div style={{ padding: '20px' }}>
             <div className="loading-spinner">Loading dashboard...</div>
           </div>
@@ -128,7 +128,7 @@ const Dashboard = () => {
       <>
         <SidebarNav />
         <div className="dashboard-container" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
-          <TopHeader title="📊 Dashboard" />
+          <TopHeader title="Dashboard" />
           <div style={{ padding: '20px' }}>
             <div className="error-message">{error}</div>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchLocations, logInventoryChange, fetchInventory } from '../services/api';
 import '../styles/InventoryManager.css';
@@ -331,7 +332,7 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
                             ))}
                             {!item.product && (
                               <span className="attribute missing-product">
-                                ⚠️ Product data missing
+                                <FaExclamationTriangle className="ui-icon" />Product data missing
                               </span>
                             )}
                           </div>

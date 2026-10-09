@@ -263,7 +263,7 @@ const CartItem = memo(({
                 onClick={onRequestMarkupAccess}
                 title="Click to unlock markup editing"
               >
-                🔒 Unlock
+                <FaLock className="ui-icon" />Unlock
               </button>
             )}
           </div>
@@ -901,10 +901,10 @@ const SalePage = () => {
                           className="enhanced-select"
                         >
                           <option value="">Choose payment method...</option>
-                          <option value="cash">💵 Cash</option>
-                          <option value="card">💳 Card</option>
-                          <option value="bank_transfer">🏦 Bank Transfer</option>
-                          <option value="pos">📱 POS Terminal</option>
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="pos">POS Terminal</option>
                         </select>
                       </div>
 

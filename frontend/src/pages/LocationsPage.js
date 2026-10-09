@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FaBoxOpen, FaEdit, FaMapMarkerAlt, FaTrash } from 'react-icons/fa';
 import { 
   fetchLocations, 
   createLocation, 
@@ -136,7 +137,7 @@ const LocationsPage = () => {
   {/* <SidebarNav /> removed to prevent duplicate sidebar */}
       <div className="locations-page" style={{ marginLeft: '0', transition: 'margin-left 0.3s ease' }}>
         <PageHeader
-          icon="📍"
+          icon={<FaMapMarkerAlt />}
           title="Manage Locations"
           subtitle="Add and manage store locations"
           actions={
@@ -213,7 +214,7 @@ const LocationsPage = () => {
                       }
                     }}
                   >
-                    📦 View Inventory
+                    <FaBoxOpen className="ui-icon" />View Inventory
                   </button>
 
                   {/* Inventory details */}
@@ -289,7 +290,7 @@ const LocationsPage = () => {
                 </div>
                 <div className="location-actions">
                   <button onClick={() => handleEdit(location)} className="edit-btn">
-                    <span>✏️</span> Edit
+                    <FaEdit className="ui-icon" />Edit
                   </button>
                   <button
                     onClick={() => handleDelete(location.id)}
@@ -297,7 +298,7 @@ const LocationsPage = () => {
                     disabled={inventoryData[location.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0)}
                     title={inventoryData[location.id]?.some(item => parseFloat(item.quantitySqm || 0) > 0) ? 'Cannot delete location with products' : 'Delete location'}
                   >
-                    <span>🗑️</span> Delete
+                    <FaTrash className="ui-icon" />Delete
                   </button>
                 </div>
               </div>

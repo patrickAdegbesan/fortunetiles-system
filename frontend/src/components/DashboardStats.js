@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaArrowDown, FaBan, FaExclamationTriangle } from 'react-icons/fa';
 import '../styles/DashboardStats.css';
 import MoneyValue from './MoneyValue';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -116,8 +117,8 @@ const DashboardStats = ({ dashboardData, selectedLocation, selectedCategory }) =
                         {quantity.toFixed(quantity % 1 === 0 ? 0 : 1)}
                       </span>
                       <span className="stock-status">
-                        {stockStatus === 'OUT_OF_STOCK' ? '� Out' : 
-                         stockStatus === 'CRITICAL' ? '⚠️ Critical' : '📉 Low'}
+                        {stockStatus === 'OUT_OF_STOCK' ? (<><FaBan className="ui-icon" />Out</>) :
+                         stockStatus === 'CRITICAL' ? (<><FaExclamationTriangle className="ui-icon" />Critical</>) : (<><FaArrowDown className="ui-icon" />Low</>)}
                       </span>
                     </div>
                   </div>

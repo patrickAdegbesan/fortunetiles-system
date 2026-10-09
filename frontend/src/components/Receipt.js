@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaEnvelope, FaExchangeAlt, FaGlobe, FaMapMarkerAlt, FaPhone, FaPrint } from 'react-icons/fa';
 import '../styles/Receipt.css';
 
 const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
@@ -425,9 +426,9 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
       <div className="receipt-container">
         <div className="receipt-header">
           <button className="close-btn" onClick={onClose}>×</button>
-          <button className="print-btn" onClick={handlePrint}>🖨️ Print</button>
+          <button className="print-btn" onClick={handlePrint}><FaPrint className="ui-icon" />Print</button>
           {onReturn && (
-            <button className="return-btn" onClick={() => onReturn(sale)}>🔄 Return/Exchange</button>
+            <button className="return-btn" onClick={() => onReturn(sale)}><FaExchangeAlt className="ui-icon" />Return/Exchange</button>
           )}
         </div>
 
@@ -450,19 +451,19 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
             <h2>Fortune et Feveur</h2>
             <div className="company-details">
               <div className="detail">
-                <span className="icon">📍</span>
+                <span className="icon"><FaMapMarkerAlt /></span>
                 <span>Lekki-Epe Expressway, Opp Sapphire Garden Beside Danco Petrol Station, Awoyaya Lagos State</span>
               </div>
               <div className="detail">
-                <span className="icon">📞</span>
+                <span className="icon"><FaPhone /></span>
                 <span>+234 806 219 5610</span>
               </div>
               <div className="detail">
-                <span className="icon">📧</span>
+                <span className="icon"><FaEnvelope /></span>
                 <span>Fortuneetfeveur@gmail.com</span>
               </div>
               <div className="detail">
-                <span className="icon">🌐</span>
+                <span className="icon"><FaGlobe /></span>
                 <span>www.fortuneetfeveur.com</span>
               </div>
             </div>

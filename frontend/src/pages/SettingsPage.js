@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { FaLock } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
 import AdminDeleteModal from '../components/AdminDeleteModal';
 import {
@@ -947,7 +948,7 @@ const SettingsPage = () => {
               {/* PIN Setup Section - Only for Admin/Owner */}
               {isAdmin && (
                 <div className="pin-setup-section">
-                  <h3>🔐 Markup Access PIN</h3>
+                  <h3><FaLock className="ui-icon" />Markup Access PIN</h3>
                   <p>Set a 4-digit PIN that staff members will use to unlock markup editing privileges.</p>
                   <form onSubmit={handleSetPin} className="pin-setup-form">
                     <div className="form-group">

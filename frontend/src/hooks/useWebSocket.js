@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { FaCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 /**
  * WebSocket context and hooks for real-time functionality
@@ -372,15 +373,15 @@ export const WebSocketStatus = ({ className = '' }) => {
   const getStatusDisplay = () => {
     switch (connectionState) {
       case CONNECTION_STATES.CONNECTED:
-        return { text: 'Connected', color: 'text-green-600', icon: '🟢' };
+        return { text: 'Connected', color: 'text-green-600', icon: <FaCircle className="text-green-600" aria-hidden="true" /> };
       case CONNECTION_STATES.CONNECTING:
-        return { text: 'Connecting...', color: 'text-yellow-600', icon: '🟡' };
+        return { text: 'Connecting...', color: 'text-yellow-600', icon: <FaCircle className="text-yellow-500" aria-hidden="true" /> };
       case CONNECTION_STATES.RECONNECTING:
-        return { text: 'Reconnecting...', color: 'text-yellow-600', icon: '🟡' };
+        return { text: 'Reconnecting...', color: 'text-yellow-600', icon: <FaCircle className="text-yellow-500" aria-hidden="true" /> };
       case CONNECTION_STATES.ERROR:
-        return { text: 'Connection Error', color: 'text-red-600', icon: '🔴' };
+        return { text: 'Connection Error', color: 'text-red-600', icon: <FaCircle className="text-red-600" aria-hidden="true" /> };
       default:
-        return { text: 'Disconnected', color: 'text-gray-600', icon: '⚫' };
+        return { text: 'Disconnected', color: 'text-gray-600', icon: <FaCircle className="text-gray-500" aria-hidden="true" /> };
     }
   };
 
@@ -392,7 +393,7 @@ export const WebSocketStatus = ({ className = '' }) => {
       <span className={status.color}>{status.text}</span>
       {error && (
         <span className="text-xs text-red-500" title={error}>
-          ⚠️
+          <FaExclamationTriangle aria-hidden="true" />
         </span>
       )}
     </div>

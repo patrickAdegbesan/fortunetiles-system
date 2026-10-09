@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FaCheckCircle, FaEye, FaEyeSlash, FaTimesCircle } from 'react-icons/fa';
 import '../styles/UserEditor.css';
 
 const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
@@ -176,10 +177,10 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
                   />
                   <button
                     type="button"
-                    className="password-toggle"
+                    className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? '👁️' : '🙈'}
+                    {showPassword ? <FaEyeSlash aria-hidden="true" /> : <FaEye aria-hidden="true" />}
                   </button>
                 </div>
                 {errors.password && <span className="error-text">{errors.password}</span>}
@@ -254,26 +255,26 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
                     <div className="permission-details">
                       {role.value === 'owner' && (
                         <ul>
-                          <li>✅ Full system access</li>
-                          <li>✅ User management</li>
-                          <li>✅ System configuration</li>
-                          <li>✅ All inventory & sales operations</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />Full system access</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />User management</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />System configuration</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />All inventory & sales operations</li>
                         </ul>
                       )}
                       {role.value === 'manager' && (
                         <ul>
-                          <li>✅ Inventory management</li>
-                          <li>✅ Sales processing</li>
-                          <li>✅ Reports & analytics</li>
-                          <li>❌ User management</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />Inventory management</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />Sales processing</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />Reports & analytics</li>
+                          <li><FaTimesCircle className="ui-icon perm-no" />User management</li>
                         </ul>
                       )}
                       {role.value === 'staff' && (
                         <ul>
-                          <li>✅ Process sales</li>
-                          <li>✅ View inventory</li>
-                          <li>❌ Modify inventory</li>
-                          <li>❌ User management</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />Process sales</li>
+                          <li><FaCheckCircle className="ui-icon perm-yes" />View inventory</li>
+                          <li><FaTimesCircle className="ui-icon perm-no" />Modify inventory</li>
+                          <li><FaTimesCircle className="ui-icon perm-no" />User management</li>
                         </ul>
                       )}
                     </div>

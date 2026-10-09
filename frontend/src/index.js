@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import App from './App';
+import './styles/ui-polish.css'; // keep after App so it overrides page styles
 import reportWebVitals from './reportWebVitals';
 import { installScrollToErrors } from './utils/scrollToErrors';
 
