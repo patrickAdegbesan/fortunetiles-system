@@ -70,7 +70,7 @@ function createSyncEngine({ sequelize, fetchImpl, now = () => Date.now(), setTim
   let schemaReady = false;
   let running = null;
   let timer = null;
-  const memo = { online: null, lastError: null, syncing: false, needsChoice: false, connecting: false };
+  const memo = { online: null, lastError: null, syncing: false, needsChoice: false, connecting: false, waiting: false };
 
   const q = (sql, replacements) => sequelize.query(sql, { replacements, type: sequelize.QueryTypes.SELECT });
   const exec = (sql, replacements) => sequelize.query(sql, { replacements });
@@ -334,6 +334,7 @@ function createSyncEngine({ sequelize, fetchImpl, now = () => Date.now(), setTim
     if (!connected) {
       if (memo.needsChoice) state = 'needs_choice';
       else if (memo.online === false) state = 'offline';
+      else if (memo.waiting) state = 'waiting';
       else state = 'connecting';
     } else if (memo.syncing) state = 'syncing';
     else if (memo.online === false) state = 'offline';
@@ -411,6 +412,10 @@ function createSyncEngine({ sequelize, fetchImpl, now = () => Date.now(), setTim
         return { needsChoice: true };
       }
       memo.needsChoice = false;
+      // A brand-new device with nothing of its own waits: it must not become the "first" device and upload only its
+      // starter location and categories. It links as soon as it has data to share, or as soon as the cloud does.
+      memo.waiting = !cloudHasData && !localHasData && mode === 'auto';
+      if (memo.waiting) return { waiting: true };
 
       let deviceNo = Number((await getState('device_no')) || 0);
       if (!deviceNo || mode === 'use-device') {

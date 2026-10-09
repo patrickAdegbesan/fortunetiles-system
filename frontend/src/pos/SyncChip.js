@@ -23,6 +23,7 @@ export default function SyncChip() {
   const state = busy || status.state === 'syncing' ? 'syncing' : status.state;
   const label = {
     connecting: 'Setting up',
+    waiting: 'Ready',
     needs_choice: 'Choose data',
     synced: 'Synced',
     pending: `${status.pending} waiting`,

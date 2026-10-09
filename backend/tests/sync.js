@@ -70,6 +70,13 @@ const stockOf = async (d, productId) => {
     // ---- connecting
     r = await A.call('GET', '/sync/status');
     check('before its first sync the device says it is setting up', r.status === 200 && r.data.state === 'connecting' && !r.data.connected, r.data);
+    // an empty device must not register itself in an empty cloud
+    const F = await startDevice('fresh', cloudPort);
+    r = await run(F);
+    check('a brand-new empty device waits instead of uploading its starter data', r.status === 200 && r.data.waiting === true && cloud.records.size === 0, [r.data, cloud.records.size]);
+    r = await F.call('GET', '/sync/status');
+    check('...and says so', r.data.state === 'waiting' && !r.data.connected, r.data);
+    F.stop();
     const W = await startDevice('wrongkey', cloudPort, 'not-the-shop-key');
     r = await run(W);
     check('a device without the shop key cannot link or write', r.data.failed === true || r.data.connected !== true, r.data);

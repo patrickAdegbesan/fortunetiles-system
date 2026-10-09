@@ -297,6 +297,7 @@ export function SyncScreen() {
   if (!status) return <Screen title="Cloud sync" back="/more"><Loading /></Screen>;
   const summary = {
     connecting: 'Setting up. This terminal links itself to the cloud the first time it has internet.',
+    waiting: 'Nothing to sync yet. Sync starts by itself as soon as you add your first items, or as soon as another device has data.',
     synced: 'Up to date. Changes are shared automatically whenever there is internet.',
     pending: `${status.pending} change${status.pending === 1 ? '' : 's'} waiting. They go out by themselves.`,
     syncing: 'Syncing now.',

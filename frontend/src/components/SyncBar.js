@@ -45,6 +45,7 @@ export default function SyncBar() {
   const state = busy || status.state === 'syncing' ? 'syncing' : status.state;
   const view = {
     connecting: { cls: 'busy', icon: <FaSyncAlt className="spin" />, text: 'Setting up sync...', hint: 'Click to try now' },
+    waiting: { cls: 'off', icon: <FaCloud />, text: 'Nothing to sync yet', hint: 'Starts when you add your first data' },
     needs_choice: { cls: 'bad', icon: <FaExclamationTriangle />, text: 'Choose which data to keep', hint: 'Open Settings' },
     synced: { cls: 'ok', icon: <FaCheckCircle />, text: 'Up to date', hint: `Last synced ${ago(status.lastSyncAt)}` },
     pending: { cls: 'warn', icon: <FaCloudDownloadAlt />, text: `${status.pending} change${status.pending === 1 ? '' : 's'} waiting`, hint: 'Click to sync now' },
