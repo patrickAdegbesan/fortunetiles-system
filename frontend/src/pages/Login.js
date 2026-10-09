@@ -3,20 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { loginUser } from '../services/api';
 import '../styles/Login.css';
-import '../styles/ForgotPasswordModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -68,9 +65,6 @@ const Login = () => {
     }
   }, [formData, login, navigate]);
 
-  const toggleForgotPasswordModal = () => {
-    setShowForgotPasswordModal(!showForgotPasswordModal);
-  };
 
   return (
     <div className="login-container">
@@ -95,16 +89,19 @@ const Login = () => {
           <div className="form-group">
             <div className="input-container">
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                id="username"
+                name="username"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={formData.username}
                 onChange={handleChange}
                 required
                 disabled={loading}
-                className={formData.email ? 'has-content' : ''}
+                className={formData.username ? 'has-content' : ''}
               />
-              <label htmlFor="email" className="floating-label">Email Address</label>
+              <label htmlFor="username" className="floating-label">Username</label>
             </div>
           </div>
 
@@ -132,9 +129,7 @@ const Login = () => {
               </button>
             </div>
             <div className="forgot-password">
-              <a href="#" onClick={(e) => { e.preventDefault(); toggleForgotPasswordModal(); }}>
-                Forgot Password?
-              </a>
+              <span>Forgot your password? Ask the owner to reset it in Settings, Users.</span>
             </div>
           </div>
           
@@ -149,9 +144,6 @@ const Login = () => {
         
         {/* Removed default admin credentials for security */}
       </div>
-      {showForgotPasswordModal && (
-        <ForgotPasswordModal onClose={toggleForgotPasswordModal} />
-      )}
     </div>
   );
 };

@@ -91,8 +91,8 @@ router.get('/', async (req, res) => {
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
         status: 'completed', // Default to completed since we can't check returns right now
-        createdAt: saleData.createdAt || new Date().toISOString(), // Fallback to current date if missing
-        saleDate: saleData.createdAt || new Date().toISOString(), // Use createdAt as saleDate with fallback
+        createdAt: saleData.created_at || saleData.createdAt || new Date().toISOString(),
+        saleDate: saleData.created_at || saleData.createdAt || new Date().toISOString(),
         items: formattedItems,
         cashier: saleData.cashier ? {
           id: saleData.cashier.id,
@@ -185,8 +185,8 @@ router.get('/:id', async (req, res) => {
       discountValue: saleData.discountValue,
       paymentMethod: saleData.paymentMethod || 'cash',
       status: saleData.status || 'completed',
-      createdAt: saleData.createdAt,
-      saleDate: saleData.saleDate || saleData.createdAt,
+      createdAt: saleData.created_at || saleData.createdAt,
+      saleDate: saleData.saleDate || saleData.created_at || saleData.createdAt,
       items: formattedItems,
       cashier: saleData.cashier ? {
         id: saleData.cashier.id,
@@ -274,8 +274,8 @@ router.get('/search/:term', async (req, res) => {
         discountValue: saleData.discountValue,
         paymentMethod: saleData.paymentMethod || 'cash',
         status: saleData.status || 'completed',
-        createdAt: saleData.createdAt,
-        saleDate: saleData.saleDate || saleData.createdAt,
+        createdAt: saleData.created_at || saleData.createdAt,
+        saleDate: saleData.saleDate || saleData.created_at || saleData.createdAt,
         items: formattedItems,
         cashier: saleData.cashier ? {
           id: saleData.cashier.id,

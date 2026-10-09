@@ -43,7 +43,8 @@
           "!node_modules/**",
           "!data/**",
           "!**/*.log",
-          "!tools/**"
+          "!tools/**",
+          "!tests/**"
         ]
       }
     ],

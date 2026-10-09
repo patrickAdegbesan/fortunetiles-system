@@ -5,7 +5,9 @@ import useActivityTracker from '../hooks/useActivityTracker';
 const isTokenExpired = (token) => {
   if (!token) return true;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Tokens use base64url ("-" and "_"), which atob() rejects, so convert first.
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)));
     const currentTime = Date.now() / 1000;
     return payload.exp < currentTime;
   } catch (e) {

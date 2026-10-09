@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SidebarNav from './components/SidebarNav_fixed';
+import GuidedTour from './components/GuidedTour';
+import SyncBar from './components/SyncBar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SalePage from './pages/SalePage';
@@ -34,10 +36,12 @@ function MainLayout({ children }) {
     <div className={`app-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
       <SidebarNav isOpen={isSidebarOpen} onToggle={toggleSidebar} />
       <div className="app-layout">
+        <SyncBar />
         <main className="main-content">
           {children}
         </main>
       </div>
+      <GuidedTour />
     </div>
   );
 }

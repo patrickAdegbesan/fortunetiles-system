@@ -19,6 +19,7 @@ function loadJwtSecret() {
 process.env.JWT_SECRET = loadJwtSecret();
 
 const { Location, Category } = require('./models');
+const { ensureUsernames } = require('./utils/usernames');
 const { ensureDefaultAdmin } = require('./bootstrap');
 const { securityHeaders } = require('./middleware/securityHeaders');
 const WebSocketService = require('./services/WebSocketService');
@@ -56,6 +57,7 @@ app.use('/api/returns', require('./routes/returns'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/backup', require('./routes/backup'));
+app.use('/api/sync', require('./routes/sync'));
 app.use('/api', (req, res) => res.status(404).json({ message: 'Route not found' }));
 
 // The React app is built with homepage "/inventory"
@@ -79,6 +81,7 @@ app.use((err, req, res, next) => {
 async function initializeDatabase() {
   await testConnection();
   await sequelize.sync();
+  await ensureUsernames(sequelize);
 
   if ((await Location.count()) === 0) {
     await Location.create({ name: 'Main Warehouse', address: 'Default warehouse location' });
@@ -105,6 +108,8 @@ async function start() {
   const server = app.listen(port, '127.0.0.1', () => {
     console.log(`Fortune Tiles server listening on http://127.0.0.1:${port}`);
     global.wsService = new WebSocketService(server);
+    // Links this device to the cloud and keeps it in step, by itself, whenever there is internet. (Tests switch it off.)
+    if (process.env.SYNC_AUTOSTART !== '0') require('./sync').start();
   });
 
   server.on('error', (error) => {

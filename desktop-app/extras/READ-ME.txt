@@ -8,7 +8,7 @@ DESKTOP ICON
   Double-click "Create Desktop Shortcut.bat" once to put a Fortune Tiles icon on your Desktop.
 
 FIRST SIGN-IN
-  Email:    admin@fortunetiles.local
+  Username: admin
   Password: open the file  FortuneTilesData\FIRST-RUN-ADMIN.txt  (created the first time the app starts).
   Sign in, go to Settings > Users > Add User to create your staff, then delete FIRST-RUN-ADMIN.txt.
 
@@ -24,3 +24,16 @@ FORGOT A PASSWORD
 IF THE APP WILL NOT START
   A box will show the reason. A copy of the messages is also saved in FortuneTilesData\server.log -
   send that file (or a photo of the box) to get it fixed.
+
+CLOUD SYNC (automatic)
+  When this computer has internet it links itself to the shop's cloud and shares products, stock, sales and users with the
+  POS terminal. There is nothing to type or click: the button at the top of the app only shows the state
+  (green = up to date, amber = changes waiting, grey = no internet). Everything works without internet.
+  The first time, if both this computer and the cloud already hold data, the owner is asked once (Settings) which to keep.
+
+UPDATING TO A NEWER VERSION
+  1. Close Fortune Tiles.
+  2. Copy the new "FortuneTiles" folder over the old one and choose "Replace".
+  3. NEVER delete or replace the folder "FortuneTilesData" - it holds all your products and sales.
+     (A new version does not contain that folder, so copying over the old one keeps it safe.)
+  4. Open Fortune Tiles.exe as usual.

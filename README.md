@@ -31,7 +31,7 @@ copy of the data at a time. Use *File → Backup Data* regularly.
 
 ## First sign-in
 
-On first run the app creates a built-in owner account, `admin@fortunetiles.local`.
+On first run the app creates a built-in owner account with the username `admin`.
 
 - If `backend/config/defaultAdmin.json` has a `passwordHash`, that password is used. Create the hash with
   `npm --prefix backend run admin:hash -- "<a password of 6+ characters>"` and paste it into the file.
@@ -43,6 +43,24 @@ The account is re-created (and kept an active owner) if it is ever deleted. Use 
 users under *Settings → Users*. Passwords only need to be at least 6 characters.
 
 **Forgotten password:** there is no email reset. An owner sets a new one under *Settings → Users → Edit*.
+
+## Cloud sync
+
+The computer and the POS terminal share data through a Supabase project while each keeps working offline. Nobody has to
+log in or press anything: a device links itself the first time it has internet and then syncs every 15 seconds.
+
+- **Set up once (already done for this shop):** run `backend/sync/supabase-setup.sql` in the Supabase SQL editor after
+  replacing `__APP_SECRET__` with the key in `backend/config/sync.secret.json`, and put the project URL and publishable
+  key in `backend/config/sync.json`. `sync.secret.json` is not committed; it is packed into the builds.
+- **Security:** the shop key is inside the app files, so anyone who can copy the app can read the shop's cloud data.
+  Keep the devices and the flash drive with people you trust. To change the key, edit both the file and the SQL function
+  `ft_app_ok`, then rebuild the apps.
+- **First device uploads, later devices download.** If a device already holds data when the cloud does too, the owner is
+  asked once (Settings, or More → Cloud sync on the terminal) which of the two to keep.
+- **How it works:** every device keeps its own database. Changes are noted by database triggers. New records use a
+  per-device id range so devices never clash, stock is shared as +/- changes (so two devices selling at once both count),
+  and for everything else the latest edit wins. The built-in `admin` account is not synced.
+- **Testing:** `npm --prefix backend run test:sync` runs several devices against a stand-in cloud, no network needed.
 
 ## Development
 

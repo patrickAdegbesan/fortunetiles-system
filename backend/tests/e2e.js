@@ -21,8 +21,10 @@ function check(name, cond, extra) {
 }
 
 (async () => {
-  let r = await call('POST', '/auth/login', { email: 'admin@fortunetiles.local', password: adminPw });
-  check('login', r.status === 200 && r.data.token, r);
+  let r = await call('POST', '/auth/login', { username: 'admin', password: adminPw });
+  check('login with username', r.status === 200 && r.data.token && r.data.user.username === 'admin', r);
+  check('login with legacy email still works', (await call('POST', '/auth/login', { email: 'admin@fortunetiles.local', password: adminPw })).status === 200);
+  check('login with unknown username -> 401', (await call('POST', '/auth/login', { username: 'nobody', password: adminPw })).status === 401);
   token = r.data.token;
 
   r = await call('GET', '/locations');
@@ -117,6 +119,10 @@ function check(name, cond, extra) {
   check('orders history', r.status === 200 && Array.isArray(r.data) && r.data.length >= 3, r);
   r = await call('GET', `/orders/${sale.id}`);
   check('order detail', r.status === 200, r);
+  r = await call('GET', `/orders/${sale.id}`);
+  check('order detail has the real sale date', r.status === 200 && !!r.data.createdAt && Math.abs(Date.now() - new Date(r.data.createdAt).getTime()) < 120000, r.data && r.data.createdAt);
+  r = await call('GET', '/orders');
+  check('order list dates differ from "now" fallback only by real time', r.status === 200 && r.data.every((o) => !!o.createdAt), r.status);
   r = await call('GET', '/orders/search/John');
   check('order search', r.status === 200, r);
   r = await call('GET', '/sales?startDate=2020-01-01&endDate=2100-01-01');
@@ -174,13 +180,19 @@ function check(name, cond, extra) {
   // ---- product photos: list carries a link, the link serves the image, saving keeps it
   r = await call('GET', '/products?search=Granite');
   const gp = r.data.products.find((p) => p.name === 'Granite Black');
-  check('list shows photo as a small link', gp && /^\/api\/products\/\d+\/image\?v=\d+$/.test(gp.imageUrl || ''), gp && gp.imageUrl && gp.imageUrl.slice(0, 80));
+  const mobile = process.argv[4] === 'mobile'; // the Android app turns photo links into local image addresses
+  check('list shows photo as a small link', gp && (mobile ? /^blob:/.test(gp.imageUrl || '') : /^\/api\/products\/\d+\/image\?v=\d+$/.test(gp.imageUrl || '')), gp && gp.imageUrl && gp.imageUrl.slice(0, 80));
   check('list does not embed the photo', JSON.stringify(r.data).length < 5000, JSON.stringify(r.data).length);
   if (gp && gp.imageUrl) {
-    const img = await fetch(base + gp.imageUrl);
-    check('photo link serves an image without login', img.status === 200 && /^image\/png/.test(img.headers.get('content-type') || ''), img.status);
+    const img = await fetch(mobile ? gp.imageUrl : base + gp.imageUrl);
+    if (mobile) {
+      const blob = await img.blob();
+      check('photo address gives an image', img.status === 200 && /^image\/png/.test(blob.type || ''), [img.status, blob.type, blob.size]);
+    } else {
+      check('photo link serves an image without login', img.status === 200 && /^image\/png/.test(img.headers.get('content-type') || ''), img.status);
+    }
     // saving the product with the link the list gave us must keep the stored photo
-    const sv = await call('PUT', `/products/${gp.id}`, { imageUrl: gp.imageUrl, price: 41 });
+    const sv = await call('PUT', `/products/${gp.id}`, { imageUrl: mobile ? '/api/products/' + gp.id + '/image?v=1' : gp.imageUrl, price: 41 });
     check('save with photo link succeeds', sv.status === 200, sv);
     const after = await call('GET', `/products/${gp.id}`);
     check('stored photo kept after save', /^data:image\/png;base64,/.test(after.data.product.imageUrl || ''), (after.data.product.imageUrl || '').slice(0, 40));
@@ -195,11 +207,11 @@ function check(name, cond, extra) {
   check('archived product hidden', r.data.products.length === 1, r.data.products?.map((p) => p.name));
   r = await call('GET', '/backup/export');
   check('backup export', r.status === 200 && r.data.tables?.sales?.length >= 3, r.status);
-  r = await call('POST', '/users', { firstName: 'Cash', lastName: 'Ier', email: 'cashier@shop.com', password: 'Cashier!Pass123', role: 'staff', locationId: loc.id });
+  r = await call('POST', '/users', { firstName: 'Cash', lastName: 'Ier', username: 'cashier', password: 'Cashier!Pass123', role: 'staff', locationId: loc.id });
   check('create staff user', r.status === 201, r);
   const staffId = r.data.user?.id;
   const adminToken = token;
-  r = await call('POST', '/auth/login', { email: 'cashier@shop.com', password: 'Cashier!Pass123' });
+  r = await call('POST', '/auth/login', { username: 'Cashier', password: 'Cashier!Pass123' });
   check('staff login', r.status === 200, r);
   token = r.data.token;
   r = await call('POST', '/sales', { locationId: loc.id, customerName: 'S', subtotalAmount: 30, items: [{ productId: p1.id, quantity: 1, unitPrice: 30 }] });
@@ -215,22 +227,22 @@ function check(name, cond, extra) {
   check('deactivate/delete user', r.status === 200, r);
 
   // ---- simple passwords + clear errors
-  r = await call('POST', '/users', { firstName: 'Simple', lastName: 'Pw', email: 'simple@shop.com', password: 'abc123', role: 'staff' });
+  r = await call('POST', '/users', { firstName: 'Simple', lastName: 'Pw', username: 'simple', password: 'abc123', role: 'staff' });
   check('create user with simple 6-char password', r.status === 201, r);
-  r = await call('POST', '/auth/login', { email: 'simple@shop.com', password: 'abc123' });
+  r = await call('POST', '/auth/login', { username: 'simple', password: 'abc123' });
   check('login with simple password', r.status === 200, r);
-  r = await call('POST', '/users', { firstName: 'Short', lastName: 'Pw', email: 'short@shop.com', password: 'abc', role: 'staff' });
+  r = await call('POST', '/users', { firstName: 'Short', lastName: 'Pw', username: 'shortpw', password: 'abc', role: 'staff' });
   check('too-short password -> 400 with clear message', r.status === 400 && /at least 6/.test(r.data.message), r);
-  r = await call('POST', '/users', { firstName: 'Dup', lastName: 'User', email: 'simple@shop.com', password: 'abc123', role: 'staff' });
-  check('duplicate email -> 409', r.status === 409, r);
-  r = await call('POST', '/users', { firstName: 'Bad', lastName: 'Email', email: 'not-an-email', password: 'abc123', role: 'staff' });
-  check('invalid email -> 400 (not 500)', r.status === 400, r);
+  r = await call('POST', '/users', { firstName: 'Dup', lastName: 'User', username: 'SIMPLE', password: 'abc123', role: 'staff' });
+  check('duplicate username (any case) -> 409', r.status === 409, r);
+  r = await call('POST', '/users', { firstName: 'Bad', lastName: 'Name', username: 'a b', password: 'abc123', role: 'staff' });
+  check('invalid username -> 400 (not 500)', r.status === 400, r);
 
   // ---- built-in admin protection
-  r = await call('POST', '/users', { firstName: 'Second', lastName: 'Owner', email: 'owner2@shop.com', password: 'Owner2!Passw0rd', role: 'owner' });
+  r = await call('POST', '/users', { firstName: 'Second', lastName: 'Owner', username: 'owner2', email: 'owner2@shop.com', password: 'Owner2!Passw0rd', role: 'owner' });
   check('create second owner', r.status === 201, r);
   const adminTok = token;
-  r = await call('POST', '/auth/login', { email: 'owner2@shop.com', password: 'Owner2!Passw0rd' });
+  r = await call('POST', '/auth/login', { username: 'owner2', password: 'Owner2!Passw0rd' });
   token = r.data.token;
   r = await call('GET', '/users');
   check('owner2 does not see built-in admin', r.status === 200 && !r.data.users.some((u) => u.email === 'admin@fortunetiles.local'), r.data.users?.map((u) => u.email));

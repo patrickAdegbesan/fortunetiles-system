@@ -365,7 +365,13 @@ const SalePage = () => {
         fetchLocations()
       ]);
       setProducts(productsData.products || []);
-      setLocations(locationsData.locations || []);
+      const locs = locationsData.locations || [];
+      setLocations(locs);
+      // Start on the location used last time (or the first one), so a sale never begins with an empty screen.
+      let remembered = '';
+      try { remembered = localStorage.getItem('sale_location') || ''; } catch (_) { /* ignore */ }
+      const pick = locs.find((l) => String(l.id) === remembered) || locs[0] || null;
+      if (pick) setSelectedLocation(String(pick.id));
     } catch (error) {
       setError('Failed to load initial data');
       console.error('Load initial data error:', error);
@@ -619,7 +625,7 @@ const SalePage = () => {
               <FaMapMarkerAlt className="location-icon" />
               <select 
                 value={selectedLocation} 
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => { setSelectedLocation(e.target.value); try { localStorage.setItem('sale_location', e.target.value); } catch (_) { /* ignore */ } }}
                 className="enhanced-location-select"
               >
                 <option value="">Choose Location</option>

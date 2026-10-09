@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import { isAndroidApp, localRequest, installFetchShim } from '../local';
 
 const resolveBaseUrl = () => {
   const envBase = process.env.REACT_APP_API_BASE_URL;
@@ -12,6 +13,24 @@ const API = axios.create({
   // Default to the backend prefix and allow override via REACT_APP_API_BASE_URL when needed
   baseURL: resolveBaseUrl(),
 });
+
+// On the Android terminal there is no server: requests are answered by the in-app database.
+if (isAndroidApp) {
+  installFetchShim();
+  API.defaults.adapter = async (config) => {
+    const headers = config.headers && config.headers.toJSON ? config.headers.toJSON() : { ...(config.headers || {}) };
+    let body;
+    if (config.data) {
+      try { body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data; } catch (_) { body = config.data; }
+    }
+    const out = await localRequest({ method: config.method || 'get', url: API.getUri(config), body, headers });
+    const response = { data: out.data, status: out.status, statusText: '', headers: out.headers || {}, config, request: {} };
+    const ok = config.validateStatus ? config.validateStatus(out.status) : out.status >= 200 && out.status < 300;
+    if (ok) return response;
+    throw new AxiosError(`Request failed with status code ${out.status}`,
+      out.status >= 500 ? AxiosError.ERR_BAD_RESPONSE : AxiosError.ERR_BAD_REQUEST, config, {}, response);
+  };
+}
 
 // Add request interceptor to include token in headers
 API.interceptors.request.use(
@@ -601,3 +620,9 @@ export const setAdminPin = async (pin) => {
 };
 
 export default API;
+
+// Cloud sync (see backend/sync/engine.js)
+export const fetchSyncStatus = async () => (await API.get('/sync/status')).data;
+export const runSyncNow = async () => (await API.post('/sync/run')).data;
+export const chooseSync = async (choice) => (await API.post('/sync/choose', { choice })).data;
+export const resyncAll = async () => (await API.post('/sync/resync')).data;

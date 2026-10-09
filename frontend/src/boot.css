@@ -1,0 +1,6 @@
+/* Minimal base shared by both interfaces (the desktop interface adds its own in index.css). */
+html, body { margin: 0; height: 100%; }
+#root { width: 100%; height: 100%; position: relative; }
+.boot-splash { display: flex; flex-direction: column; gap: 18px; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; text-align: center; font: 16px/1.4 Roboto, "Segoe UI", system-ui, sans-serif; color: #1a2d66; background: #f4f6fb; }
+
+.boot-logo { width: 96px; height: 96px; }

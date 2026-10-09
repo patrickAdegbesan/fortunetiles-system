@@ -29,7 +29,7 @@ async function ensureDefaultAdmin() {
     const notePath = path.join(dataDir, 'FIRST-RUN-ADMIN.txt');
     fs.writeFileSync(
       notePath,
-      `Email: ${defaults.email}\nPassword: ${password}\n\nDelete this file after you have signed in and created your own users.\n`
+      `Username: ${defaults.username}\nPassword: ${password}\n\nDelete this file after you have signed in and created your own users.\n`
     );
     console.log(`Default admin created. Credentials written to ${notePath}`);
   }
@@ -39,6 +39,7 @@ async function ensureDefaultAdmin() {
     {
       firstName: defaults.firstName,
       lastName: defaults.lastName,
+      username: defaults.username,
       email: defaults.email,
       password: passwordHash,
       role: 'owner',

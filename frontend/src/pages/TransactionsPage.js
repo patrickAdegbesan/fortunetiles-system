@@ -368,7 +368,7 @@ const TransactionsPage = () => {
                     </td>
                     <td className="payment-method">
                       <span className={`payment-badge payment-${(transaction.paymentMethod || 'cash').toLowerCase()}`}>
-                        {transaction.paymentMethod || 'Cash'}
+                        {String(transaction.paymentMethod || 'Cash').replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="transaction-date">

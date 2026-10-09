@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaClipboardList } from 'react-icons/fa';
+import { FaBars, FaTimes, FaTachometerAlt, FaMoneyBillWave, FaBox, FaUsers, FaChartLine, FaMapMarkerAlt, FaCog, FaSignOutAlt, FaClipboardList, FaQuestionCircle } from 'react-icons/fa';
 import '../styles/SidebarNav.css';
 
 const logo = process.env.PUBLIC_URL + '/assets/logo.png';
@@ -12,7 +12,7 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
   const location = useLocation();
 
   // Single source of truth for sidebar state
-  const [isExpanded, setIsExpanded] = useState(isOpen ?? true);
+  const [isExpanded, setIsExpanded] = useState(isOpen ?? false);
 
   // Tooltip state for collapsed icons
   const [hoverLabel, setHoverLabel] = useState(null);
@@ -195,6 +195,10 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
           );
         })}
       </div>
+      <button type="button" className="tour-sidebar-help collapsed-help" title="Help - guided tour of this page" aria-label="Help: guided tour of this page"
+        onClick={() => window.dispatchEvent(new Event('ft-tour-start'))}>
+        <FaQuestionCircle aria-hidden="true" />
+      </button>
       <div className="user-profile collapsed-user-profile">
         <div className="user-avatar">
           {(user?.firstName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
@@ -239,6 +243,10 @@ const SidebarNav = React.memo(({ isOpen, onToggle }) => {
           );
         })}
       </div>
+      <button type="button" className="tour-sidebar-help expanded-help" title="Help - guided tour of this page" aria-label="Help: guided tour of this page"
+        onClick={() => window.dispatchEvent(new Event('ft-tour-start'))}>
+        <FaQuestionCircle aria-hidden="true" /><span>Help &amp; guide</span>
+      </button>
       <div className="user-profile expanded-user-profile">
         <div className="user-info">
           <div className="user-avatar">

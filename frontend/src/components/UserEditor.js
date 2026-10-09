@@ -6,6 +6,7 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    username: '',
     email: '',
     password: '',
     role: 'staff',
@@ -21,7 +22,8 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        email: user.email || '',
+        username: user.username || '',
+        email: /@fortunetiles\.local$/.test(user.email || '') ? '' : (user.email || ''),
         password: '', // Don't pre-fill password for security
         role: user.role || 'staff',
         locationId: user.locationId || '',
@@ -54,10 +56,12 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
       newErrors.lastName = 'Last name is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!/^[a-z0-9._-]{3,30}$/i.test(formData.username.trim())) {
+      newErrors.username = 'Use 3-30 letters, numbers, dot, dash or underscore (no spaces)';
+    }
+
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Enter a valid email address, or leave it empty';
     }
 
     // Password validation only for new users or when password is provided
@@ -92,6 +96,9 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
       if (user && !userData.password) {
         delete userData.password;
       }
+
+      userData.username = userData.username.trim().toLowerCase();
+      if (!userData.email.trim()) delete userData.email; // email is optional: the server keeps or generates one
 
       // Convert locationId to number or null
       userData.locationId = userData.locationId ? parseInt(userData.locationId) : null;
@@ -152,14 +159,31 @@ const UserEditor = ({ user, roles, locations, onSave, onCancel }) => {
               </div>
 
               <div className="form-group">
-                <label>Email Address *</label>
+                <label>Username *</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className={errors.username ? 'error' : ''}
+                  placeholder="e.g. ada"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+                <small className="form-help">What this person types to sign in.</small>
+                {errors.username && <span className="error-text">{errors.username}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Email Address (optional)</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   className={errors.email ? 'error' : ''}
-                  placeholder="john.doe@fortunetiles.com"
+                  placeholder="Only if you want one on file"
                 />
                 {errors.email && <span className="error-text">{errors.email}</span>}
               </div>

@@ -16,3 +16,9 @@ FIRST-RUN-ADMIN.txt
 *.log
 .DS_Store
 FortuneTilesData/
+
+# Android app build output and signed APKs
+frontend/build-mobile/
+release/
+*.apk
+backend/config/sync.secret.json

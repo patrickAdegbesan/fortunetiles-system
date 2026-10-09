@@ -7,7 +7,7 @@
 3. **First time only** (needs internet, takes several minutes): it installs Node.js if missing,
    installs the components, builds the app, then asks you to **choose the admin password**
    (typing is hidden; write it down). If a Windows prompt asks permission to install Node.js, click Yes.
-4. The app opens. Sign in with `admin@fortunetiles.local` and the password you chose.
+4. The app opens. Sign in with the username `admin` and the password you chose.
 5. **From then on**, double-clicking START.bat opens the app straight away.
    No internet and no Node.js needed - so after the first setup you can copy the whole folder
    (including the `FortuneTilesData` folder, which holds all your data) to other Windows PCs and just double-click START.bat there.

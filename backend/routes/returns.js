@@ -1,11 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const { Return, ReturnItem, Sale, SaleItem, Product, User, Location, sequelize } = require('../models');
+const { Return, ReturnItem, Sale, SaleItem, Product, User, Location, InventoryLog, sequelize } = require('../models');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { Op } = require('sequelize');
 const { validate, toInteger, toNumber } = require('../middleware/validate');
 
 const writeRoles = requireRole(['owner', 'manager']);
+
+// Changes the stock of a product at a location and records it in the stock history. Every stock change must leave a
+// history row: that history is what keeps the stock of several devices in step when they sync.
+async function adjustStockWithLog({ productId, locationId, delta, note, userId, transaction }) {
+  const [row] = await sequelize.query(
+    'SELECT "quantitySqm" AS q FROM "inventory" WHERE "productId" = :productId AND "locationId" = :locationId',
+    { replacements: { productId, locationId }, type: sequelize.QueryTypes.SELECT, transaction }
+  );
+  if (!row) return;
+  const previous = Number(row.q);
+  await sequelize.query(
+    'UPDATE "inventory" SET "quantitySqm" = "quantitySqm" + :delta WHERE "productId" = :productId AND "locationId" = :locationId',
+    { replacements: { delta, productId, locationId }, transaction }
+  );
+  await InventoryLog.create({
+    productId, locationId, changeType: delta > 0 ? 'received' : 'adjusted', changeAmount: delta,
+    previousQuantity: previous, newQuantity: previous + delta, notes: note, userId,
+  }, { transaction });
+}
 
 // Get all returns
 router.get('/', authenticateToken, async (req, res) => {
@@ -191,19 +210,14 @@ router.post('/', authenticateToken, validate([
 
       // If it's not an exchange, return items to inventory
       if (normalizedReturnType === 'REFUND') {
-        await sequelize.query(
-          `UPDATE "inventory" 
-           SET "quantitySqm" = "quantitySqm" + :quantity 
-           WHERE "productId" = :productId AND "locationId" = :locationId`,
-          {
-            replacements: {
-              quantity,
-              productId: saleItem.productId,
-              locationId: sale.locationId // Use the location from the sale
-            },
-            transaction: t
-          }
-        );
+        await adjustStockWithLog({
+          productId: saleItem.productId,
+          locationId: sale.locationId, // Use the location from the sale
+          delta: quantity,
+          note: `Returned goods (order ${sale.id})`,
+          userId: req.user.id,
+          transaction: t
+        });
       }
 
       returnItems.push(returnItem);
@@ -275,19 +289,14 @@ router.patch('/:id/status', authenticateToken, writeRoles, validate([
     if (status === 'REJECTED' && returnRecord.returnType === 'REFUND') {
       // If rejecting a refund, remove items from inventory
       for (const item of returnRecord.items) {
-        await sequelize.query(
-          `UPDATE "inventory" 
-           SET "quantitySqm" = "quantitySqm" - :quantity 
-           WHERE "productId" = :productId AND "locationId" = :locationId`,
-          {
-            replacements: {
-              quantity: item.quantity,
-              productId: item.productId,
-              locationId: item.locationId
-            },
-            transaction: t
-          }
-        );
+        await adjustStockWithLog({
+          productId: item.productId,
+          locationId: item.locationId,
+          delta: -item.quantity,
+          note: `Return #${returnRecord.id} rejected`,
+          userId: req.user.id,
+          transaction: t
+        });
       }
     }
 

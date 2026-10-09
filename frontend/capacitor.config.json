@@ -1,0 +1,13 @@
+{
+  "appId": "com.fortunetiles.inventory",
+  "appName": "Fortune Tiles",
+  "webDir": "build-mobile",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "CapacitorSQLite": {
+      "androidIsEncryption": false
+    }
+  }
+}

@@ -1,0 +1,28 @@
+/* Guided tour: a dimmed screen with one highlighted area and a small explanation card. */
+.tour-layer { position: fixed; inset: 0; z-index: 10000; }
+.tour-dim { position: absolute; inset: 0; background: rgba(15,23,42,.6); }
+.tour-spot { position: absolute; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(15,23,42,.6); pointer-events: none; transition: left .2s, top .2s, width .2s, height .2s; }
+.tour-card { position: absolute; box-sizing: border-box; background: #fff; color: #1c2330; border-radius: 12px; padding: 18px 20px 16px; box-shadow: 0 10px 30px rgba(16,24,40,.35); font: 14px/1.5 "Segoe UI", Roboto, system-ui, sans-serif; max-width: calc(100vw - 16px); }
+.tour-card h3 { margin: 2px 0 6px; font-size: 17px; font-weight: 700; color: #1c2330; }
+.tour-card p { margin: 0 0 14px; color: #475467; }
+.tour-count { font-size: 12px; font-weight: 600; color: #667085; text-transform: uppercase; letter-spacing: .05em; }
+.tour-x { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: #667085; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.tour-x:hover { background: #f2f4f7; color: #1c2330; }
+.tour-bar { height: 4px; border-radius: 2px; background: #e5e8ee; margin-bottom: 14px; overflow: hidden; }
+.tour-bar span { display: block; height: 100%; background: #1a2d66; }
+.tour-actions { display: flex; align-items: center; gap: 8px; }
+.tour-spacer { flex: 1; }
+.tour-skip { border: 0; background: none; color: #667085; font: inherit; font-weight: 600; cursor: pointer; padding: 6px 4px; }
+.tour-skip:hover { color: #1c2330; text-decoration: underline; }
+.tour-btn { height: 34px; padding: 0 16px; border-radius: 6px; border: 1px solid #cdd2db; background: #fff; color: #1c2330; font: inherit; font-weight: 600; cursor: pointer; }
+.tour-btn:hover { background: #f2f4f7; }
+.tour-btn.primary { background: #1a2d66; border-color: #1a2d66; color: #fff; }
+.tour-btn.primary:hover { background: #12204d; }
+/* the pretend mouse pointer that shows where the guide is about to click */
+.tour-cursor { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: rgba(26,45,102,.35); border: 2px solid #1a2d66; transition: left .45s ease, top .45s ease, transform .15s; pointer-events: none; }
+.tour-cursor.press { transform: scale(.6); background: rgba(26,45,102,.7); }
+.tour-sidebar-help { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 6px auto; width: 40px; height: 40px; border-radius: 8px; border: 1px solid #3a4560; background: transparent; color: #e5e7eb; cursor: pointer; font-size: 15px; }
+.tour-sidebar-help:hover { background: #26304a; }
+.sidebar-container.expanded .tour-sidebar-help { width: calc(100% - 40px); margin: 6px 20px; justify-content: flex-start; padding: 0 12px; font: 600 14px "Segoe UI", Roboto, sans-serif; }
+@media print { .tour-layer { display: none !important; } }
+.sidebar-container.collapsed .expanded-help, .sidebar-container.expanded .collapsed-help { display: none; }

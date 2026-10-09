@@ -22,16 +22,17 @@ const pinLimiter = createRateLimiter({
 // POST /api/auth/login
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    // Staff sign in with their username (an email still works for accounts that have one).
+    const raw = [req.body?.username, req.body?.email, req.body?.identifier].find((v) => typeof v === 'string' && v.trim());
+    const identifier = raw ? raw.trim().toLowerCase() : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
     }
 
-    // Find user by email
-    const user = await User.findOne({ 
-      where: { email },
+    const user = await User.findOne({
+      where: { [Op.or]: [{ username: identifier }, { email: identifier }] },
       include: [{ model: Location, as: 'location' }]
     });
 
@@ -71,6 +72,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
+        username: user.username,
         email: user.email,
         role: user.role,
         location: user.location

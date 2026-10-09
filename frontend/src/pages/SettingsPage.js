@@ -1,3 +1,4 @@
+import SyncCard from '../components/SyncCard';
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { FaLock } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
@@ -780,6 +781,7 @@ const SettingsPage = () => {
     const matchesSearch = !searchTerm || 
       user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesRole = !selectedRole || user.role === selectedRole;
@@ -984,6 +986,8 @@ const SettingsPage = () => {
                 </div>
               )}
 
+              {isOwner && <SyncCard />}
+
               {/* Quick Actions */}
               <div className="quick-actions">
                 <h3>Quick Actions</h3>
@@ -1183,7 +1187,7 @@ const SettingsPage = () => {
               <div className="users-filters">
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Search by name or username..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -1229,7 +1233,7 @@ const SettingsPage = () => {
                         <td>
                           <div className="user-info">
                             <strong>{user.firstName} {user.lastName}</strong>
-                            <small>{user.email}</small>
+                            <small>{user.username || user.email}</small>
                           </div>
                         </td>
                         <td>

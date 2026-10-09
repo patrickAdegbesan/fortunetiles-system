@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fortune Tiles</string>
+    <string name="title_activity_main">Fortune Tiles</string>
+    <string name="package_name">com.fortunetiles.inventory</string>
+    <string name="custom_url_scheme">com.fortunetiles.inventory</string>
+</resources>

@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Professional finish for the desktop interface. Loaded after everything else.
+   It does not change what any page contains: it calms the visual language
+   (no gradients, glows or heavy shadows), unifies type, colour and spacing,
+   and tidies a few alignments. Page structure and features are untouched.
+   ========================================================================== */
+:root {
+  --pro-bg: #f5f6f8; --pro-card: #fff; --pro-line: #e2e5eb; --pro-ink: #1c2330; --pro-muted: #667085;
+  --pro-navy: #1a2d66; --pro-navy-d: #12204d; --pro-tint: #eef2fb; --pro-red: #b42318; --pro-radius: 10px;
+}
+html, body { background: var(--pro-bg) !important; }
+body, button, input, select, textarea { font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif; }
+body { color: var(--pro-ink); }
+
+/* ---- surfaces: one flat white card style everywhere ---- */
+body .top-header, body .dashboard-filters, body .stat-card, body .low-stock-section, body .dashboard-section,
+body .inventory-form-section, body .current-inventory-section, body .enhanced-header, body .page-header,
+body .compact-stats, body .product-section, body .enhanced-cart-section, body .settings-tabs, body .tab-content,
+body .overview-card, body .pin-setup-section, body .reports-controls, body .report-content, body .summary-card,
+body .chart-container, body .transactions-container, body .sale-product-card {
+  background: var(--pro-card) !important; background-image: none !important;
+  border: 1px solid var(--pro-line) !important; box-shadow: none !important; border-radius: var(--pro-radius) !important;
+}
+body .products-page, body .reports-page, body .settings-page { background: none !important; }
+body .low-stock-item-compact, body .ft-stat {
+  background: #f8f9fb !important; background-image: none !important; box-shadow: none !important; border: 1px solid var(--pro-line) !important;
+}
+body .stat-card { border-top-width: 3px !important; }
+body .stat-card:hover, body .sale-product-card:hover, body .overview-card:hover { box-shadow: 0 1px 3px rgba(16,24,40,.08) !important; transform: none !important; }
+
+/* gradient text and icon chips become plain */
+body .stat-number { background: none !important; -webkit-text-fill-color: currentColor !important; color: var(--pro-ink) !important; }
+body .stat-icon, body .cart-count { background-image: none !important; box-shadow: none !important; }
+body .cart-title { background: none !important; box-shadow: none !important; color: var(--pro-ink) !important; padding-left: 0 !important; }
+body .cart-title * { color: var(--pro-ink) !important; }
+
+/* ---- buttons: solid colours, no gradient, no glow ---- */
+body .reset-filters-btn, body .edit-btn, body .card-action, body .quick-action-btn,
+body .primary-button, body .add-btn, body .checkout-btn {
+  background: var(--pro-navy) !important; background-image: none !important; box-shadow: none !important; border: 1px solid var(--pro-navy) !important; color: #fff !important;
+}
+body .reset-filters-btn:hover, body .edit-btn:hover, body .card-action:hover, body .quick-action-btn:hover,
+body .primary-button:hover, body .add-btn:hover, body .checkout-btn:hover { background: var(--pro-navy-d) !important; }
+body .delete-btn { background: var(--pro-red) !important; background-image: none !important; box-shadow: none !important; border: 1px solid var(--pro-red) !important; color: #fff !important; }
+body .view-btn, body .action-btn, body .refresh-btn, body .export-btn, body .sort-order-btn, body .tab-btn, body .tab-button {
+  box-shadow: none !important; background-image: none !important; border-radius: 8px !important;
+}
+
+/* ---- sidebar: calm charcoal, flat active state ---- */
+body .sidebar-container { background: #131a2b !important; background-image: none !important; box-shadow: none !important; border-right: 1px solid #0c1220; }
+body .collapsed-header, body .expanded-header, body .user-profile { background: transparent !important; background-image: none !important; }
+body .collapsed-logo, body .user-avatar { box-shadow: none !important; background-image: none !important; background-color: #2b3a6b !important; }
+body .collapsed-nav-item, body .expanded-nav-item { background-image: none !important; box-shadow: none !important; border-radius: 8px !important; }
+body .collapsed-nav-item.active, body .expanded-nav-item.active { background: #26376b !important; }
+body .logout-button { background: transparent !important; background-image: none !important; box-shadow: none !important; border: 1px solid #3a4560 !important; color: #e5e7eb !important; }
+body .logout-button:hover { background: #26304a !important; }
+
+/* ---- page headers ---- */
+body .page-header, body .enhanced-header, body .top-header { padding-top: 16px; padding-bottom: 16px; }
+body .page-header h1, body .enhanced-header h1, body .top-header h1 { color: var(--pro-ink) !important; }
+body .page-header p, body .enhanced-header p { color: var(--pro-muted) !important; }
+
+/* ---- product cards: smaller photo, tidier ---- */
+body .sale-product-card .product-image, body .sale-product-card .image-placeholder { background-image: none !important; background-color: #f2f4f7 !important; }
+body .sale-product-card .product-image { aspect-ratio: 16 / 10; height: auto !important; max-height: 180px; }
+body .sale-product-card .product-image img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- reports: summary cards fill the row evenly ---- */
+body .summary-cards, body .report-summary { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+body .summary-card { margin: 0 !important; }
+
+/* ---- tables ---- */
+body table th { background: #fafbfc; color: var(--pro-muted); font-weight: 600; letter-spacing: .02em; }
+body table td { border-color: #eef0f3; }
+body table tbody tr:hover { background: #f8f9fb; }
+
+/* ---- shared page header: title on the left, key figures on the right as plain numbers ---- */
+body .page-header { padding: 20px 24px !important; }
+body .page-header .header-content { align-items: center; }
+body .page-header .header-main { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+body .page-header .title-section { margin: 0; }
+body .page-header .header-stats { display: flex; gap: 0; background: none !important; border: 0 !important; padding: 0 !important; margin: 0 !important; }
+body .page-header .stat-item { background: none !important; border: 0 !important; border-left: 1px solid var(--pro-line) !important; border-radius: 0 !important;
+  padding: 2px 24px !important; min-width: 0; text-align: left; align-items: flex-start; box-shadow: none !important; }
+body .page-header .stat-item:first-child { border-left: 0 !important; }
+body .page-header .stat-item::before { display: none !important; }
+body .page-header .stat-value { font-size: 22px; font-weight: 700; color: var(--pro-ink); line-height: 28px; }
+body .page-header .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--pro-muted); }
+
+/* ---- dashboard stat icons: flat colour chips ---- */
+body .sales-icon { background: #15803d !important; }
+body .revenue-icon { background: var(--pro-navy) !important; }
+body .stock-icon { background: #6d4fc2 !important; }
+body .alerts-icon { background: var(--pro-red) !important; }
+
+/* ---- payment badges: same shape for every method ---- */
+body .payment-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: capitalize; background: #eef0f3; color: #344054; }
+body .payment-cash { background: #e7f6ec !important; color: #166534 !important; }
+body .payment-card { background: #e8eefb !important; color: #1a2d66 !important; }
+body .payment-bank, body .payment-bank_transfer { background: #fdf3dc !important; color: #8a5a00 !important; }
+body .payment-pos { background: #f0e9fb !important; color: #5b3a9a !important; }
+body .page-header .header-stats { box-shadow: none !important; }
+body .page-header .stat-item::after, body .page-header .stat-value::before, body .page-header .stat-value::after, body .page-header .stat-label::before { display: none !important; content: none !important; }
+body .page-header .stat-item { border-top: 0 !important; }
+body .dashboard-content, body .dashboard-page > .main-content { padding-left: 8px; }
+body .cart-title, body .cart-title * { text-shadow: none !important; filter: none !important; }
+body .cart-title { border: 0 !important; }
+body .quick-action-btn, body .quick-action-btn * { color: #fff !important; }

@@ -6,6 +6,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { activityLogger } = require('../middleware/activityLogger');
 const cache = require('../middleware/enhancedCache');
 const { Op } = require('sequelize');
+const { USERNAME_RULE } = require('../utils/usernames');
 const { email: SYSTEM_ADMIN_EMAIL } = require('../config/defaultAdmin.json');
 
 
@@ -15,7 +16,8 @@ function sendUserError(res, error, fallback) {
     return res.status(400).json({ message: error.errors.map((e) => e.message).join(', ') });
   }
   if (error.name === 'SequelizeUniqueConstraintError') {
-    return res.status(409).json({ message: 'A user with this email already exists' });
+    const onEmail = Object.keys(error.fields || {}).some((f) => /email/.test(f));
+    return res.status(409).json({ message: onEmail ? 'A user with this email already exists' : 'That username is already taken' });
   }
   console.error(fallback, error);
   return res.status(500).json({ message: 'Internal server error' });
@@ -73,6 +75,7 @@ router.get('/', authenticateToken, requireRole(['owner']), activityLogger('view_
       where[Op.or] = [
         { firstName: { [Op.like]: `%${search}%` } },
         { lastName: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } }
       ];
     }
@@ -138,14 +141,20 @@ router.get('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin
 router.post('/', authenticateToken, requireRole(['owner']), activityLogger('create_user', 'users'), async (req, res) => {
   try {
     const { firstName, lastName, password, role, locationId, isActive } = req.body;
-    // Login looks users up by lowercased email, so store it that way.
-    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    // Staff sign in with a username. Email is optional; without one an internal address is generated.
+    const username = typeof req.body.username === 'string' ? req.body.username.trim().toLowerCase() : '';
+    const email = typeof req.body.email === 'string' && req.body.email.trim()
+      ? req.body.email.trim().toLowerCase()
+      : `${username}@fortunetiles.local`;
 
     // Validation
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !username || !password) {
       return res.status(400).json({ 
-        message: 'First name, last name, email, and password are required' 
+        message: 'First name, last name, username, and password are required' 
       });
+    }
+    if (!USERNAME_RULE.test(username)) {
+      return res.status(400).json({ message: 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore' });
     }
 
     // Validate role
@@ -157,8 +166,10 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
+    if (await User.findOne({ where: { username } })) {
+      return res.status(409).json({ message: 'That username is already taken' });
+    }
+    if (await User.findOne({ where: { email } })) {
       return res.status(409).json({ message: 'User with this email already exists' });
     }
 
@@ -174,6 +185,7 @@ router.post('/', authenticateToken, requireRole(['owner']), activityLogger('crea
     const newUser = await User.create({
       firstName,
       lastName,
+      username,
       email,
       password,
       role: role || 'staff',
@@ -244,7 +256,9 @@ router.post('/:id/reset-password', authenticateToken, requireRole(['owner']), pr
 router.put('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, role, locationId, isActive } = req.body;
+    const { firstName, lastName, role, locationId, isActive } = req.body;
+    const email = typeof req.body.email === 'string' && req.body.email.trim() ? req.body.email.trim().toLowerCase() : undefined;
+    const username = typeof req.body.username === 'string' && req.body.username.trim() ? req.body.username.trim().toLowerCase() : undefined;
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -274,6 +288,16 @@ router.put('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin
       }
     }
 
+    if (username && username !== user.username) {
+      if (!USERNAME_RULE.test(username)) {
+        return res.status(400).json({ message: 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore' });
+      }
+      const taken = await User.findOne({ where: { username }, attributes: ['id'] });
+      if (taken && taken.id !== parseInt(id)) {
+        return res.status(409).json({ message: 'That username is already taken' });
+      }
+    }
+
     // Check if email is being changed and if it already exists
     if (email && email !== user.email) {
       const existingUser = await User.findOne({ 
@@ -289,6 +313,7 @@ router.put('/:id', authenticateToken, requireRole(['owner']), protectSystemAdmin
     await user.update({
       firstName: firstName || user.firstName,
       lastName: lastName || user.lastName,
+      username: username || user.username,
       email: email || user.email,
       role: role || user.role,
       locationId: locationId !== undefined ? locationId : user.locationId,

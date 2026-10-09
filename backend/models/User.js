@@ -22,6 +22,17 @@ const User = sequelize.define('User', {
       notEmpty: true,
     },
   },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    set(value) {
+      this.setDataValue('username', typeof value === 'string' ? value.trim().toLowerCase() : value);
+    },
+    validate: {
+      is: { args: /^[a-z0-9._-]{3,30}$/, msg: 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore' },
+    },
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -79,6 +90,10 @@ const User = sequelize.define('User', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   hooks: {
+    // Staff do not need an email: give them an internal one so the account stays unique.
+    beforeValidate: (user) => {
+      if (!user.email && user.username) user.email = `${user.username}@fortunetiles.local`;
+    },
     beforeCreate: async (user) => {
       if (user.password) {
         user.password = await bcrypt.hash(user.password, 12);
