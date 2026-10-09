@@ -33,13 +33,13 @@ router.get('/', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'baseUnitPrice', 'markupPrice', 'markupBy', 'totalPrice'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'soldQuantity', 'soldUnit', 'unitPrice', 'baseUnitPrice', 'markupPrice', 'markupBy', 'totalPrice'],
           include: [
             {
               model: Product,
               paranoid: false,
               as: 'product',
-              attributes: ['id', 'name', 'categories', 'description', 'price']
+              attributes: ['id', 'name', 'categories', 'description', 'price', 'unitOfMeasure', 'packSize', 'packUnit']
             }
           ]
         },
@@ -73,6 +73,9 @@ router.get('/', async (req, res) => {
         description: item.product?.description || '',
         quantity: item.quantity,
         unit: item.product?.unitOfMeasure || 'sqm',
+        soldQuantity: item.soldQuantity !== undefined && item.soldQuantity !== null ? Number(item.soldQuantity) : null,
+        soldUnit: item.soldUnit || null,
+        packSize: item.product?.packSize ? Number(item.product.packSize) : null,
         unitPrice: parseFloat(item.unitPrice),
         baseUnitPrice: parseFloat(item.baseUnitPrice || item.unitPrice),
         markupPrice: parseFloat(item.markupPrice || 0),
@@ -134,13 +137,13 @@ router.get('/:id', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'totalPrice'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'soldQuantity', 'soldUnit', 'unitPrice', 'totalPrice'],
           include: [
             {
               model: Product,
               paranoid: false,
               as: 'product',
-              attributes: ['id', 'name', 'categories', 'description', 'price']
+              attributes: ['id', 'name', 'categories', 'description', 'price', 'unitOfMeasure', 'packSize', 'packUnit']
             }
           ]
         },
@@ -167,6 +170,9 @@ router.get('/:id', async (req, res) => {
       description: item.product?.description || '',
       quantity: item.quantity,
       unit: item.product?.unitOfMeasure || 'sqm',
+      soldQuantity: item.soldQuantity !== undefined && item.soldQuantity !== null ? Number(item.soldQuantity) : null,
+      soldUnit: item.soldUnit || null,
+      packSize: item.product?.packSize ? Number(item.product.packSize) : null,
       unitPrice: parseFloat(item.unitPrice),
       baseUnitPrice: parseFloat(item.unitPrice), // Use unitPrice as base
       markupPrice: 0, // No markup data available
@@ -225,7 +231,7 @@ router.get('/search/:term', async (req, res) => {
         {
           model: SaleItem,
           as: 'items',
-          attributes: ['id', 'saleId', 'productId', 'quantity', 'unitPrice', 'totalPrice'],
+          attributes: ['id', 'saleId', 'productId', 'quantity', 'soldQuantity', 'soldUnit', 'unitPrice', 'totalPrice'],
           include: [
             {
               model: Product,
@@ -256,6 +262,9 @@ router.get('/search/:term', async (req, res) => {
         description: item.product?.description || '',
         quantity: item.quantity,
         unit: item.product?.unitOfMeasure || 'sqm',
+        soldQuantity: item.soldQuantity !== undefined && item.soldQuantity !== null ? Number(item.soldQuantity) : null,
+        soldUnit: item.soldUnit || null,
+        packSize: item.product?.packSize ? Number(item.product.packSize) : null,
         unitPrice: parseFloat(item.unitPrice),
         baseUnitPrice: parseFloat(item.unitPrice), // Use unitPrice as base
         markupPrice: 0, // No markup data available

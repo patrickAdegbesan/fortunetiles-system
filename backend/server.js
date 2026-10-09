@@ -19,7 +19,7 @@ function loadJwtSecret() {
 process.env.JWT_SECRET = loadJwtSecret();
 
 const { Location, Category } = require('./models');
-const { ensureUsernames } = require('./utils/usernames');
+const { ensureSchemaUpdates } = require('./utils/schemaUpdates');
 const { ensureDefaultAdmin } = require('./bootstrap');
 const { securityHeaders } = require('./middleware/securityHeaders');
 const WebSocketService = require('./services/WebSocketService');
@@ -81,7 +81,7 @@ app.use((err, req, res, next) => {
 async function initializeDatabase() {
   await testConnection();
   await sequelize.sync();
-  await ensureUsernames(sequelize);
+  await ensureSchemaUpdates(sequelize);
 
   if ((await Location.count()) === 0) {
     await Location.create({ name: 'Main Warehouse', address: 'Default warehouse location' });

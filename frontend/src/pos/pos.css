@@ -166,3 +166,5 @@
 .pos-note { margin-top: 10px; font-weight: 600; }
 .pos-note.ok { color: var(--green); }
 .pos-note.bad { color: var(--red); }
+
+.pos-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }

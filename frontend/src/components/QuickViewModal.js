@@ -1,3 +1,4 @@
+import { hasPack, packName, cartonPrice, quantityText, fmtSqm } from '../utils/units';
 import React from 'react';
 import { FaBox, FaTimes } from 'react-icons/fa';
 import '../styles/QuickViewModal.css';
@@ -62,6 +63,11 @@ const QuickViewModal = ({ product, isOpen, onRequestClose }) => {
                     per {product.unitOfMeasure}
                   </div>
                 )}
+                {hasPack(product) && (
+                  <div className="quickview-unit">
+                    ₦{cartonPrice(product).toLocaleString('en-NG', { minimumFractionDigits: 2 })} per {packName(product)} ({fmtSqm(product.packSize)} sqm)
+                  </div>
+                )}
               </div>
 
               {/* Stock Info */}
@@ -72,7 +78,7 @@ const QuickViewModal = ({ product, isOpen, onRequestClose }) => {
                 <div className={`quickview-stock-value ${
                   product.availableQty > 0 ? 'quickview-stock-available' : 'quickview-stock-unavailable'
                 }`}>
-                  {product.availableQty || 0} {product.unitOfMeasure || 'pc'} available
+                  {quantityText(product, product.availableQty || 0)} available
                 </div>
               </div>
 

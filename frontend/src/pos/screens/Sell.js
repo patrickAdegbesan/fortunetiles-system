@@ -3,24 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaShoppingBasket } from 'react-icons/fa';
 import { Screen, SearchBox, Chips, Stepper, Empty, Loading, ErrorNote, Thumb, money } from '../ui';
 import { useCatalog, useCart, useToast } from '../store';
+import { hasPack, packName, unitLabel, cartonPrice, toBase, fromBase, quantityText } from '../../utils/units';
 
 const PAGE = 40;
 
-const ProductRow = React.memo(function ProductRow({ p, qty, available, onSet, onBlocked }) {
+const ProductRow = React.memo(function ProductRow({ p, qty, unit, available, onSet, onBlocked }) {
   const out = available <= 0;
+  const packed = hasPack(p);
+  const u = packed ? (unit || 'pack') : 'base';
+  const entry = fromBase(p, qty, u);
+  const attrs = p.attributes || {};
+  const detail = [attrs.Size || attrs.size, attrs.Finish || attrs.finish].filter(Boolean).join(' · ');
   return (
-    <div className={`pos-row${out ? ' off' : ''}`} onClick={() => (out ? onBlocked(p) : qty === 0 && onSet(p, 1))} role="button" tabIndex={0}>
+    <div className={`pos-row${out ? ' off' : ''}`} onClick={() => (out ? onBlocked(p) : qty === 0 && onSet(p, toBase(p, 1, u), u))} role="button" tabIndex={0}>
       <Thumb src={p.imageUrl} name={p.name} />
       <div className="pos-row-main">
         <div className="pos-row-title">{p.name}</div>
-        <div className="pos-row-sub">{money(p.price)} / {p.unitOfMeasure || 'pcs'} · {out ? 'Out of stock' : `${available} in stock`}</div>
+        <div className="pos-row-sub">{detail ? `${detail} · ` : ''}{money(p.price)}/{unitLabel(p)}{packed ? ` · ${money(cartonPrice(p))}/${packName(p)}` : ''}</div>
+        <div className="pos-row-sub">{out ? 'Out of stock' : `${quantityText(p, available)} in stock`}</div>
       </div>
       {qty > 0 ? (
         <div onClick={(e) => e.stopPropagation()}>
-          <Stepper value={qty} min={0} max={available} onChange={(n) => onSet(p, n)} label={`${p.name} quantity`} />
+          <Stepper value={entry} min={0} max={fromBase(p, available, u)} onChange={(n) => onSet(p, toBase(p, n, u), u)} label={`${p.name} quantity`} />
         </div>
       ) : (
-        <button type="button" className="pos-add" aria-label={`Add ${p.name}`} disabled={out} onClick={(e) => { e.stopPropagation(); onSet(p, 1); }}>
+        <button type="button" className="pos-add" aria-label={`Add ${p.name}`} disabled={out} onClick={(e) => { e.stopPropagation(); onSet(p, toBase(p, 1, u), u); }}>
           <FaPlus aria-hidden="true" />
         </button>
       )}
@@ -44,17 +51,16 @@ export default function Sell() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [products, q, cat]);
 
-  const setQty = (p, n) => {
+  const setQty = (p, n, unit) => {
     const available = stock[p.id] || 0;
-    if (n > available) { toast(`Only ${available} in stock`, 'error'); return; }
-    cart.setQty(p, n);
+    if (n > available + 1e-9) { toast(`Only ${quantityText(p, available)} in stock`, 'error'); return; }
+    cart.setQty(p, n, unit);
   };
   const blocked = (p) => toast(`${p.name} is out of stock here`, 'error');
 
-  const units = cart.list.reduce((n, l) => n + l.qty, 0);
   const footer = cart.count > 0 && (
     <button type="button" className="pos-cartbar" onClick={() => navigate('/sell/cart')} style={{ margin: 0, width: '100%' }}>
-      <span><FaShoppingBasket aria-hidden="true" style={{ marginRight: 8 }} />{cart.count} item{cart.count === 1 ? '' : 's'}<small>{units} units · tap to review and charge</small></span>
+      <span><FaShoppingBasket aria-hidden="true" style={{ marginRight: 8 }} />{cart.count} item{cart.count === 1 ? '' : 's'}<small>tap to review and charge</small></span>
       <span>{money(cart.subtotal)}</span>
     </button>
   );
@@ -81,7 +87,7 @@ export default function Sell() {
       {list.length > 0 && (
         <div className="pos-list">
           {list.slice(0, shown).map((p) => (
-            <ProductRow key={p.id} p={p} qty={cart.qtyOf(p.id)} available={stock[p.id] || 0} onSet={setQty} onBlocked={blocked} />
+            <ProductRow key={p.id} p={p} qty={cart.qtyOf(p.id)} unit={cart.unitOf(p.id)} available={stock[p.id] || 0} onSet={setQty} onBlocked={blocked} />
           ))}
         </div>
       )}

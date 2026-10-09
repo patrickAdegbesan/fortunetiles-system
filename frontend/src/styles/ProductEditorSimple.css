@@ -1,0 +1,55 @@
+/* Simple tile-first add/edit item form (desktop). */
+.pe-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(15, 23, 42, .5); display: flex; align-items: flex-start; justify-content: center; padding: 28px 16px; overflow-y: auto; }
+.pe-dialog { width: 100%; max-width: 720px; background: #fff; border-radius: 12px; box-shadow: 0 12px 40px rgba(16, 24, 40, .3); font: 14px/1.45 "Segoe UI", Roboto, system-ui, sans-serif; color: #1c2330; }
+.pe-dialog .pe-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid #e2e5eb; }
+.pe-dialog .pe-header h2 { margin: 0; font-size: 19px; font-weight: 700; }
+.pe-x { width: 34px; height: 34px; border: 1px solid #cdd2db; border-radius: 6px; background: #fff; color: #475467; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.pe-x:hover { background: #f2f4f7; }
+.pe-dialog .pe-form { padding: 6px 22px 20px; }
+.pe-dialog .pe-section { padding: 14px 0; border-bottom: 1px solid #eef0f3; }
+.pe-dialog .pe-section h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #667085; text-transform: uppercase; letter-spacing: .05em; }
+.pe-dialog label { display: block; font-size: 13px; font-weight: 600; color: #344054; margin-bottom: 4px; }
+.pe-dialog input:not([type=checkbox]):not([type=file]), .pe-dialog select, .pe-dialog textarea { width: 100%; box-sizing: border-box; height: 38px; padding: 0 11px; border: 1px solid #cdd2db; border-radius: 6px; font: inherit; background: #fff; color: #1c2330; }
+.pe-dialog textarea { height: auto; padding: 8px 11px; }
+.pe-dialog input:focus, .pe-dialog select:focus, .pe-dialog textarea:focus { outline: none; border-color: #1a2d66; box-shadow: 0 0 0 3px rgba(26, 45, 102, .14); }
+.pe-dialog input.error, .pe-dialog select.error { border-color: #b42318; box-shadow: 0 0 0 3px rgba(180, 35, 24, .12); }
+.pe-dialog .pe-error { display: block; color: #b42318; font-size: 12.5px; font-weight: 600; margin-top: 4px; }
+.pe-dialog .pe-help { display: block; color: #667085; font-size: 12.5px; margin-top: 4px; line-height: 1.4; }
+.pe-dialog .pe-field { margin: 0 0 10px; }
+.pe-message { margin: 14px 0 0; padding: 10px 12px; background: #fdeaea; border: 1px solid #f0a3a3; border-radius: 8px; color: #991b1b; font-weight: 600; }
+.pe-kind { display: flex; gap: 6px; margin: 14px 0 0; padding: 4px; background: #eef0f3; border-radius: 9px; }
+.pe-kind button { flex: 1; height: 38px; border: 0; border-radius: 6px; background: transparent; color: #475467; font: 600 14px inherit; cursor: pointer; }
+.pe-kind button small { font-weight: 500; color: #98a2b3; margin-left: 4px; }
+.pe-kind button.on { background: #fff; color: #1a2d66; box-shadow: 0 1px 2px rgba(16, 24, 40, .12); }
+.pe-top { display: flex; gap: 16px; align-items: flex-start; }
+.pe-photo { flex: 0 0 96px; height: 96px; border: 2px dashed #b8c0cf; border-radius: 10px; background: #f8f9fb; color: #667085; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; cursor: pointer; overflow: hidden; padding: 0; }
+.pe-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pe-photo:hover { border-color: #1a2d66; }
+.pe-name { flex: 1; }
+.pe-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.pe-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pe-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.pe-calc-value { height: 38px; display: flex; align-items: center; padding: 0 11px; border-radius: 6px; background: #f2f4f7; font-weight: 700; font-size: 16px; }
+.pe-calc-value span { font-weight: 500; font-size: 13px; color: #98a2b3; }
+.pe-summary { margin: 4px 0 0; padding: 8px 12px; background: #eef2fb; border-radius: 8px; color: #1a2d66; }
+.pe-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pe-chip { height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid #cdd2db; background: #fff; color: #344054; font: 600 13px inherit; cursor: pointer; }
+.pe-chip:hover:not(.on) { background: #f2f4f7; }
+.pe-chip.on { background: #1a2d66; border-color: #1a2d66; color: #fff; }
+.pe-addcat { display: flex; gap: 8px; margin-top: 10px; }
+.pe-btn { height: 38px; padding: 0 16px; border-radius: 6px; border: 1px solid #cdd2db; background: #fff; font: 600 14px inherit; cursor: pointer; white-space: nowrap; }
+.pe-btn:disabled { opacity: .5; cursor: default; }
+.pe-link { background: none; border: 0; color: #1a2d66; font: 600 12.5px inherit; text-decoration: underline; cursor: pointer; padding: 0 0 0 8px; }
+.pe-more { border-bottom: 0 !important; }
+.pe-more-toggle { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; padding: 4px 0; font: 700 14px inherit; color: #1a2d66; cursor: pointer; text-align: left; }
+.pe-more-toggle small { font-weight: 500; color: #98a2b3; }
+.pe-more-body { margin-top: 12px; }
+.pe-extra { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+.pe-check { display: flex !important; align-items: center; gap: 8px; }
+.pe-check input { width: auto !important; height: auto !important; }
+.pe-dialog .pe-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; }
+.pe-dialog .pe-cancel { height: 40px; padding: 0 20px; border-radius: 6px; border: 1px solid #cdd2db; background: #fff; font: 600 14px inherit; color: #1c2330; cursor: pointer; }
+.pe-dialog .pe-save { height: 40px; padding: 0 24px; border-radius: 6px; border: 1px solid #1a2d66; background: #1a2d66; color: #fff; font: 600 14px inherit; cursor: pointer; }
+.pe-dialog .pe-save:disabled { opacity: .6; cursor: default; }
+.pe-loading { padding: 40px; text-align: center; color: #667085; }
+@media (max-width: 640px) { .pe-grid2, .pe-grid3 { grid-template-columns: 1fr; } .pe-top { flex-direction: column; } }

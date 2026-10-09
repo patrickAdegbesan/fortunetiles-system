@@ -200,11 +200,54 @@ function check(name, cond, extra) {
   r = await call('GET', '/products?search=Carrara');
   check('product without photo has no image link', r.data.products[0] && !r.data.products[0].imageUrl, r.data.products[0]);
 
+  // ---- tiles: product type, carton size, decimal quantities
+  r = await call('POST', '/product-types', { name: 'Wall Tile', unitOfMeasure: 'sqm' });
+  const ptype = r.data.productType;
+  check('product type for tiles is created', r.status === 201 && ptype && ptype.id, r);
+  r = await call('POST', '/products', {
+    name: 'Porcelain 60x60', price: 5250, categories: ['Porcelain'], unitOfMeasure: 'sqm', productTypeId: ptype && ptype.id,
+    packSize: 1.44, packUnit: 'carton', attributes: { Size: '60x60 cm', Finish: 'Matt', 'Pieces per carton': 4 },
+    initialLocation: loc.id, initialQuantity: 43.2, // 30 cartons
+  });
+  check('tile with carton size is created', r.status === 201, r);
+  const tile = r.data.product;
+  check('the product type that was chosen is saved', ptype && tile.productTypeId === ptype.id, tile);
+  check('carton size is saved as 1.44 sqm per carton', Number(tile.packSize) === 1.44 && tile.packUnit === 'carton', tile);
+  r = await call('GET', `/products/${tile.id}`);
+  check('product detail returns carton size and type', Number(r.data.product.packSize) === 1.44 && r.data.product.productTypeId === ptype.id, r.data.product);
+  r = await call('GET', '/products?search=Porcelain');
+  check('list returns carton size and type', Number(r.data.products[0].packSize) === 1.44 && r.data.products[0].productTypeId === ptype.id, r.data.products[0]);
+
+  // 2.5 cartons = 3.6 sqm
+  r = await call('POST', '/sales', {
+    locationId: loc.id, customerName: 'Carton buyer', paymentMethod: 'cash', subtotalAmount: 18900,
+    items: [{ productId: tile.id, quantity: 3.6, unitPrice: 5250, soldQuantity: 2.5, soldUnit: 'carton' }],
+  });
+  check('selling 2.5 cartons (3.6 sqm) works', r.status === 201 || r.status === 200, r);
+  check('line total is exact: 3.6 x 5250 = 18900', Number(r.data.sale.totalAmount) === 18900, r.data.sale);
+  const tileSale = r.data.sale;
+  r = await call('GET', `/inventory?productId=${tile.id}&limit=50`);
+  const tileStock = (r.data.inventory || []).filter((i) => i.productId === tile.id).reduce((n, i) => n + Number(i.quantitySqm), 0);
+  check('stock fell by 3.6 sqm: 43.2 - 3.6 = 39.6', Math.abs(tileStock - 39.6) < 1e-9, tileStock);
+  r = await call('GET', `/orders/${tileSale.id}`);
+  const tl = (r.data.items || [])[0] || {};
+  check('the order remembers it was sold as 2.5 carton', Number(tl.soldQuantity) === 2.5 && tl.soldUnit === 'carton' && Number(tl.quantity) === 3.6, tl);
+  r = await call('POST', '/sales', { locationId: loc.id, customerName: 'Decimal', paymentMethod: 'cash', subtotalAmount: 13125, items: [{ productId: tile.id, quantity: 2.5, unitPrice: 5250 }] });
+  check('selling 2.50 sqm works and totals 13125', (r.status === 201 || r.status === 200) && Number(r.data.sale.totalAmount) === 13125, r);
+  r = await call('POST', '/sales', { locationId: loc.id, customerName: 'Too many', paymentMethod: 'cash', subtotalAmount: 1, items: [{ productId: tile.id, quantity: 37.11, unitPrice: 5250 }] });
+  check('selling more than the 37.1 sqm left is refused', r.status === 400, r);
+  r = await call('PUT', `/products/${tile.id}`, { packSize: 0.9216, version: (await call('GET', `/products/${tile.id}`)).data.product.version });
+  check('carton size can be changed', r.status === 200 && Number(r.data.product.packSize) === 0.9216, r);
+  r = await call('PUT', `/products/${tile.id}`, { packSize: null, version: (await call('GET', `/products/${tile.id}`)).data.product.version });
+  check('carton size can be cleared', r.status === 200 && r.data.product.packSize === null && r.data.product.packUnit === null, r.data.product);
+  r = await call('PUT', `/products/${tile.id}`, { productTypeId: null, version: (await call('GET', `/products/${tile.id}`)).data.product.version });
+  check('product type can be cleared', r.status === 200 && r.data.product.productTypeId === null, r.data.product);
+
   // ---- delete product (archive) + backup + users
   r = await call('DELETE', `/products/${p2.id}`);
   check('delete/archive product', r.status === 200, r);
   r = await call('GET', '/products');
-  check('archived product hidden', r.data.products.length === 1, r.data.products?.map((p) => p.name));
+  check('archived product hidden', r.data.products.length === 2 && !r.data.products.some((p) => p.name === 'Granite Black'), r.data.products?.map((p) => p.name));
   r = await call('GET', '/backup/export');
   check('backup export', r.status === 200 && r.data.tables?.sales?.length >= 3, r.status);
   r = await call('POST', '/users', { firstName: 'Cash', lastName: 'Ier', username: 'cashier', password: 'Cashier!Pass123', role: 'staff', locationId: loc.id });

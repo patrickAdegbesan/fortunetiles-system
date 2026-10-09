@@ -6,6 +6,7 @@ import { useCatalog, useToast } from '../store';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchOrders, fetchOrderById, fetchReturns, createReturn, updateReturnStatus } from '../../services/api';
 import { printReceiptOnTerminal, isPosTerminal } from '../../utils/posPrinter';
+import { soldText } from '../../utils/units';
 
 const PAGE = 40;
 const PAY = { cash: 'Cash', card: 'Card', bank_transfer: 'Transfer', pos: 'POS' };
@@ -142,7 +143,7 @@ export function OrderDetail() {
         <h2>Items</h2>
         {(order.items || []).map((it) => (
           <div className="pos-kv" key={it.id}>
-            <span style={{ color: 'var(--ink)' }}>{it.productName || (it.product && it.product.name)} <small style={{ color: 'var(--muted)' }}>× {it.quantity} {it.unit || ''}</small></span>
+            <span style={{ color: 'var(--ink)' }}>{it.productName || (it.product && it.product.name)} <small style={{ color: 'var(--muted)' }}>× {soldText(it)}</small></span>
             <strong>{money(it.totalPrice || it.lineTotal || it.quantity * it.unitPrice)}</strong>
           </div>
         ))}
@@ -212,8 +213,8 @@ export function ReturnForm() {
         <h2>What is coming back?</h2>
         {lines.map((l) => (
           <div className="pos-line" key={l.id}>
-            <div className="pos-line-main"><div className="pos-row-title">{l.productName}</div><div className="pos-row-sub">Bought {l.quantity} × {money(l.unitPrice)}</div></div>
-            <Stepper value={qty[l.id] || 0} min={0} max={l.quantity} onChange={(n) => setQty({ ...qty, [l.id]: n })} label={`${l.productName} quantity`} />
+            <div className="pos-line-main"><div className="pos-row-title">{l.productName}</div><div className="pos-row-sub">Bought {soldText(l)} · {money(l.unitPrice)}/{l.unit || 'sqm'}</div></div>
+            <Stepper value={qty[l.id] || 0} min={0} max={l.quantity} step={(l.unit || 'sqm') === 'sqm' ? 0.5 : 1} onChange={(n) => setQty({ ...qty, [l.id]: n })} label={`${l.productName} quantity (${l.unit || 'sqm'})`} />
             {type === 'EXCHANGE' && (qty[l.id] || 0) > 0 && (
               <div style={{ flex: '1 1 100%' }}>
                 <select value={swap[l.id] || ''} onChange={(e) => setSwap({ ...swap, [l.id]: e.target.value })} aria-label="Replacement product">

@@ -7,6 +7,7 @@ import MoneyValue from '../components/MoneyValue';
 import QuickViewModal from '../components/QuickViewModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import '../styles/ProductsPage.css';
+import { hasPack, packName, unitLabel, cartonPrice, quantityText } from '../utils/units';
 import {
   FaBox,
   FaCubes,
@@ -160,9 +161,9 @@ const ProductCard = memo(({
       )}
 
       <div className="product-attributes">
-        {Object.entries(product.customAttributes || {}).slice(0, 2).map(([key, value], i) => (
+        {Object.entries(product.attributes || product.customAttributes || {}).filter(([k]) => /^(size|finish)$/i.test(k)).slice(0, 2).map(([key, value], i) => (
           <span key={key} className="attribute-tag">
-            {String(value).substring(0, 15)}
+            {String(value).substring(0, 18)}
           </span>
         ))}
       </div>
@@ -170,10 +171,14 @@ const ProductCard = memo(({
       <div className="price-stock-info">
         <div className="product-price">
           <MoneyValue amount={product.price || 0} sensitive={false} />
+          <small className="price-unit"> /{unitLabel(product)}</small>
+          {hasPack(product) && (
+            <div className="carton-price"><MoneyValue amount={cartonPrice(product)} sensitive={false} /> /{packName(product)}</div>
+          )}
         </div>
         <div className="product-stock">
           <FaStore size={10} />
-          {availableQty} {product.unitOfMeasure || 'pc'}
+          {quantityText(product, availableQty)}
         </div>
       </div>
     </div>
@@ -247,12 +252,13 @@ const ProductTableRow = memo(({
       </div>
     </td>
     <td>
-      <MoneyValue amount={product.price || 0} sensitive={false} />
+      <MoneyValue amount={product.price || 0} sensitive={false} /> <small>/{unitLabel(product)}</small>
+      {hasPack(product) && <div className="carton-price"><MoneyValue amount={cartonPrice(product)} sensitive={false} /> /{packName(product)}</div>}
     </td>
     <td>
       <div className={`inventory-status ${availableQty <= 0 ? 'out' : availableQty <= 10 ? 'low' : 'high'}`}>
         <FaWarehouse size={10} />
-        {availableQty} {product.unitOfMeasure || 'pcs'}
+        {quantityText(product, availableQty)}
       </div>
     </td>
     <td>
@@ -771,7 +777,7 @@ const ProductsPage = () => {
         </div>
       </td>
       <td>{product.category || 'General'}</td>
-      <td>₦{parseFloat(product.price).toLocaleString()}{product.unitOfMeasure ? `/${product.unitOfMeasure}` : ''}</td>
+      <td>₦{parseFloat(product.price).toLocaleString()}{product.unitOfMeasure ? `/${product.unitOfMeasure}` : ''}{hasPack(product) ? ` · ₦${cartonPrice(product).toLocaleString()}/${packName(product)}` : ''}</td>
       <td>
         {hasInventoryData ? (
           (() => {
@@ -779,7 +785,7 @@ const ProductsPage = () => {
             if (qty > 0) {
               return (
                 <span className="stock-pill" >
-                  {qty} {product.unitOfMeasure || 'pc'}{selectedLocation === 'all' ? ' total' : ''}
+                  {quantityText(product, qty)}{selectedLocation === 'all' ? ' total' : ''}
                 </span>
               );
             }

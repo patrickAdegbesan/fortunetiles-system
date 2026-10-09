@@ -128,7 +128,7 @@ router.get('/', async (req, res) => {
       include: includeClause,
       attributes: [
         'id', 'name', 'description', 'categories', 'price',
-        'isActive', 'attributes', 'unitOfMeasure',
+        'isActive', 'attributes', 'unitOfMeasure', 'productTypeId', 'packSize', 'packUnit',
         // Photos are stored as data URLs; send a small link instead (see routes/productImages.js)
         [sequelize.literal(`CASE
           WHEN "Product"."image_url" IS NULL OR "Product"."image_url" = '' THEN NULL
@@ -199,6 +199,9 @@ router.post('/', writeRoles, validate([
   { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
   { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
   { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
+  { in: 'body', field: 'productTypeId', required: false, type: 'integer', min: 1 },
+  { in: 'body', field: 'packSize', required: false, type: 'number', min: 0.0001, max: 100000 },
+  { in: 'body', field: 'packUnit', required: false, type: 'string', trim: true, maxLen: 32 },
   // Supports both regular URLs and base64 data URLs from the camera uploader
   { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 5000000 },
   { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
@@ -216,6 +219,9 @@ router.post('/', writeRoles, validate([
       supplierCode,
       categories,
       unitOfMeasure,
+      productTypeId,
+      packSize,
+      packUnit,
       imageUrl,
       description,
       isActive,
@@ -253,6 +259,10 @@ router.post('/', writeRoles, validate([
       supplierCode,
       categories: productCategories,
       unitOfMeasure: unitOfMeasure || 'pcs',
+      // The type the form sends used to be dropped here, so it never stuck.
+      productTypeId: productTypeId || null,
+      packSize: packSize || null,
+      packUnit: packSize ? (packUnit || 'carton') : null,
       imageUrl,
       description,
       isActive: isActive !== undefined ? isActive : true
@@ -300,6 +310,9 @@ router.put('/:id', writeRoles, validate([
   { in: 'body', field: 'supplierCode', required: false, type: 'string', trim: true, maxLen: 255 },
   { in: 'body', field: 'categories', required: false, type: 'array', wrapSingle: true },
   { in: 'body', field: 'unitOfMeasure', required: false, type: 'string', trim: true, maxLen: 32 },
+  { in: 'body', field: 'productTypeId', required: false, type: 'integer', min: 1 },
+  { in: 'body', field: 'packSize', required: false, type: 'number', min: 0.0001, max: 100000 },
+  { in: 'body', field: 'packUnit', required: false, type: 'string', trim: true, maxLen: 32 },
   // Supports both regular URLs and base64 data URLs from the camera uploader
   { in: 'body', field: 'imageUrl', required: false, type: 'string', trim: true, maxLen: 5000000 },
   { in: 'body', field: 'description', required: false, type: 'string', trim: true, maxLen: 20000 },
@@ -322,6 +335,9 @@ router.put('/:id', writeRoles, validate([
       lastUpdatedAt,
       version
     } = req.body;
+    // Null (or empty) means "clear it", so these are read straight from the body rather than skipped when falsy.
+    const body = req.body;
+    const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
 
     const product = await Product.findByPk(id);
 
@@ -362,6 +378,11 @@ router.put('/:id', writeRoles, validate([
       supplierCode: supplierCode || product.supplierCode,
       categories: productCategories,
       unitOfMeasure: unitOfMeasure || product.unitOfMeasure,
+      productTypeId: has('productTypeId') ? (body.productTypeId || null) : product.productTypeId,
+      packSize: has('packSize') ? (Number(body.packSize) > 0 ? Number(body.packSize) : null) : product.packSize,
+      packUnit: has('packSize') || has('packUnit')
+        ? ((has('packSize') ? Number(body.packSize) > 0 : product.packSize > 0) ? (body.packUnit || product.packUnit || 'carton') : null)
+        : product.packUnit,
       // The list sends a link in place of the photo; saving that link back must not wipe the photo.
       imageUrl: imageUrl !== undefined && !/^\/api\/products\/\d+\/image/.test(imageUrl) ? imageUrl : product.imageUrl,
       description: description !== undefined ? description : product.description,

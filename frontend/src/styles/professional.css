@@ -106,3 +106,25 @@ body .dashboard-content, body .dashboard-page > .main-content { padding-left: 8p
 body .cart-title, body .cart-title * { text-shadow: none !important; filter: none !important; }
 body .cart-title { border: 0 !important; }
 body .quick-action-btn, body .quick-action-btn * { color: #fff !important; }
+
+/* ---- tiles: carton price, sell-by switch, decimal quantity box ---- */
+body .price-unit { font-size: 12px; font-weight: 500; color: var(--pro-muted); }
+body .carton-price { font-size: 12px; font-weight: 600; color: var(--pro-muted); margin-top: 2px; }
+body .unit-toggle { display: inline-flex; border: 1px solid #cdd2db; border-radius: 7px; overflow: hidden; margin-bottom: 6px; }
+body .unit-toggle button { height: 26px; padding: 0 12px; border: 0; background: #fff; color: #475467; font: 600 12px "Segoe UI", Roboto, sans-serif; cursor: pointer; }
+body .unit-toggle button + button { border-left: 1px solid #cdd2db; }
+body .unit-toggle button.on { background: var(--pro-navy); color: #fff; }
+body .qty-input { width: 64px; height: 30px; text-align: center; border: 1px solid #cdd2db; border-radius: 6px; font: 700 14px "Segoe UI", Roboto, sans-serif; color: var(--pro-ink); background: #fff; }
+body .qty-input:focus { outline: none; border-color: var(--pro-navy); box-shadow: 0 0 0 3px rgba(26,45,102,.14); }
+body .qty-equiv { font-size: 12px; color: var(--pro-muted); margin-top: 3px; text-align: center; }
+body .item-pricing-section { min-width: 0; }
+body .carton-price { white-space: nowrap; }
+body .item-info-section .unit-toggle { margin-top: 6px; margin-bottom: 0; }
+
+/* cart line: name and remove on the first row, price and quantity on the second (the cart column is narrow) */
+body .cart-item-enhanced { grid-template-columns: minmax(0, 1fr) auto !important; grid-template-areas: "info remove" "price qty"; align-items: start !important; row-gap: 10px; }
+body .cart-item-enhanced .item-info-section { grid-area: info; }
+body .cart-item-enhanced .remove-btn { grid-area: remove; }
+body .cart-item-enhanced .item-pricing-section { grid-area: price; }
+body .cart-item-enhanced .item-quantity-section { grid-area: qty; }
+body .cart-item-enhanced .price-display { flex-wrap: wrap; gap: 4px 8px; }

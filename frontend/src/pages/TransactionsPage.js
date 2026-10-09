@@ -458,7 +458,7 @@ const TransactionsPage = () => {
                             min="0"
                             max={item.maxQuantity}
                             value={item.returnQuantity}
-                            onChange={(e) => handleReturnQuantityChange(index, parseInt(e.target.value) || 0)}
+                            onChange={(e) => handleReturnQuantityChange(index, parseFloat(e.target.value) || 0)}
                             className="return-quantity-input"
                           />
                           <span className="return-amount">

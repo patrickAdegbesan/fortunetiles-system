@@ -34,6 +34,17 @@ const SaleItem = sequelize.define('SaleItem', {
       key: 'id',
     },
   },
+  // How it was sold when that differs from the base unit, e.g. 2.5 carton (the quantity itself is in base units).
+  soldQuantity: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: true,
+    field: 'sold_quantity',
+  },
+  soldUnit: {
+    type: DataTypes.STRING(32),
+    allowNull: true,
+    field: 'sold_unit',
+  },
   quantity: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,

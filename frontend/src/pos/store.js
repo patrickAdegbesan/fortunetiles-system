@@ -2,6 +2,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchProducts, fetchInventory, fetchCategories, fetchLocations } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { hasPack, roundMoney } from '../utils/units';
 
 /* ----------------------------------------------------------------- toasts */
 const ToastContext = createContext({ toast: () => {} });
@@ -100,7 +101,7 @@ const CartContext = createContext(null);
 export const useCart = () => useContext(CartContext);
 
 export function CartProvider({ children }) {
-  const [lines, setLines] = useState({}); // productId -> { product, qty, markup }
+  const [lines, setLines] = useState({}); // productId -> { product, qty (base unit), unit ('base' | 'pack'), markup }
   const [markupUntil, setMarkupUntil] = useState(0);
 
   const api = useMemo(() => ({
@@ -108,18 +109,21 @@ export function CartProvider({ children }) {
     list: Object.values(lines),
     count: Object.values(lines).reduce((n, l) => n + 1, 0),
     qtyOf: (id) => (lines[id] ? lines[id].qty : 0),
-    setQty: (product, qty) => setLines((cur) => {
+    unitOf: (id) => (lines[id] ? lines[id].unit : undefined),
+    // qty is always in the base unit (square metres for tiles); unit is what the customer asked for (sqm or carton).
+    setQty: (product, qty, unit) => setLines((cur) => {
       const next = { ...cur };
       if (qty <= 0) delete next[product.id];
-      else next[product.id] = { markup: 0, ...(cur[product.id] || {}), product, qty };
+      else next[product.id] = { markup: 0, unit: hasPack(product) ? 'pack' : 'base', ...(cur[product.id] || {}), product, qty, ...(unit ? { unit } : {}) };
       return next;
     }),
+    setUnit: (id, unit) => setLines((cur) => (cur[id] ? { ...cur, [id]: { ...cur[id], unit } } : cur)),
     setMarkup: (id, markup) => setLines((cur) => (cur[id] ? { ...cur, [id]: { ...cur[id], markup: Math.max(0, Number(markup) || 0) } } : cur)),
     clear: () => setLines({}),
     markupUnlocked: markupUntil > Date.now(),
     unlockMarkup: () => setMarkupUntil(Date.now() + 8 * 3600 * 1000),
     lockMarkup: () => setMarkupUntil(0),
-    subtotal: Object.values(lines).reduce((sum, l) => sum + l.qty * (Number(l.product.price) + (l.markup || 0)), 0),
+    subtotal: Object.values(lines).reduce((sum, l) => roundMoney(sum + roundMoney(l.qty * (Number(l.product.price) + (l.markup || 0)))), 0),
   }), [lines, markupUntil]);
 
   return <CartContext.Provider value={api}>{children}</CartContext.Provider>;

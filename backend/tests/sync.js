@@ -57,7 +57,7 @@ const stockOf = async (d, productId) => {
     // ---- device A has data before sync is ever switched on
     let r = await A.call('GET', '/locations');
     const loc = r.data.locations[0];
-    r = await A.call('POST', '/products', { name: 'Marble Tile', price: 100, categories: ['Marble'], unitOfMeasure: 'sqm', initialLocation: loc.id, initialQuantity: 50, imageUrl: 'data:image/png;base64,' + 'A'.repeat(3000) });
+    r = await A.call('POST', '/products', { name: 'Marble Tile', price: 100, categories: ['Marble'], unitOfMeasure: 'sqm', packSize: 1.44, packUnit: 'carton', initialLocation: loc.id, initialQuantity: 50, imageUrl: 'data:image/png;base64,' + 'A'.repeat(3000) });
     const p1 = r.data.product;
     r = await A.call('POST', '/products', { name: 'Granite Slab', price: 40, categories: ['Granite'], unitOfMeasure: 'pcs', initialLocation: loc.id, initialQuantity: 20 });
     const p2 = r.data.product;
@@ -96,6 +96,7 @@ const stockOf = async (d, productId) => {
     r = await B.call('GET', '/products?limit=100');
     check('B sees both products', r.data.products.length === 2, r.data.products.map((p) => p.name));
     check('B sees the photo as a link', (r.data.products.find((p) => p.name === 'Marble Tile') || {}).imageUrl, r.data.products[0]);
+    check('the carton size travelled with the product', Number((r.data.products.find((p) => p.name === 'Marble Tile') || {}).packSize) === 1.44 && (r.data.products.find((p) => p.name === 'Marble Tile') || {}).packUnit === 'carton', r.data.products);
     check('B stock for product 1 = 48', (await stockOf(B, p1.id)) === 48, await stockOf(B, p1.id));
     check('B stock for product 2 = 20', (await stockOf(B, p2.id)) === 20);
     r = await B.call('GET', '/orders');
@@ -110,16 +111,20 @@ const stockOf = async (d, productId) => {
     r = await B.call('POST', '/sales', { locationId: locB.id, customerName: 'B customer', paymentMethod: 'card', subtotalAmount: 200, items: [{ productId: p1.id, quantity: 2, unitPrice: 100 }] });
     check('B sells 2 offline', r.status === 201 || r.status === 200, r);
     const bSaleId = r.data.sale.id;
+    r = await B.call('POST', '/sales', { locationId: locB.id, customerName: 'Carton customer', paymentMethod: 'cash', subtotalAmount: 288, items: [{ productId: p1.id, quantity: 2.88, unitPrice: 100, soldQuantity: 2, soldUnit: 'carton' }] });
+    check('B sells 2 cartons (2.88 sqm) offline', r.status === 201 || r.status === 200, r);
+    const cartonSaleId = r.data.sale.id;
     check('B new ids come from its own range', bSaleId >= 20000000, bSaleId);
     r = await A.call('GET', '/sync/status');
     check('A shows changes waiting', r.data.state === 'pending' && r.data.pending > 0, r.data);
     await run(A); await run(B); await run(A);
-    check('stock agrees on A: 50-2-3-2 = 43', (await stockOf(A, p1.id)) === 43, await stockOf(A, p1.id));
-    check('stock agrees on B: 43', (await stockOf(B, p1.id)) === 43, await stockOf(B, p1.id));
+    check('stock agrees on A: 50-2-3-2-2.88 = 40.12', Math.abs((await stockOf(A, p1.id)) - 40.12) < 1e-9, await stockOf(A, p1.id));
+    check('stock agrees on B: 40.12', Math.abs((await stockOf(B, p1.id)) - 40.12) < 1e-9, await stockOf(B, p1.id));
     r = await A.call('GET', '/orders');
-    check('A sees all 3 sales', r.data.length === 3, r.data.length);
+    check('A sees all 4 sales', r.data.length === 4, r.data.length);
+    check('A sees how the carton sale was entered', ((r.data.find((o) => o.id === cartonSaleId) || {}).items || [])[0] && Number(r.data.find((o) => o.id === cartonSaleId).items[0].soldQuantity) === 2 && r.data.find((o) => o.id === cartonSaleId).items[0].soldUnit === 'carton', r.data.find((o) => o.id === cartonSaleId));
     r = await B.call('GET', '/orders');
-    check('B sees all 3 sales', r.data.length === 3, r.data.length);
+    check('B sees all 4 sales', r.data.length === 4, r.data.length);
     r = await B.call('GET', `/orders/${bSaleId}`);
     check('sale items travelled with the sale', r.status === 200 && (r.data.items || []).length === 1, r.data);
 
@@ -142,8 +147,8 @@ const stockOf = async (d, productId) => {
     r = await A.call('POST', '/returns', { saleId: saleA.id, returnType: 'refund', reason: 'damaged', refundMethod: 'cash', items: [{ saleItemId: (detail.items || detail.saleItems)[0].id, quantity: 1, condition: 'damaged', returnReason: 'cracked' }] });
     check('A processes a return of 1', r.status === 201 || r.status === 200, r);
     await run(A); await run(B);
-    check('return put the stock back (43+1 = 44) on A', (await stockOf(A, p1.id)) === 44, await stockOf(A, p1.id));
-    check('return and delivery reached B: 44 and 30', (await stockOf(B, p1.id)) === 44 && (await stockOf(B, p2.id)) === 30, [await stockOf(B, p1.id), await stockOf(B, p2.id)]);
+    check('return put the stock back (40.12+1 = 41.12) on A', Math.abs((await stockOf(A, p1.id)) - 41.12) < 1e-9, await stockOf(A, p1.id));
+    check('return and delivery reached B: 41.12 and 30', Math.abs((await stockOf(B, p1.id)) - 41.12) < 1e-9 && (await stockOf(B, p2.id)) === 30, [await stockOf(B, p1.id), await stockOf(B, p2.id)]);
     r = await B.call('GET', '/returns');
     check('B sees the return', (r.data.returns || []).length === 1, r.data);
 

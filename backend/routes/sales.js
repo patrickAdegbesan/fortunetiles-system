@@ -1,4 +1,5 @@
 const express = require('express');
+const { roundQty, roundMoney } = require('../utils/units');
 const { Op } = require('sequelize');
 const { Sale, SaleItem, Product, Location, User, Inventory, InventoryLog } = require('../models');
 const { sequelize } = require('../config/database');
@@ -37,7 +38,7 @@ router.get('/', authenticateToken, async (req, res) => {
         { 
           model: SaleItem, 
           as: 'items',
-          attributes: ['id', 'quantity', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
+          attributes: ['id', 'quantity', 'soldQuantity', 'soldUnit', 'unitPrice', 'lineTotal', 'baseUnitPrice', 'markupPrice', 'markupBy'],
           include: [{ 
             model: Product,
             paranoid: false,
@@ -303,7 +304,7 @@ router.post('/', authenticateToken, async (req, res) => {
         const baseUnitPrice = parseFloat(item.unitPrice);
         const markupPrice = parseFloat(item.markupPrice) || 0;
         const finalUnitPrice = baseUnitPrice + markupPrice;
-        const lineTotal = requestedQty * finalUnitPrice;
+        const lineTotal = roundMoney(requestedQty * finalUnitPrice);
 
         // Create sale item with markup tracking
         const saleItem = await SaleItem.create({
@@ -311,6 +312,9 @@ router.post('/', authenticateToken, async (req, res) => {
           productId: item.productId,
           quantity: requestedQty,
           unit: product.unitOfMeasure,
+          // How the customer asked for it (for example 2.5 cartons); the quantity above is always in the base unit.
+          soldQuantity: item.soldQuantity !== undefined && item.soldQuantity !== null && item.soldQuantity !== '' ? roundQty(item.soldQuantity) : null,
+          soldUnit: item.soldUnit ? String(item.soldUnit).slice(0, 32) : null,
           unitPrice: finalUnitPrice,
           lineTotal,
           baseUnitPrice: baseUnitPrice,
@@ -323,7 +327,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // Update inventory
         const previousQuantity = parseFloat(inventory.quantitySqm);
-        const newQuantity = previousQuantity - requestedQty;
+        const newQuantity = roundQty(previousQuantity - requestedQty);
         
         console.log('Updating inventory:', {
           productId: item.productId,

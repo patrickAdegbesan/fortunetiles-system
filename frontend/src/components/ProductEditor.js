@@ -1,1080 +1,347 @@
-import React, { useState, useEffect } from 'react';
-import { fetchLocations, fetchProductTypes, fetchCategories, fetchGlobalAttributes } from '../services/api';
-import { FaPen, FaDollarSign, FaImage, FaCog, FaInfoCircle, FaCreditCard, FaCamera, FaUpload, FaCheck, FaTimes, FaPlus, FaTrash, FaTag } from 'react-icons/fa';
-import '../styles/ProductEditor.css';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FaTimes, FaCamera, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import API, { fetchLocations, fetchProductTypes, fetchCategories, createCategory } from '../services/api';
+import { fileToResizedDataUrl } from '../pos/image';
+import { roundQty, roundMoney, sqmPerPiece, fmtSqm, fmtCount } from '../utils/units';
+import '../styles/ProductEditorSimple.css';
 
-const mergeValuesCaseInsensitive = (current = [], values = []) => {
-  const merged = [...current];
-  const lower = new Set(current.map((value) => value.toLowerCase()));
+const OTHER_UNITS = [['pcs', 'Piece'], ['bag', 'Bag'], ['box', 'Box'], ['kg', 'Kilogram'], ['m', 'Metre'], ['l', 'Litre'], ['set', 'Set']];
+const FINISHES = ['Matt', 'Glossy', 'Polished', 'Satin', 'Rustic', 'Textured', 'Anti-slip'];
+const money = (n) => `₦${Number(n || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
 
-  values.forEach((value) => {
-    const trimmed = (value || '').trim();
-    if (!trimmed) {
-      return;
-    }
-
-    if (!lower.has(trimmed.toLowerCase())) {
-      merged.push(trimmed);
-      lower.add(trimmed.toLowerCase());
-    }
-  });
-
-  return merged;
-};
-
-const normalizeCategoriesList = (current = [], extra = []) => {
-  const base = current.length ? current : ['General'];
-  const merged = mergeValuesCaseInsensitive(base, extra);
-
-  if (!merged.some((value) => value.toLowerCase() === 'general')) {
-    merged.push('General');
-  }
-
-  const cleaned = merged
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-
-  const generalIndex = cleaned.findIndex((value) => value.toLowerCase() === 'general');
-  if (generalIndex > 0) {
-    const [general] = cleaned.splice(generalIndex, 1);
-    cleaned.unshift(general);
-  }
-
-  return cleaned;
-};
-
-const normalizeAttributesList = (current = [], extra = []) => {
-  const merged = mergeValuesCaseInsensitive(current, extra);
-
-  return merged
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-};
-
-const findMatchingKey = (collection = {}, candidate = '') => {
-  const lowerCandidate = candidate.toLowerCase();
-  return Object.keys(collection).find((key) => key.toLowerCase() === lowerCandidate) || null;
-};
-
+// Add or edit an item. Tiles come first: size and pieces per carton give the square metres per carton by themselves,
+// the price is per square metre (the carton price is shown), and starting stock can be typed in cartons.
+// Other products (adhesive, grout, tools) are simply sold by the piece, bag, box and so on.
 const ProductEditor = ({ product, onSave, onCancel }) => {
+  const editing = !!product;
+  const fileRef = useRef(null);
+  const [loaded, setLoaded] = useState(!editing);
   const [locations, setLocations] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
   const [productTypes, setProductTypes] = useState([]);
-  const [categoryOptions, setCategoryOptions] = useState(['General']);
-  const [attributeSuggestions, setAttributeSuggestions] = useState([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    productTypeId: '',
-    price: '',
-    attributes: {},
-    supplierCode: '',
-    categories: ['General'],
-    unitOfMeasure: 'pcs',
-    imageUrl: '',
-    description: '',
-    isActive: true,
-    // Initial inventory fields
-    initialLocation: '',
-    initialQuantity: ''
+  const [kind, setKind] = useState(!editing || product.unitOfMeasure === 'sqm' ? 'tile' : 'other');
+  const [form, setForm] = useState({
+    name: '', imageUrl: '', categories: [], length: '', width: '', pieces: '', cartonSqm: '', cartonEdited: false, finish: '',
+    price: '', otherUnit: 'pcs', stockUnit: 'carton', quantity: '', location: '',
+    productTypeId: '', supplierCode: '', description: '', isActive: true, extra: {},
   });
+  const [newCat, setNewCat] = useState('');
+  const [extraKey, setExtraKey] = useState('');
+  const [extraValue, setExtraValue] = useState('');
+  const [more, setMore] = useState(false);
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [categoryInput, setCategoryInput] = useState('');
-  const [attributeDraft, setAttributeDraft] = useState({ key: '', value: '' });
-  const [renamingAttribute, setRenamingAttribute] = useState(null);
-  const [renameValue, setRenameValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const set = (patch) => { setForm((f) => ({ ...f, ...patch })); setErrors({}); };
 
   useEffect(() => {
-    const loadData = async () => {
+    let alive = true;
+    (async () => {
       try {
-        const [
-          locationsData,
-          productTypesData,
-          categoriesData,
-          globalAttributesData
-        ] = await Promise.all([
+        const [loc, types, cats, full] = await Promise.all([
           fetchLocations(),
           fetchProductTypes().catch(() => ({ productTypes: [] })),
           fetchCategories().catch(() => ({ categories: [] })),
-          fetchGlobalAttributes().catch(() => ({ attributes: [] }))
+          editing ? API.get(`/products/${product.id}`).then((r) => r.data.product).catch(() => product) : Promise.resolve(null),
         ]);
-
-        setLocations(locationsData.locations || []);
-        setProductTypes(productTypesData.productTypes || []);
-
-        const normalizedCategories = Array.isArray(categoriesData.categories)
-          ? categoriesData.categories.map((category) =>
-              typeof category === 'string'
-                ? category.trim()
-                : typeof category?.name === 'string'
-                  ? category.name.trim()
-                  : ''
-            ).filter(Boolean)
-          : [];
-
-        setCategoryOptions((prev) => normalizeCategoriesList(prev, normalizedCategories));
-
-        const normalizedAttributes = Array.isArray(globalAttributesData.attributes)
-          ? globalAttributesData.attributes.map((attribute) =>
-              typeof attribute === 'string'
-                ? attribute.trim()
-                : typeof attribute?.name === 'string'
-                  ? attribute.name.trim()
-                  : ''
-            ).filter(Boolean)
-          : [];
-
-        setAttributeSuggestions((prev) => normalizeAttributesList(prev, normalizedAttributes));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to load data');
-      }
-    };
-
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name || '',
-        productTypeId: product.productTypeId || '',
-        price: product.price || '',
-        attributes: product.attributes || {},
-        supplierCode: product.supplierCode || '',
-        categories: Array.isArray(product.categories) ? product.categories : ['General'],
-        unitOfMeasure: product.unitOfMeasure || 'pcs',
-        description: product.description || '',
-        imageUrl: product.imageUrl || '',
-        isActive: product.isActive !== undefined ? product.isActive : true
-      });
-
-      const productCategories = Array.isArray(product.categories) ? product.categories : [];
-      if (productCategories.length) {
-        setCategoryOptions((prev) => normalizeCategoriesList(prev, productCategories));
-      }
-
-      const attributeKeys = Object.keys(product.attributes || {});
-      if (attributeKeys.length) {
-        setAttributeSuggestions((prev) => normalizeAttributesList(prev, attributeKeys));
-      }
-    }
-  }, [product]);
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    if (name.startsWith('attribute_')) {
-      const attributeName = name.replace('attribute_', '');
-      setFormData(prev => ({
-        ...prev,
-        attributes: {
-          ...(prev.attributes || {}),
-          [attributeName]: value
-        }
-      }));
-    } else if (name === 'imageUrl') {
-      const processedUrl = extractDirectImageUrl(value);
-      setFormData(prev => ({
-        ...prev,
-        imageUrl: processedUrl
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleAttributeValueChange = (key, value) => {
-    setFormData(prev => ({
-      ...prev,
-      attributes: {
-        ...(prev.attributes || {}),
-        [key]: value
-      }
-    }));
-  };
-
-  const handleAttributeRename = (oldKey, newKey) => {
-    const trimmed = (newKey || '').trim();
-    if (!trimmed || trimmed === oldKey) {
-      return;
-    }
-
-    setFormData(prev => {
-      const attributes = { ...(prev.attributes || {}) };
-      if (!Object.prototype.hasOwnProperty.call(attributes, oldKey)) {
-        return prev;
-      }
-
-      const existingValue = attributes[oldKey];
-      delete attributes[oldKey];
-
-      const duplicateKey = findMatchingKey(attributes, trimmed);
-      if (duplicateKey) {
-        delete attributes[duplicateKey];
-      }
-
-      attributes[trimmed] = existingValue;
-
-      return {
-        ...prev,
-        attributes
-      };
-    });
-
-    setAttributeSuggestions(prev => normalizeAttributesList(prev, [trimmed]));
-  };
-
-  const startAttributeRename = (key) => {
-    setRenamingAttribute(key);
-    setRenameValue(key);
-  };
-
-  const cancelAttributeRename = () => {
-    setRenamingAttribute(null);
-    setRenameValue('');
-  };
-
-  const confirmAttributeRename = () => {
-    if (!renamingAttribute) return;
-    handleAttributeRename(renamingAttribute, renameValue);
-    cancelAttributeRename();
-  };
-
-  const removeAttribute = (key) => {
-    setFormData(prev => {
-      const attributes = { ...(prev.attributes || {}) };
-      delete attributes[key];
-      return {
-        ...prev,
-        attributes
-      };
-    });
-
-    if (renamingAttribute === key) {
-      cancelAttributeRename();
-    }
-  };
-
-  const addCategoryByValue = (value) => {
-    const trimmed = (value || '').trim();
-    if (!trimmed) {
-      return;
-    }
-
-    setFormData(prev => {
-      const categories = Array.isArray(prev.categories) ? [...prev.categories] : [];
-      const exists = categories.some(category => category.toLowerCase() === trimmed.toLowerCase());
-      if (exists) {
-        return prev;
-      }
-
-      const updated = [...categories, trimmed];
-
-      return {
-        ...prev,
-        categories: updated
-      };
-    });
-
-    setCategoryOptions(prev => normalizeCategoriesList(prev, [trimmed]));
-    setCategoryInput('');
-  };
-
-  const handleCategoryInputKeyDown = (event) => {
-    if (event.key === 'Enter' || event.key === ',' ) {
-      event.preventDefault();
-      addCategoryByValue(categoryInput);
-    } else if (event.key === 'Tab' && categoryInput.trim()) {
-      addCategoryByValue(categoryInput);
-    }
-  };
-
-  const handleCategoryInputBlur = () => {
-    addCategoryByValue(categoryInput);
-  };
-
-  const handleRemoveCategory = (category) => {
-    setFormData(prev => {
-      const filtered = (prev.categories || []).filter(current => current !== category);
-      return {
-        ...prev,
-        categories: filtered.length ? filtered : ['General']
-      };
-    });
-  };
-
-  const handleCategorySuggestionClick = (suggestion) => {
-    addCategoryByValue(suggestion);
-  };
-
-  const commitAttributeDraft = () => {
-    const trimmedKey = (attributeDraft.key || '').trim();
-    if (!trimmedKey) {
-      return;
-    }
-
-    const normalizedKey = findMatchingKey(formData.attributes || {}, trimmedKey) || trimmedKey;
-
-    setFormData(prev => {
-      const attributes = { ...(prev.attributes || {}) };
-      const existingKey = findMatchingKey(attributes, trimmedKey);
-
-      if (existingKey) {
-        attributes[existingKey] = attributeDraft.value;
-      } else {
-        attributes[trimmedKey] = attributeDraft.value;
-      }
-
-      return {
-        ...prev,
-        attributes
-      };
-    });
-
-    setAttributeSuggestions(prev => normalizeAttributesList(prev, [normalizedKey]));
-    setAttributeDraft({ key: '', value: '' });
-  };
-
-  const handleAttributeDraftKeyDown = (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      commitAttributeDraft();
-    }
-  };
-
-  const handleAttributeSuggestionClick = (suggestion) => {
-    const existingKey = findMatchingKey(formData.attributes, suggestion);
-    setAttributeDraft(prev => ({
-      ...prev,
-      key: suggestion,
-      value: existingKey ? formData.attributes[existingKey] : prev.value
-    }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Product name is required';
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = 'Valid price is required';
-    }
-
-    // Only validate initial inventory for new products
-    if (!product) {
-      if (!formData.initialLocation) {
-        newErrors.initialLocation = 'Initial location is required';
-      }
-
-      if (!formData.initialQuantity || parseFloat(formData.initialQuantity) <= 0) {
-        newErrors.initialQuantity = 'Initial quantity must be greater than 0';
-      }
-    }
-
-    if (formData.imageUrl && !isValidImageUrl(formData.imageUrl)) {
-      newErrors.imageUrl = 'Please enter a valid direct image URL. For Google Images, right-click the image and select "Copy image address".';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const isValidImageUrl = (string) => {
-    try {
-      const url = new URL(string);
-      // Check if it's a direct image URL
-      return url.pathname.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
-             url.pathname.endsWith('/image') ||
-             url.hostname.includes('images') ||
-             string.startsWith('data:image/');
-    } catch (_) {
-      return false;
-    }
-  };
-
-  const extractDirectImageUrl = (url) => {
-    try {
-      // If it's already a valid image URL or base64, return as is
-      if (url.startsWith('data:image/') || url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-        return url;
-      }
-
-      // Handle Google Images URLs by showing an error
-      if (url.includes('google.com/imgres')) {
-        alert('Please right-click on the image in Google Images and select "Copy image address" instead.');
-        return '';
-      }
-
-      return url;
-    } catch (err) {
-      console.error('Error processing image URL:', err);
-      return '';
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const productData = {
-        ...formData,
-        price: parseFloat(formData.price)
-      };
-
-      if (Array.isArray(productData.categories)) {
-        const cleanedCategories = Array.from(
-          new Set(
-            productData.categories
-              .map((category) => (category || '').trim())
-              .filter(Boolean)
-          )
-        );
-        productData.categories = cleanedCategories.length ? cleanedCategories : ['General'];
-      } else {
-        productData.categories = ['General'];
-      }
-
-      if (productData.attributes && typeof productData.attributes === 'object') {
-        const sanitizedAttributes = {};
-        Object.entries(productData.attributes).forEach(([key, value]) => {
-          const trimmedKey = (key || '').trim();
-          if (trimmedKey) {
-            sanitizedAttributes[trimmedKey] = value;
-          }
-        });
-        productData.attributes = sanitizedAttributes;
-      }
-
-      // If this is a new product and we have initial inventory data
-      if (!product && formData.initialLocation && formData.initialQuantity) {
-        productData.initialLocation = parseInt(formData.initialLocation);
-        productData.initialQuantity = parseFloat(formData.initialQuantity);
-      }
-
-      await onSave(productData);
-    } catch (error) {
-      console.error('Save error:', error);
-      setError(error.message || 'Failed to save product');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [cameraStatus, setCameraStatus] = useState('');
-  const videoRef = React.useRef(null);
-  const canvasRef = React.useRef(null);
-
-  const startCamera = async () => {
-    try {
-      setCameraStatus('Checking camera support...');
-      
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Camera not supported in this browser');
-      }
-
-      setCameraStatus('Requesting camera permission...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-
-      setCameraStatus('Camera connected, preparing preview...');
-
-      // 1) Render the camera UI first so the <video> element exists
-      setIsCapturing(true);
-      // Wait one animation frame to ensure the video element mounts
-      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-      let videoEl = videoRef.current;
-      if (!videoEl) {
-        // In rare cases, allow an extra microtask
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        videoEl = videoRef.current;
-      }
-
-      if (!videoEl) {
-        setCameraStatus('Could not prepare camera preview. Please try again.');
-        return;
-      }
-
-      // Ensure autoplay works across browsers
-      videoEl.muted = true;
-      try { videoEl.setAttribute('muted', ''); } catch (_) {}
-      videoEl.playsInline = true;
-      try { videoEl.setAttribute('playsinline', ''); } catch (_) {}
-
-      // Attach stream and start playback
-      videoEl.srcObject = stream;
-      
-      // Handle video events like the working test
-      videoEl.onloadedmetadata = () => {
-        const playPromise = videoEl.play();
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise
-            .then(() => setCameraStatus('Camera is ready!'))
-            .catch(() => setCameraStatus('Camera ready (click video if paused)'));
+        if (!alive) return;
+        const locs = loc.locations || [];
+        setLocations(locs);
+        setProductTypes(types.productTypes || []);
+        setCategoryOptions((cats.categories || []).map((c) => (typeof c === 'string' ? c : c && c.name)).filter(Boolean));
+        if (full) {
+          const attrs = full.attributes || {};
+          const size = String(attrs.Size || attrs.size || '').match(/([\d.]+)\s*[x×]\s*([\d.]+)/i);
+          const { Size, size: sizeLower, Finish, finish, 'Pieces per carton': ppc, ...rest } = attrs; // eslint-disable-line no-unused-vars
+          setKind(full.unitOfMeasure === 'sqm' ? 'tile' : 'other');
+          setForm((f) => ({
+            ...f,
+            name: full.name || '',
+            imageUrl: full.imageUrl || '',
+            categories: full.categories || [],
+            length: size ? size[1] : '', width: size ? size[2] : '',
+            pieces: ppc !== undefined ? String(ppc) : '',
+            cartonSqm: full.packSize ? String(full.packSize) : '', cartonEdited: !!full.packSize,
+            finish: Finish || finish || '',
+            otherUnit: full.unitOfMeasure === 'sqm' ? 'pcs' : (full.unitOfMeasure || 'pcs'),
+            price: full.price !== undefined ? String(full.price) : '',
+            productTypeId: full.productTypeId ? String(full.productTypeId) : '',
+            supplierCode: full.supplierCode || '', description: full.description || '', isActive: full.isActive !== false,
+            extra: rest,
+          }));
+          setMore(!!(full.productTypeId || full.supplierCode || Object.keys(rest).length));
+          setLoaded(true);
         } else {
-          setCameraStatus('Camera is ready!');
+          setForm((f) => ({ ...f, location: String((locs[0] || {}).id || '') }));
         }
-      };
-    } catch (err) {
-      console.error('Camera error:', err);
-      setCameraStatus(`Camera error: ${err.message}`);
-      setIsCapturing(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      try { videoRef.current.pause(); } catch (_) {}
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setIsCapturing(false);
-    setCameraStatus('');
-  };
-
-  const captureImage = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      
-      try {
-        // Scale image to a reasonable max dimension to keep payload small
-        const srcW = video.videoWidth || 1280;
-        const srcH = video.videoHeight || 720;
-        const MAX = 1024;
-        const scale = Math.min(MAX / srcW, MAX / srcH, 1);
-        canvas.width = Math.round(srcW * scale);
-        canvas.height = Math.round(srcH * scale);
-
-        // Draw video frame to canvas with smoothing
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Convert to base64 (slightly higher quality for clarity)
-        const imageUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-        setFormData(prev => ({
-          ...prev,
-          imageUrl: imageUrl
-        }));
-
-        stopCamera();
-        setCameraStatus('Photo captured successfully!');
-      } catch (err) {
-        console.error('Error capturing image:', err);
-        alert('Failed to capture image. Please try again.');
+      } catch (e) {
+        if (alive) setMessage((e && e.message) || 'Could not load the form');
       }
-    }
-  };
+    })();
+    return () => { alive = false; };
+  }, [editing, product]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      const vid = videoRef.current;
-      if (vid?.srcObject) {
-        try { vid.pause(); } catch (_) {}
-        const tracks = vid.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
-        vid.srcObject = null;
-      }
-      setIsCapturing(false);
-      setCameraStatus('');
-    };
-  }, []);
+  // Square metres in one carton: worked out from the size and the pieces, unless it was typed in by hand.
+  const piece = sqmPerPiece(form.length, form.width);
+  const autoCarton = piece && num(form.pieces) > 0 ? roundQty(piece * num(form.pieces)) : 0;
+  const cartonSqm = form.cartonEdited ? num(form.cartonSqm) : autoCarton;
+  const price = num(form.price);
+  const isTile = kind === 'tile';
+  const cartonCost = isTile && cartonSqm > 0 ? roundMoney(price * cartonSqm) : 0;
+  const stockBase = useMemo(() => {
+    const q = num(form.quantity);
+    return isTile && form.stockUnit === 'carton' ? roundQty(q * cartonSqm) : roundQty(q);
+  }, [form.quantity, form.stockUnit, cartonSqm, isTile]);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  const pickPhoto = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    try {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = canvasRef.current || document.createElement('canvas');
-          const MAX = 1024;
-          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setFormData(prev => ({ ...prev, imageUrl: dataUrl }));
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error('Image processing error:', err);
-      alert('Could not process image. Please try a smaller image.');
-    }
+    try { set({ imageUrl: await fileToResizedDataUrl(file) }); } catch (err) { setMessage(err.message); }
   };
 
-  const attributeEntries = Object.entries(formData.attributes || {});
-  const selectedCategories = Array.isArray(formData.categories) ? formData.categories : [];
+  const toggleCat = (c) => set({ categories: form.categories.includes(c) ? form.categories.filter((x) => x !== c) : [...form.categories, c] });
+  const addCat = async () => {
+    const name = newCat.trim();
+    if (!name) return;
+    try { await createCategory(name); } catch (_) { /* may already exist */ }
+    if (!categoryOptions.includes(name)) setCategoryOptions([...categoryOptions, name]);
+    if (!form.categories.includes(name)) set({ categories: [...form.categories, name] });
+    setNewCat('');
+  };
 
-  const categorySuggestionList = categoryOptions
-    .filter(option => !selectedCategories.some(category => category.toLowerCase() === option.toLowerCase()))
-    .slice(0, 8);
+  const submit = async (e) => {
+    e.preventDefault();
+    const err = {};
+    if (!form.name.trim()) err.name = 'Enter the name';
+    if (!(price >= 0) || form.price === '') err.price = isTile ? 'Enter the price per square metre' : 'Enter the price';
+    if (isTile && form.cartonSqm !== '' && form.cartonEdited && !(num(form.cartonSqm) > 0)) err.carton = 'Square metres per carton must be more than zero';
+    if (!editing) {
+      if (!form.location) err.location = 'Choose where the stock is kept';
+      if (!(num(form.quantity) > 0)) err.quantity = 'Enter how much you have';
+      if (isTile && form.stockUnit === 'carton' && !(cartonSqm > 0)) err.quantity = 'To count in cartons, enter the size and pieces per carton (or use square metres)';
+    }
+    setErrors(err);
+    if (Object.keys(err).length) { setMessage('Please fix the highlighted fields.'); return; }
 
-  const attributeSuggestionList = attributeSuggestions
-    .filter(option => !attributeEntries.some(([key]) => key.toLowerCase() === option.toLowerCase()))
-    .slice(0, 8);
+    const attributes = { ...form.extra };
+    if (isTile) {
+      if (num(form.length) > 0 && num(form.width) > 0) attributes.Size = `${fmtCount(form.length)}x${fmtCount(form.width)} cm`;
+      if (form.finish) attributes.Finish = form.finish;
+      if (num(form.pieces) > 0) attributes['Pieces per carton'] = num(form.pieces);
+    }
+    const payload = {
+      name: form.name.trim(),
+      price,
+      unitOfMeasure: isTile ? 'sqm' : form.otherUnit,
+      packSize: isTile && cartonSqm > 0 ? cartonSqm : null,
+      packUnit: isTile && cartonSqm > 0 ? 'carton' : null,
+      productTypeId: form.productTypeId ? Number(form.productTypeId) : null,
+      categories: form.categories.length ? form.categories : ['General'],
+      attributes,
+      supplierCode: form.supplierCode.trim() || undefined,
+      description: form.description.trim(),
+      isActive: form.isActive,
+      imageUrl: form.imageUrl || undefined,
+    };
+    if (!editing) { payload.initialLocation = Number(form.location); payload.initialQuantity = stockBase; }
+
+    setBusy(true);
+    setMessage('');
+    try { await onSave(payload); } catch (error) { setMessage((error && error.message) || 'Could not save'); } finally { setBusy(false); }
+  };
+
+  if (!loaded) return <div className="pe-overlay"><div className="pe-dialog"><p className="pe-loading">Loading...</p></div></div>;
 
   return (
-    <div className="product-editor-overlay">
-      <div className="product-editor">
-        <div className="editor-header">
-          <h2>{product ? 'Edit Product' : 'Add New Product'}</h2>
-          <button className="close-btn" onClick={onCancel}>×</button>
+    <div className="pe-overlay">
+      <div className="pe-dialog" role="dialog" aria-modal="true" aria-label={editing ? 'Edit product' : 'Add product'}>
+        <div className="pe-header">
+          <h2>{editing ? 'Edit item' : 'Add item'}</h2>
+          <button type="button" className="pe-x" onClick={onCancel} aria-label="Close"><FaTimes /></button>
         </div>
+        <form onSubmit={submit} className="pe-form" noValidate>
+          {message && <div className="pe-message" role="alert">{message}</div>}
 
-        <form onSubmit={handleSubmit} className="editor-form">
-          {error && <div className="form-error-message">{error}</div>}
-          <div className="form-content">
-            <div className="form-grid">
-            {/* Basic Information */}
-            <div className="form-section basic-info">
-              <h3><span className="section-icon"><FaPen /></span> Basic Information</h3>
-
-              <div className="form-group">
-                <label>Product Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={errors.name ? 'error' : ''}
-                  placeholder="Enter a descriptive product name (e.g., Premium White Marble Tiles)"
-                />
-                {errors.name && <span className="error-text">{errors.name}</span>}
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Unit of Measure</label>
-                  <select
-                    name="unitOfMeasure"
-                    value={formData.unitOfMeasure}
-                    onChange={handleInputChange}
-                  >
-                    <option value="pcs">Pieces (pcs)</option>
-                    <option value="sqm">Square Meters (sqm)</option>
-                    <option value="m">Meters (m)</option>
-                    <option value="kg">Kilograms (kg)</option>
-                    <option value="l">Liters (l)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Supplier Code</label>
-                  <input
-                    type="text"
-                    name="supplierCode"
-                    value={formData.supplierCode}
-                    onChange={handleInputChange}
-                    placeholder="Enter supplier product code"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Product Type (Optional)</label>
-                <select
-                  name="productTypeId"
-                  value={formData.productTypeId}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select Product Type (Optional)</option>
-                  {productTypes.map(type => (
-                    <option key={type.id} value={type.id}>
-                      {type.name} ({type.unitOfMeasure})
-                    </option>
-                  ))}
-                </select>
-                <small className="form-help">Product types help organize similar products for reporting</small>
-              </div>
-
+          {!editing && (
+            <div className="pe-kind" role="tablist">
+              <button type="button" className={isTile ? 'on' : ''} onClick={() => setKind('tile')}>Tile</button>
+              <button type="button" className={!isTile ? 'on' : ''} onClick={() => setKind('other')}>Other product <small>adhesive, grout, tools...</small></button>
             </div>
+          )}
 
-            {/* Custom Attributes */}
-            <div className="form-section full-width product-attributes-card">
-              <h3><span className="section-icon"><FaCog /></span> Custom Attributes</h3>
-              <div className="attributes-section">
-                <div className="attributes-list">
-                  {attributeEntries.length === 0 ? (
-                    <p className="empty-state">No custom attributes yet. Add your first attribute below.</p>
-                  ) : (
-                    attributeEntries.map(([key, value]) => (
-                      <div className="attribute-row" key={key}>
-                        <div className="attribute-key-wrapper">
-                          {renamingAttribute === key ? (
-                            <div className="attribute-rename">
-                              <input
-                                type="text"
-                                value={renameValue}
-                                onChange={(e) => setRenameValue(e.target.value)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    confirmAttributeRename();
-                                  }
-                                  if (event.key === 'Escape') {
-                                    event.preventDefault();
-                                    cancelAttributeRename();
-                                  }
-                                }}
-                                list="global-attribute-suggestions"
-                                className="attribute-rename-input"
-                                placeholder="Attribute name"
-                                autoFocus
-                              />
-                              <div className="attribute-rename-actions">
-                                <button type="button" className="small-button" onClick={confirmAttributeRename}>Save</button>
-                                <button type="button" className="small-button secondary" onClick={cancelAttributeRename}>Cancel</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="attribute-key-display">
-                              <span className="attribute-key-label">{key}</span>
-                              <button type="button" className="rename-attribute-btn" onClick={() => startAttributeRename(key)}>
-                                <FaPen size={12} /> Rename
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Attribute value"
-                          value={value}
-                          onChange={(e) => handleAttributeValueChange(key, e.target.value)}
-                          className="attribute-value"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeAttribute(key)}
-                          className="remove-attribute-btn"
-                          aria-label={`Remove ${key}`}
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {attributeSuggestionList.length > 0 && (
-                  <div className="suggestion-chip-row">
-                    <span className="chip-label">Try:</span>
-                    {attributeSuggestionList.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        className="chip-button"
-                        onClick={() => handleAttributeSuggestionClick(option)}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="attribute-draft-row">
-                  <input
-                    type="text"
-                    placeholder="Attribute name (e.g., Material)"
-                    value={attributeDraft.key}
-                    onChange={(e) => setAttributeDraft(prev => ({ ...prev, key: e.target.value }))}
-                    onKeyDown={handleAttributeDraftKeyDown}
-                    list="global-attribute-suggestions"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Attribute value (e.g., Porcelain)"
-                    value={attributeDraft.value}
-                    onChange={(e) => setAttributeDraft(prev => ({ ...prev, value: e.target.value }))}
-                    onKeyDown={handleAttributeDraftKeyDown}
-                  />
-                  <button type="button" className="add-attribute-btn" onClick={commitAttributeDraft} disabled={!attributeDraft.key.trim()}>
-                    <FaPlus /> Add Attribute
-                  </button>
-                </div>
-
-                <datalist id="global-attribute-suggestions">
-                  {attributeSuggestions.map((option) => (
-                    <option key={option} value={option} />
-                  ))}
-                </datalist>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="form-section categories-section">
-              <h3><span className="section-icon"><FaInfoCircle /></span> Categories</h3>
-              <div className="categories-selected">
-                {selectedCategories.length === 0 && (
-                  <span className="empty-state">No categories yet. Add one below.</span>
-                )}
-                {selectedCategories.map((category) => (
-                  <span key={category} className="category-chip">
-                    {category}
-                    <button type="button" className="chip-remove" onClick={() => handleRemoveCategory(category)} aria-label={`Remove ${category}`}>
-                      <FaTimes size={10} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-
-              <div className="category-input-row">
-                <input
-                  type="text"
-                  placeholder="Type a category and press Enter"
-                  value={categoryInput}
-                  onChange={(e) => setCategoryInput(e.target.value)}
-                  onKeyDown={handleCategoryInputKeyDown}
-                  onBlur={handleCategoryInputBlur}
-                  list="category-suggestions"
-                />
-                <button type="button" className="add-category-btn" onClick={() => addCategoryByValue(categoryInput)} disabled={!categoryInput.trim()}>
-                  <FaPlus /> Add
-                </button>
-              </div>
-
-              <datalist id="category-suggestions">
-                {categoryOptions.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-
-              {categorySuggestionList.length > 0 && (
-                <div className="suggestion-chip-row">
-                  <span className="chip-label">Popular:</span>
-                  {categorySuggestionList.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className="chip-button"
-                      onClick={() => handleCategorySuggestionClick(option)}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Pricing */}
-            <div className="form-section">
-              <h3><span className="section-icon"><FaDollarSign /></span> Pricing</h3>
-
-              <div className="form-group">
-                <label>Price (per {formData.unitOfMeasure}) (₦) *</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  className={errors.price ? 'error' : ''}
-                  placeholder={`Enter price in Naira (e.g., 2500 per ${formData.unitOfMeasure})`}
-                  min="0"
-                  step="0.01"
-                />
-                {errors.price && <span className="error-text">{errors.price}</span>}
-              </div>
-
-              {!product && ( // Only show for new products
-                <div className="initial-inventory">
-                  <h4>Initial Inventory</h4>
-                  <div className="form-group">
-                    <label>Location *</label>
-                    <select
-                      name="initialLocation"
-                      value={formData.initialLocation}
-                      onChange={handleInputChange}
-                      className={errors.initialLocation ? 'error' : ''}
-                    >
-                      <option value="">Select Location</option>
-                      {locations.map(location => (
-                        <option key={location.id} value={location.id}>
-                          {location.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.initialLocation && <span className="error-text">{errors.initialLocation}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Initial Quantity ({formData.unitOfMeasure}) *</label>
-                    <input
-                      type="number"
-                      name="initialQuantity"
-                      value={formData.initialQuantity}
-                      onChange={handleInputChange}
-                      className={errors.initialQuantity ? 'error' : ''}
-                      placeholder={`Enter initial stock quantity (e.g., 100 ${formData.unitOfMeasure})`}
-                      min="0"
-                      step="0.01"
-                    />
-                    {errors.initialQuantity && <span className="error-text">{errors.initialQuantity}</span>}
-                  </div>
-                </div>
-              )}
-            </div>
-
-
-            {/* Image & Description */}
-            <div className="form-section full-width">
-              <h3><span className="section-icon"><FaImage /></span> Image & Description</h3>
-
-              <div className="form-group">
-                <label>Product Image</label>
-                <div className="image-upload-area">
-                  <div className="upload-buttons">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleImageUpload}
-                      className="file-input"
-                      id="image-upload"
-                    />
-                    {!isCapturing ? (
-                      <>
-                        <button type="button" onClick={startCamera} className="camera-btn">
-                          <FaCamera /> Take Photo
-                        </button>
-                        <label htmlFor="image-upload" className="file-label">
-                          <FaUpload /> Choose Image
-                        </label>
-                      </>
-                    ) : null}
-                  </div>
-                  
-                  {isCapturing && (
-                    <div className="camera-container">
-                      {cameraStatus && (
-                        <div className="camera-status">
-                          {cameraStatus}
-                        </div>
-                      )}
-                      <div className="video-container">
-                        <video 
-                          ref={videoRef} 
-                          autoPlay 
-                          playsInline
-                          muted
-                          onClick={() => {
-                            try { videoRef.current && videoRef.current.play(); } catch (_) {}
-                          }}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            maxWidth: '640px',
-                            backgroundColor: '#000',
-                            cursor: 'pointer'
-                          }}
-                        />
-                      </div>
-                      <div className="camera-controls">
-                        <button type="button" onClick={captureImage} className="capture-btn">
-                          <FaCheck /> Take Photo
-                        </button>
-                        <button type="button" onClick={stopCamera} className="cancel-camera-btn">
-                          <FaTimes /> Close Camera
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  <span className="file-info">Or enter image URL below</span>
-                </div>
-                
-                <input
-                  type="url"
-                  name="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  className={errors.imageUrl ? 'error' : ''}
-                  placeholder="Paste image URL here (e.g., https://example.com/product-image.jpg)"
-                />
-                {errors.imageUrl && <span className="error-text">{errors.imageUrl}</span>}
-                
-                {formData.imageUrl && (
-                  <div className="image-preview">
-                    <img src={formData.imageUrl} alt="Preview" />
-                  </div>
-                )}
-              </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Describe the product features, specifications, installation notes, or any additional details that would help customers..."
-                  rows="4"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                  />
-                  Active Product
-                </label>
-              </div>
-            </div>
+          <div className="pe-section pe-top">
+            <button type="button" className="pe-photo" onClick={() => fileRef.current && fileRef.current.click()} aria-label="Choose a photo">
+              {form.imageUrl ? <img src={form.imageUrl} alt="" /> : <><FaCamera /><span>Photo</span></>}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="pe-hidden" onChange={pickPhoto} />
+            <div className="pe-name">
+              <label>{isTile ? 'Tile name' : 'Product name'} *</label>
+              <input value={form.name} onChange={(e) => set({ name: e.target.value })} className={errors.name ? 'error' : ''}
+                placeholder={isTile ? 'e.g. Calacatta Gold Polished' : 'e.g. Tile adhesive 25kg'} autoFocus />
+              {errors.name && <span className="pe-error">{errors.name}</span>}
+              {form.imageUrl && <button type="button" className="pe-link" onClick={() => set({ imageUrl: '' })}>Remove photo</button>}
             </div>
           </div>
 
-          <div className="editor-actions">
-            <button type="button" onClick={onCancel} className="cancel-btn">
-              Cancel
+          {isTile ? (
+            <div className="pe-section">
+              <h3>Size and carton</h3>
+              <div className="pe-grid3">
+                <div className="pe-field"><label>Length (cm)</label><input inputMode="decimal" value={form.length} onChange={(e) => set({ length: e.target.value.replace(/[^0-9.]/g, '') })} placeholder="60" /></div>
+                <div className="pe-field"><label>Width (cm)</label><input inputMode="decimal" value={form.width} onChange={(e) => set({ width: e.target.value.replace(/[^0-9.]/g, '') })} placeholder="60" /></div>
+                <div className="pe-field"><label>Pieces in a carton</label><input inputMode="numeric" value={form.pieces} onChange={(e) => set({ pieces: e.target.value.replace(/[^0-9]/g, '') })} placeholder="4" /></div>
+              </div>
+              <div className="pe-grid2">
+                <div className="pe-field">
+                  <label>Square metres in one carton</label>
+                  <input inputMode="decimal" value={form.cartonEdited ? form.cartonSqm : (autoCarton ? String(autoCarton) : '')}
+                    onChange={(e) => set({ cartonEdited: true, cartonSqm: e.target.value.replace(/[^0-9.]/g, '') })}
+                    className={errors.carton ? 'error' : ''} placeholder="worked out from the size" />
+                  <small className="pe-help">
+                    {autoCarton && !form.cartonEdited ? `${fmtCount(form.length)} x ${fmtCount(form.width)} cm = ${piece.toFixed(4).replace(/0+$/, '')} sqm a piece, so ${fmtCount(form.pieces)} pieces = ${autoCarton} sqm.` : 'Filled in for you when you enter the size and pieces. You can also type it from the carton label.'}
+                    {form.cartonEdited && autoCarton > 0 && <button type="button" className="pe-link" onClick={() => set({ cartonEdited: false, cartonSqm: '' })}>Use the calculated value</button>}
+                  </small>
+                  {errors.carton && <span className="pe-error">{errors.carton}</span>}
+                </div>
+                <div className="pe-field">
+                  <label>Finish</label>
+                  <select value={form.finish} onChange={(e) => set({ finish: e.target.value })}>
+                    <option value="">Not set</option>
+                    {FINISHES.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="pe-section">
+              <h3>How it is sold</h3>
+              <div className="pe-field">
+                <label>Sold by</label>
+                <select value={form.otherUnit} onChange={(e) => set({ otherUnit: e.target.value })}>
+                  {OTHER_UNITS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div className="pe-section">
+            <h3>Price</h3>
+            <div className="pe-grid2">
+              <div className="pe-field">
+                <label>{isTile ? 'Price per square metre (₦) *' : `Price per ${(OTHER_UNITS.find(([v]) => v === form.otherUnit) || [0, 'unit'])[1].toLowerCase()} (₦) *`}</label>
+                <input inputMode="decimal" value={form.price} onChange={(e) => set({ price: e.target.value.replace(/[^0-9.]/g, '') })} className={errors.price ? 'error' : ''} placeholder="0.00" />
+                {errors.price && <span className="pe-error">{errors.price}</span>}
+              </div>
+              {isTile && (
+                <div className="pe-field pe-calc">
+                  <label>Price of one carton</label>
+                  <div className="pe-calc-value">{cartonCost > 0 ? money(cartonCost) : <span>shown when the carton size is known</span>}</div>
+                  {cartonCost > 0 && <small className="pe-help">{money(price)} x {cartonSqm} sqm</small>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!editing && (
+            <div className="pe-section">
+              <h3>Stock you have now</h3>
+              <div className="pe-grid3">
+                <div className="pe-field">
+                  <label>How much? *</label>
+                  <input inputMode="decimal" value={form.quantity} onChange={(e) => set({ quantity: e.target.value.replace(/[^0-9.]/g, '') })} className={errors.quantity ? 'error' : ''} placeholder="0" />
+                </div>
+                {isTile ? (
+                  <div className="pe-field">
+                    <label>Counted in</label>
+                    <select value={form.stockUnit} onChange={(e) => set({ stockUnit: e.target.value })}>
+                      <option value="carton">Cartons</option>
+                      <option value="sqm">Square metres</option>
+                    </select>
+                  </div>
+                ) : <div />}
+                <div className="pe-field">
+                  <label>Kept at *</label>
+                  <select value={form.location} onChange={(e) => set({ location: e.target.value })} className={errors.location ? 'error' : ''}>
+                    <option value="">Choose...</option>
+                    {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              {errors.quantity && <span className="pe-error">{errors.quantity}</span>}
+              {errors.location && <span className="pe-error">{errors.location}</span>}
+              {isTile && num(form.quantity) > 0 && cartonSqm > 0 && (
+                <p className="pe-summary">That is <strong>{fmtSqm(stockBase)} sqm</strong>{form.stockUnit === 'carton' ? ` (${fmtCount(form.quantity)} cartons x ${cartonSqm} sqm)` : ` = ${fmtCount(roundQty(stockBase / cartonSqm))} cartons`}.</p>
+              )}
+            </div>
+          )}
+
+          <div className="pe-section">
+            <h3>Category</h3>
+            <div className="pe-chips">
+              {categoryOptions.map((c) => (
+                <button type="button" key={c} className={`pe-chip${form.categories.includes(c) ? ' on' : ''}`} onClick={() => toggleCat(c)} aria-pressed={form.categories.includes(c)}>{c}</button>
+              ))}
+              {form.categories.filter((c) => !categoryOptions.includes(c)).map((c) => (
+                <button type="button" key={c} className="pe-chip on" onClick={() => toggleCat(c)}>{c}</button>
+              ))}
+            </div>
+            <div className="pe-addcat">
+              <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="New category" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCat(); } }} />
+              <button type="button" className="pe-btn" onClick={addCat} disabled={!newCat.trim()}>Add</button>
+            </div>
+          </div>
+
+          <div className="pe-section pe-more">
+            <button type="button" className="pe-more-toggle" onClick={() => setMore(!more)} aria-expanded={more}>
+              {more ? <FaChevronDown /> : <FaChevronRight />} More options <small>product type, supplier code, notes, extra details</small>
             </button>
-            <button type="submit" disabled={loading} className="save-btn">
-              {loading ? 'Saving...' : (product ? 'Update Product' : 'Create Product')}
-            </button>
+            {more && (
+              <div className="pe-more-body">
+                <div className="pe-grid2">
+                  <div className="pe-field">
+                    <label>Product type</label>
+                    <select value={form.productTypeId} onChange={(e) => set({ productTypeId: e.target.value })}>
+                      <option value="">None</option>
+                      {productTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <small className="pe-help">Optional. Groups similar items in reports. Types are made in Settings, Admin Settings.</small>
+                  </div>
+                  <div className="pe-field">
+                    <label>Supplier code</label>
+                    <input value={form.supplierCode} onChange={(e) => set({ supplierCode: e.target.value })} />
+                  </div>
+                </div>
+                <div className="pe-field">
+                  <label>Notes</label>
+                  <textarea rows={2} value={form.description} onChange={(e) => set({ description: e.target.value })} />
+                </div>
+                <div className="pe-field">
+                  <label>Extra details (for example Brand, Colour)</label>
+                  {Object.entries(form.extra).map(([k, v]) => (
+                    <div className="pe-extra" key={k}><span><strong>{k}:</strong> {String(v)}</span><button type="button" className="pe-link" onClick={() => { const next = { ...form.extra }; delete next[k]; set({ extra: next }); }}>Remove</button></div>
+                  ))}
+                  <div className="pe-addcat">
+                    <input value={extraKey} onChange={(e) => setExtraKey(e.target.value)} placeholder="Name" />
+                    <input value={extraValue} onChange={(e) => setExtraValue(e.target.value)} placeholder="Value" />
+                    <button type="button" className="pe-btn" disabled={!extraKey.trim() || !extraValue.trim()} onClick={() => { set({ extra: { ...form.extra, [extraKey.trim()]: extraValue.trim() } }); setExtraKey(''); setExtraValue(''); }}>Add</button>
+                  </div>
+                </div>
+                <label className="pe-checklabel pe-check"><input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} /> Available for sale</label>
+              </div>
+            )}
+          </div>
+
+          <div className="pe-actions">
+            <button type="button" className="pe-cancel" onClick={onCancel}>Cancel</button>
+            <button type="submit" className="pe-save" disabled={busy}>{busy ? 'Saving...' : editing ? 'Save changes' : 'Add item'}</button>
           </div>
         </form>
       </div>
     </div>
-);
+  );
 };
 
 export default ProductEditor;

@@ -3,6 +3,7 @@ import { FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchLocations, logInventoryChange, fetchInventory } from '../services/api';
 import '../styles/InventoryManager.css';
+import { hasPack, packName, toBase, fromBase, quantityText, fmtCount, fmtSqm } from '../utils/units';
 
 const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selectedCategory: dashboardSelectedCategory }) => {
   const { user } = useContext(AuthContext);
@@ -12,6 +13,7 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [entryUnit, setEntryUnit] = useState('pack'); // tiles with a carton size can be counted in cartons or sqm
   const [changeType, setChangeType] = useState('received'); // 'received' or 'adjusted'
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -78,9 +80,9 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
       setLoading(true);
       setError('');
       
-      const changeAmount = changeType === 'received' ? 
-        Math.abs(parseFloat(quantity)) : 
-        -Math.abs(parseFloat(quantity));
+      const selected = products.find(p => p.id === parseInt(selectedProduct));
+      const baseQty = toBase(selected || {}, Math.abs(parseFloat(quantity)), hasPack(selected) ? entryUnit : 'base');
+      const changeAmount = changeType === 'received' ? baseQty : -baseQty;
 
       await logInventoryChange({
         productId: parseInt(selectedProduct),
@@ -194,6 +196,9 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
     return product?.unitOfMeasure || 'units';
   };
 
+  const selectedProductObj = products.find(p => p.id === parseInt(selectedProduct));
+  const packedSelected = hasPack(selectedProductObj);
+
   return (
     <div className="inventory-manager">
       <h2>Inventory Management</h2>
@@ -243,7 +248,7 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
                 <option value="">Select Product</option>
                 {filteredProducts.map(product => (
                   <option key={product.id} value={product.id}>
-                    {product.name} - Current Stock: {getProductCurrentStock(product.id)} {product.unitOfMeasure || 'units'}
+                    {product.name} - Current Stock: {quantityText(product, getProductCurrentStock(product.id))}
                   </option>
                 ))}
               </select>
@@ -264,16 +269,27 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
               </div>
 
               <div className="form-group">
-                <label>Quantity ({getSelectedProductUnit()}) *</label>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder={`Enter quantity in ${getSelectedProductUnit()}`}
-                  step="0.01"
-                  min="0"
-                  required
-                />
+                <label>Quantity *</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder={packedSelected ? (entryUnit === 'pack' ? 'e.g. 2.5 cartons' : 'e.g. 3.60 sqm') : `Enter quantity in ${getSelectedProductUnit()}`}
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                  {packedSelected && (
+                    <select value={entryUnit} onChange={(e) => setEntryUnit(e.target.value)} aria-label="Counted in" style={{ width: 'auto' }}>
+                      <option value="pack">{packName(selectedProductObj)}s</option>
+                      <option value="base">sqm</option>
+                    </select>
+                  )}
+                </div>
+                {packedSelected && Number(quantity) > 0 && (
+                  <small className="form-help">= {fmtSqm(toBase(selectedProductObj, quantity, entryUnit))} sqm ({fmtCount(fromBase(selectedProductObj, toBase(selectedProductObj, quantity, entryUnit), 'pack'))} {packName(selectedProductObj)}s)</small>
+                )}
               </div>
             </div>
 
@@ -340,6 +356,7 @@ const InventoryManager = ({ selectedLocation: dashboardSelectedLocation, selecte
                         <div className="item-quantity">
                           <span className="quantity">{formatQuantity(item.totalQuantity)}</span>
                           <span className="unit">{unitOfMeasure}</span>
+                          {hasPack(product) && <span className="unit"> · {fmtCount(fromBase(product, item.totalQuantity, 'pack'))} {packName(product)}s</span>}
                         </div>
                         {item.breakdown.length > 1 && (
                           <div className="inventory-breakdown">

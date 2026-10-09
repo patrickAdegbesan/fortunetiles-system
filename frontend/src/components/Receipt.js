@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaEnvelope, FaExchangeAlt, FaGlobe, FaMapMarkerAlt, FaPhone, FaPrint } from 'react-icons/fa';
 import '../styles/Receipt.css';
+import { soldText } from '../utils/units';
 
 const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   // Handle both 'sale' and 'order' data formats
@@ -534,13 +535,13 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
                       </div>
                     </div>
                     <div className="col-qty">
-                      {item.quantity} {item.unit || 'sqm'}
+                      {soldText(item)}
                     </div>
                     <div className="col-price">
-                      ₦{parseFloat(item.unitPrice).toLocaleString()}
+                      ₦{parseFloat(item.unitPrice).toLocaleString('en-NG', { maximumFractionDigits: 2 })}{(item.unit || 'sqm') === 'sqm' ? ' /sqm' : ''}
                     </div>
                     <div className="col-total">
-                      ₦{parseFloat(item.lineTotal || item.totalPrice || (item.quantity * item.unitPrice)).toLocaleString()}
+                      ₦{parseFloat(item.lineTotal || item.totalPrice || (item.quantity * item.unitPrice)).toLocaleString('en-NG', { maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 ))}

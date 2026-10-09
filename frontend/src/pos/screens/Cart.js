@@ -4,6 +4,7 @@ import { FaTimes, FaCheck, FaPrint, FaLock, FaLockOpen } from 'react-icons/fa';
 import { Screen, Card, Field, Button, Chips, Stepper, Empty, ConfirmDialog, money, Thumb } from '../ui';
 import { useCatalog, useCart, useToast } from '../store';
 import { createSale, verifyMarkupPin } from '../../services/api';
+import { hasPack, packName, unitLabel, toBase, fromBase, fmtCount, fmtSqm, roundMoney } from '../../utils/units';
 import { printReceiptOnTerminal, isPosTerminal } from '../../utils/posPrinter';
 
 const PAYMENTS = [
@@ -48,7 +49,14 @@ export default function Cart() {
         discountType: discType || null,
         discountValue: dv,
         subtotalAmount: subtotal,
-        items: cart.list.map((l) => ({ productId: l.product.id, quantity: l.qty, unitPrice: Number(l.product.price), markupPrice: l.markup || 0 })),
+        items: cart.list.map((l) => {
+          const packed = hasPack(l.product) && l.unit === 'pack';
+          return {
+            productId: l.product.id, quantity: l.qty, unitPrice: Number(l.product.price), markupPrice: l.markup || 0,
+            soldQuantity: fromBase(l.product, l.qty, packed ? 'pack' : 'base'),
+            soldUnit: packed ? packName(l.product) : unitLabel(l.product),
+          };
+        }),
       });
       setDone(result.sale);
       cart.clear();
@@ -118,18 +126,29 @@ export default function Cart() {
         {cart.list.map((l) => {
           const max = stock[l.product.id] || 0;
           const unit = Number(l.product.price) + (l.markup || 0);
+          const packed = hasPack(l.product);
+          const u = packed ? (l.unit || 'pack') : 'base';
+          const entry = fromBase(l.product, l.qty, u);
+          const attrs = l.product.attributes || {};
+          const detail = [attrs.Size || attrs.size, attrs.Finish || attrs.finish].filter(Boolean).join(' · ');
           return (
             <div className="pos-line" key={l.product.id}>
               <Thumb src={l.product.imageUrl} name={l.product.name} />
               <div className="pos-line-main">
                 <div className="pos-row-title">{l.product.name}</div>
-                <div className="pos-row-sub">{money(unit)} / {l.product.unitOfMeasure || 'pcs'}</div>
+                <div className="pos-row-sub">{detail ? `${detail} · ` : ''}{money(unit)}/{unitLabel(l.product)}{packed ? ` · ${money(roundMoney(unit * l.product.packSize))}/${packName(l.product)}` : ''}</div>
               </div>
               <button type="button" className="pos-x" aria-label={`Remove ${l.product.name}`} onClick={() => cart.setQty(l.product, 0)}><FaTimes aria-hidden="true" /></button>
-              <Stepper value={l.qty} min={1} max={max} onChange={(n) => cart.setQty(l.product, n)} label={`${l.product.name} quantity`} />
-              <strong className="pos-line-total">{money(l.qty * unit)}</strong>
+              {packed && (
+                <div style={{ flex: '1 1 100%' }}>
+                  <Chips options={[{ value: 'pack', label: `By ${packName(l.product)}` }, { value: 'base', label: `By ${unitLabel(l.product)}` }]} value={u} onChange={(v) => cart.setUnit(l.product.id, v)} />
+                </div>
+              )}
+              <Stepper value={entry} min={0.01} max={fromBase(l.product, max, u)} step={1} onChange={(n) => cart.setQty(l.product, toBase(l.product, n, u), u)} label={`${l.product.name} quantity`} />
+              <strong className="pos-line-total">{money(roundMoney(l.qty * unit))}</strong>
+              {packed && <div className="pos-row-sub" style={{ flex: '1 1 100%' }}>{u === 'pack' ? `= ${fmtSqm(l.qty)} sqm` : `= ${fmtCount(fromBase(l.product, l.qty, 'pack'))} ${packName(l.product)}${fromBase(l.product, l.qty, 'pack') === 1 ? '' : 's'}`}</div>}
               {cart.markupUnlocked && (
-                <label className="pos-line-markup">Markup per unit ₦
+                <label className="pos-line-markup">Markup per {unitLabel(l.product)} ₦
                   <input inputMode="decimal" value={l.markup || ''} placeholder="0" onChange={(e) => cart.setMarkup(l.product.id, e.target.value)} />
                 </label>
               )}

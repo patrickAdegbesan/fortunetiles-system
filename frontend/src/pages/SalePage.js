@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useMemo, memo } from 'react';
+import { hasPack, packName, unitLabel, fmtSqm, fmtCount, cartonPrice, toBase, fromBase, quantityText, roundQty, roundMoney } from '../utils/units';
 import { AuthContext } from '../contexts/AuthContext';
 import { fetchProducts, fetchInventory, fetchLocations, createSale, verifyMarkupPin } from '../services/api';
 import Receipt from '../components/Receipt';
@@ -46,7 +47,7 @@ const ProductCard = memo(({
     {inCart && inCart.quantity > 0 && (
       <div className="in-cart-badge">
         <FaShoppingCart size={10} />
-        {inCart.quantity}
+        {fmtCount(fromBase(inCart, inCart.quantity, inCart.entryUnit))}
       </div>
     )}
     
@@ -77,20 +78,24 @@ const ProductCard = memo(({
       )}
       
       <div className="product-attributes">
-        {Object.entries(product.customAttributes || {}).slice(0, 2).map(([key, value], i) => (
+        {Object.entries(product.attributes || product.customAttributes || {}).filter(([k]) => /^(size|finish)$/i.test(k)).slice(0, 2).map(([key, value]) => (
           <span key={key} className="attribute-tag">
-            {String(value).substring(0, 15)}
+            {String(value).substring(0, 18)}
           </span>
         ))}
       </div>
       
       <div className="price-stock-info">
         <div className="product-price">
-                    <MoneyValue amount={product.price || 0} sensitive={false} />
+          <MoneyValue amount={product.price || 0} sensitive={false} />
+          <small className="price-unit"> /{unitLabel(product)}</small>
+          {hasPack(product) && (
+            <div className="carton-price"><MoneyValue amount={cartonPrice(product)} sensitive={false} /> /{packName(product)}</div>
+          )}
         </div>
         <div className="product-stock">
           <FaStore size={10} />
-          {availableQty} {product.unitOfMeasure || 'pc'}
+          {quantityText(product, availableQty)}
         </div>
       </div>
     </div>
@@ -99,7 +104,7 @@ const ProductCard = memo(({
       <button
         className={`add-btn ${availableQty <= 0 ? 'disabled' : ''}`}
         onClick={() => onAddToCart(product)}
-        disabled={availableQty <= 0 || (inCart && inCart.quantity >= availableQty)}
+        disabled={availableQty <= 0 || (inCart && inCart.quantity + (hasPack(product) ? Number(product.packSize) : 1) > availableQty + 1e-9)}
       >
         {availableQty <= 0 ? (
           <>
@@ -201,16 +206,43 @@ const MarkupPinDialog = ({ isOpen, onClose, onVerify, loading }) => {
   );
 };
 
+// A quantity box that accepts decimals such as 2.50 while it is being typed.
+const QtyInput = ({ value, onCommit }) => {
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+  const commit = () => {
+    const v = parseFloat(text);
+    if (Number.isFinite(v) && v > 0) onCommit(v); else setText(String(value));
+  };
+  return (
+    <input
+      className="qty-input"
+      inputMode="decimal"
+      aria-label="Quantity"
+      value={text}
+      onChange={(e) => setText(e.target.value.replace(/[^0-9.]/g, ''))}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+      onFocus={(e) => e.target.select()}
+    />
+  );
+};
+
 // Memoized CartItem component
 const CartItem = memo(({ 
   item, 
   onUpdateQuantity, 
+  onChangeUnit,
   onRemove,
   onUpdateMarkup,
   userRole,
   canEditMarkup,
   onRequestMarkupAccess
 }) => {
+  const packSize = Number(item.packSize) || 0;
+  const packed = packSize > 0;
+  const entryUnit = packed ? (item.entryUnit || 'pack') : 'base';
+  const entryQty = fromBase(item, item.quantity, entryUnit);
   const basePrice = parseFloat(item.basePrice || item.price) || 0;
   const markupPrice = parseFloat(item.markupPrice) || 0;
   const finalPrice = basePrice + markupPrice;
@@ -222,7 +254,13 @@ const CartItem = memo(({
       {/* Left: Product Info */}
       <div className="item-info-section">
         <div className="item-name">{item.productName}</div>
-        <div className="item-unit">{item.unitOfMeasure}</div>
+        <div className="item-unit">{[item.size, item.finish].filter(Boolean).join(' · ') || item.unitOfMeasure}</div>
+        {packed && (
+          <div className="unit-toggle sell-by" role="group" aria-label="Sell by">
+            <button type="button" className={entryUnit === 'base' ? 'on' : ''} onClick={() => onChangeUnit(item.productId, 'base')}>{item.unit || 'sqm'}</button>
+            <button type="button" className={entryUnit === 'pack' ? 'on' : ''} onClick={() => onChangeUnit(item.productId, 'pack')}>{item.packUnit || 'carton'}</button>
+          </div>
+        )}
       </div>
 
       {/* Middle: Pricing */}
@@ -230,8 +268,11 @@ const CartItem = memo(({
         <div className="price-display">
           <div className="price-label">Unit Price</div>
           <div className="price-value">
-            <MoneyValue amount={finalPrice} sensitive={false} />
+            <MoneyValue amount={finalPrice} sensitive={false} /> <small>/{item.unit || 'sqm'}</small>
           </div>
+          {packed && (
+            <div className="carton-price"><MoneyValue amount={roundMoney(finalPrice * packSize)} sensitive={false} /> /{item.packUnit || 'carton'}</div>
+          )}
         </div>
         {markupPrice > 0 && (
           <div className="markup-info">
@@ -275,23 +316,30 @@ const CartItem = memo(({
         <div className="qty-controls">
           <button
             className="qty-btn decrease"
-            onClick={() => onUpdateQuantity(item.productId, item.quantity - 1)}
-            disabled={item.quantity <= 1}
+            onClick={() => onUpdateQuantity(item.productId, toBase(item, Math.max(0, entryQty - 1), entryUnit))}
+            disabled={entryQty <= 1}
             title="Decrease quantity"
           >
             <FaMinus size={12} />
           </button>
-          <span className="qty-value">{item.quantity}</span>
+          <QtyInput value={entryQty} onCommit={(v) => onUpdateQuantity(item.productId, toBase(item, v, entryUnit))} />
           <button
             className="qty-btn increase"
-            onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
+            onClick={() => onUpdateQuantity(item.productId, toBase(item, entryQty + 1, entryUnit))}
             title="Increase quantity"
           >
             <FaPlus size={12} />
           </button>
         </div>
+        {packed && (
+          <div className="qty-equiv">
+            {entryUnit === 'pack'
+              ? `= ${fmtSqm(item.quantity)} ${item.unit || 'sqm'}`
+              : `= ${fmtCount(fromBase(item, item.quantity, 'pack'))} ${item.packUnit || 'carton'}${fromBase(item, item.quantity, 'pack') === 1 ? '' : 's'}`}
+          </div>
+        )}
         <div className="item-total">
-          <MoneyValue amount={finalPrice * parseFloat(item.quantity)} sensitive={false} />
+          <MoneyValue amount={roundMoney(finalPrice * parseFloat(item.quantity))} sensitive={false} />
         </div>
       </div>
 
@@ -421,24 +469,32 @@ const SalePage = () => {
     setCart(prevCart => {
       const existingItemIndex = prevCart.findIndex(item => item.productId === product.id);
       
+      const entryUnit = hasPack(product) ? 'pack' : 'base';
+      const step = toBase(product, 1, entryUnit);
       if (existingItemIndex !== -1) {
         const existingItem = prevCart[existingItemIndex];
-        if (existingItem.quantity >= availableQty) return prevCart;
+        const nextQty = roundQty(existingItem.quantity + toBase(existingItem, 1, existingItem.entryUnit || entryUnit));
+        if (nextQty > availableQty + 1e-9) return prevCart;
         
         const newCart = [...prevCart];
-        newCart[existingItemIndex] = {
-          ...existingItem,
-          quantity: existingItem.quantity + 1
-        };
+        newCart[existingItemIndex] = { ...existingItem, quantity: nextQty };
         return newCart;
       } else {
+        if (step > availableQty + 1e-9) return prevCart;
+        const attrs = product.attributes || product.customAttributes || {};
         return [...prevCart, {
           productId: product.id,
           productName: product.name,
           price: product.price,
           basePrice: product.price,
           markupPrice: 0,
-          quantity: 1,
+          quantity: step,
+          entryUnit,
+          unit: product.unitOfMeasure,
+          packSize: hasPack(product) ? Number(product.packSize) : null,
+          packUnit: hasPack(product) ? packName(product) : null,
+          size: attrs.Size || attrs.size || '',
+          finish: attrs.Finish || attrs.finish || '',
           unitOfMeasure: product.unitOfMeasure
         }];
       }
@@ -451,16 +507,21 @@ const SalePage = () => {
     setCart(prevCart => {
       if (newQuantity <= 0) {
         return prevCart.filter(item => item.productId !== productId);
-      } else if (newQuantity <= availableQty) {
+      } else if (roundQty(newQuantity) <= availableQty + 1e-9) {
         return prevCart.map(item =>
           item.productId === productId
-            ? { ...item, quantity: newQuantity }
+            ? { ...item, quantity: roundQty(newQuantity) }
             : item
         );
       }
       return prevCart;
     });
   }, [getAvailableQuantity]);
+
+  // Switch a cart line between selling by the square metre and by the carton; the amount stays the same.
+  const changeCartUnit = useCallback((productId, entryUnit) => {
+    setCart(prevCart => prevCart.map(item => (item.productId === productId ? { ...item, entryUnit } : item)));
+  }, []);
 
   const removeFromCart = useCallback((productId) => {
     setCart(prevCart => prevCart.filter(item => item.productId !== productId));
@@ -502,7 +563,7 @@ const SalePage = () => {
       const markupPrice = parseFloat(item.markupPrice) || 0;
       const quantity = parseFloat(item.quantity) || 0;
       const finalPrice = basePrice + markupPrice;
-      return total + (finalPrice * quantity);
+      return roundMoney(total + roundMoney(finalPrice * quantity));
     }, 0);
   }, [cart]);
 
@@ -555,6 +616,8 @@ const SalePage = () => {
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
+          soldQuantity: fromBase(item, item.quantity, item.entryUnit),
+          soldUnit: item.packSize > 0 && item.entryUnit === 'pack' ? (item.packUnit || 'carton') : (item.unit || item.unitOfMeasure),
           unitPrice: item.basePrice || item.price,
           markupPrice: item.markupPrice || 0
         }))
@@ -756,7 +819,7 @@ const SalePage = () => {
                                 </td>
                                 <td className="table-cell">
                                   <div className="product-attributes-table">
-                                    {Object.entries(product.customAttributes || {}).slice(0, 3).map(([key, value]) => (
+                                    {Object.entries(product.attributes || product.customAttributes || {}).slice(0, 3).map(([key, value]) => (
                                       <div key={key} className="attribute-item">
                                         <span className="attribute-key">{key}:</span> {String(value).substring(0, 20)}
                                       </div>
@@ -769,17 +832,20 @@ const SalePage = () => {
                                   </div>
                                   {product.unitOfMeasure && (
                                     <div className="price-per-unit-table">
-                                      per {product.unitOfMeasure}
+                                      per {unitLabel(product)}
                                     </div>
+                                  )}
+                                  {hasPack(product) && (
+                                    <div className="price-per-unit-table"><MoneyValue amount={cartonPrice(product)} sensitive={false} /> per {packName(product)}</div>
                                   )}
                                 </td>
                                 <td className="table-cell center">
                                   <div className={`stock-info ${availableQty > 0 ? 'stock-high' : 'stock-low'}`}>
-                                    {availableQty} {product.unitOfMeasure || 'pc'}
+                                    {quantityText(product, availableQty)}
                                   </div>
                                   {inCart && (
                                     <div className="stock-available-text">
-                                      {inCart.quantity} in cart
+                                      {quantityText(product, inCart.quantity)} in cart
                                     </div>
                                   )}
                                 </td>
@@ -788,7 +854,7 @@ const SalePage = () => {
                                     <button
                                       className="action-button"
                                       onClick={() => addToCart(product)}
-                                      disabled={availableQty <= 0 || (inCart && inCart.quantity >= availableQty)}
+                                      disabled={availableQty <= 0 || (inCart && inCart.quantity + (hasPack(product) ? Number(product.packSize) : 1) > availableQty + 1e-9)}
                                     >
                                       {availableQty <= 0 ? 'Out of Stock' : '+ Add'}
                                     </button>
@@ -840,6 +906,7 @@ const SalePage = () => {
                         key={item.productId}
                         item={item}
                         onUpdateQuantity={updateCartQuantity}
+                        onChangeUnit={changeCartUnit}
                         onRemove={removeFromCart}
                         onUpdateMarkup={canEditMarkup ? updateMarkup : null}
                         userRole={user?.role}

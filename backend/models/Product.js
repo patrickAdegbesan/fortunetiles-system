@@ -50,6 +50,18 @@ const Product = sequelize.define('Product', {
     allowNull: true,
     defaultValue: ['General'],
   },
+  // How many base units (square metres for tiles) one carton/pack holds. Null = not sold in packs.
+  packSize: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: true,
+    field: 'pack_size',
+    get() { const v = this.getDataValue('packSize'); return v === null || v === undefined ? null : Number(v); },
+  },
+  packUnit: {
+    type: DataTypes.STRING(32),
+    allowNull: true,
+    field: 'pack_unit',
+  },
   unitOfMeasure: {
     type: DataTypes.STRING(20),
     allowNull: false,

@@ -1,6 +1,7 @@
 // Printing on the NEXGO/XGD POS terminal's built-in thermal printer (Android app only).
 // The native NexgoPrinter plugin draws a list of simple items (text rows, dashed lines, images) and prints it.
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { soldText } from './units';
 import { PRINT_LOGO } from '../pos/printLogo';
 
 const NexgoPrinter = registerPlugin('NexgoPrinter');
@@ -50,11 +51,11 @@ export async function buildReceiptItems(sale, { withLogo = true } = {}) {
 
   (sale.items || []).forEach((item) => {
     const name = (item.product && item.product.name) || item.productName || 'Product';
-    const qty = item.quantity;
     const unit = item.unit || (item.product && item.product.unitOfMeasure) || '';
     const total = item.lineTotal || item.totalPrice || item.quantity * item.unitPrice;
     items.push({ type: 'text', text: name, bold: true });
-    items.push({ type: 'row', left: `${qty} ${unit} x ${money(item.unitPrice)}`.replace('  ', ' '), right: money(total), size: 'small' });
+    items.push({ type: 'row', left: soldText({ ...item, unit }), right: money(total), size: 'small' });
+    items.push({ type: 'text', text: `@ ${money(item.unitPrice)}${unit ? ` per ${unit}` : ''}`, size: 'small' });
   });
   items.push(rule);
 

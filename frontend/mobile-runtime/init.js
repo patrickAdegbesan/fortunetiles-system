@@ -1,11 +1,11 @@
 // First-run setup for the in-app database: schema, default location/categories and the built-in admin.
 const bcrypt = require('bcryptjs');
 const defaults = require('../../backend/config/defaultAdmin.json');
-const { ensureUsernames } = require('../../backend/utils/usernames');
+const { ensureSchemaUpdates } = require('../../backend/utils/schemaUpdates');
 
 // Bump when the schema changes. Tables that already exist are never altered by sync, so changes to them need a
-// migration below (2: users.username).
-const SCHEMA_VERSION = 2;
+// migration below (2: users.username; 3: products.pack_size/pack_unit, sale_items.sold_quantity/sold_unit).
+const SCHEMA_VERSION = 3;
 
 function randomPassword() {
   const bytes = new Uint8Array(9);
@@ -37,7 +37,7 @@ async function initLocalBackend(options = {}) {
   }
 
   await sequelize.sync();
-  await ensureUsernames(sequelize);
+  await ensureSchemaUpdates(sequelize);
   lap('sync');
 
   if ((await Location.count()) === 0) {

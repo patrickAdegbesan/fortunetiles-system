@@ -72,7 +72,8 @@ const SALES = {
     { selector: '.sale-product-card', title: 'A product card', text: 'Each card shows the photo, price and how much is in stock. Products that are out of stock cannot be added. The eye button opens a quick look at the details.' },
     { selector: '.sale-product-card .add-btn', title: 'Add to Cart', text: 'Pressing this adds one of the product to the cart. Watch the cart on the right...' },
     { selector: '.cart-item-enhanced', title: 'The product is in the cart', ensure: [click('.sale-product-card .add-btn', { unless: '.cart-item-enhanced' }), waitFor('.cart-item-enhanced')], text: 'There it is. Each cart line shows the product, its unit price, the quantity and the line total. The cart count and the total at the top of the page updated too.', placement: 'left' },
-    { selector: '.qty-controls', title: 'Quantity', ensure: [click('.qty-btn.increase', { once: 'qty' })], text: 'Use plus and minus to change the quantity. We pressed plus, so the line total went up. You cannot add more than is in stock.', placement: 'left' },
+    { selector: '.cart-item-enhanced .unit-toggle', title: 'Sell by carton or by square metre', text: 'A tile can be sold either way. Press carton or sqm to choose: the amount stays the same and is converted for you, for example 2.5 cartons is 3.60 sqm at 1.44 sqm a carton. The price per sqm and the price per carton are both shown. This switch only appears for tiles that have a carton size.', placement: 'left' },
+    { selector: '.qty-controls', title: 'Quantity', ensure: [click('.qty-btn.increase', { once: 'qty' })], text: 'Use plus and minus to change the quantity, or type it, decimals included (2.50 is fine). We pressed plus, so the line total went up. You cannot add more than is in stock.', placement: 'left' },
     { selector: '.remove-btn', title: 'Remove a line', text: 'The red bin removes this product from the cart. It does not affect your stock because nothing has been sold yet.', placement: 'left' },
     { selector: '.markup-editor', title: 'Editing the price (markup)', text: 'Sometimes you need to charge more than the listed price. Markup adds an amount on top of the unit price for this sale only. Owners and managers can type it directly. Other staff see an Unlock button and need the PIN the owner set in Settings, which stops anyone changing prices without permission.', placement: 'left' },
     { selector: '.pin-dialog', modal: 'pin', title: 'The PIN window', ensure: [click('.markup-unlock-btn', { ifPresent: '.markup-unlock-btn', unless: '.pin-dialog' })], text: 'This is what staff see after pressing Unlock. They enter the 4-digit PIN and press Unlock. It stays unlocked for a limited time. (If you are the owner, you do not need it, so this window may not appear for you.)' },
@@ -131,13 +132,14 @@ const TRANSACTIONS = {
 
 /* ------------------------------------------------------------------- products */
 const PRODUCTS_RESET = [
-  { name: 'editor', selector: '.product-editor .editor-actions button[type="button"]', ifPresent: '.product-editor-overlay' },
+  { name: 'editor', selector: '.pe-dialog .pe-actions button[type="button"]', ifPresent: '.pe-overlay' },
   { name: 'quick', selector: '.quickview-close-footer-btn', ifPresent: '.quickview-overlay' },
   { name: 'delete', selector: '.delete-cancel-btn', ifPresent: '.delete-modal-overlay' },
 ];
-const section = (title) => ({ selector: '.product-editor h3', match: new RegExp(title), closest: '.form-section' });
-const openAdd = click('button', { match: /Add Product/, unless: '.product-editor-overlay' });
-const openEdit = click('.sale-product-card .edit-btn', { unless: '.product-editor-overlay' });
+const section = (title) => ({ selector: '.pe-dialog h3', match: new RegExp(title), closest: '.pe-section' });
+const openAdd = click('button', { match: /Add Product/, unless: '.pe-overlay' });
+const openEdit = click('.sale-product-card .edit-btn', { unless: '.pe-overlay' });
+const peField = (n) => `.pe-dialog .pe-grid3 .pe-field:nth-child(${n}) input`;
 const PRODUCTS = {
   reset: PRODUCTS_RESET,
   steps: [
@@ -150,16 +152,18 @@ const PRODUCTS = {
     { selector: '.view-controls', title: 'Grid or Table', ensure: [click('.view-controls .view-btn', { match: /Table/ })], text: 'Cards with photos, or a compact table that fits more products on screen. We switched to Table.' },
     { selector: '.sort-controls', title: 'Sorting', ensure: [click('.view-controls .view-btn', { match: /Grid/ })], text: 'Sort by name, price or stock, and use the arrow button beside it to flip the order.' },
     { selector: 'button.action-btn', match: /Export/i, title: 'Export', text: 'Downloads the product list as a file so you can keep it or open it in Excel.' },
-    { selector: 'button', match: /Add Product/, title: 'Add Product', text: 'Press this to create a new product. We will open the form now...' },
-    { selector: '.product-editor .editor-header', modal: 'editor', title: 'The Add Product form', ensure: [openAdd, waitFor('.product-editor')], text: 'This form holds everything about a product. Nothing is saved until you press Save. It is divided into sections.' },
-    { ...section('Basic Information'), modal: 'editor', title: 'Basic information', ensure: [openAdd, waitFor('.product-editor'), type('.product-editor .form-group input', 'Sample Tile 60x60', { once: 'pn' })], text: 'The product name, how it is measured (square metres, boxes, pieces), a supplier code and an optional product type that groups similar products for reports. We typed a sample name.' },
-    { ...section('Custom Attributes'), modal: 'editor', title: 'Custom attributes', ensure: [openAdd, waitFor('.product-editor')], text: 'Extra details such as size, finish or colour. Anything you add here can be searched on the Sales and Products pages.' },
-    { ...section('Categories'), modal: 'editor', title: 'Categories', ensure: [openAdd, waitFor('.product-editor')], text: 'Tick one or more categories so the product can be filtered and reported on. Categories are created in Settings, under Admin Settings.' },
-    { ...section('Pricing'), modal: 'editor', title: 'Pricing and starting stock', ensure: [openAdd, waitFor('.product-editor')], text: 'The selling price per unit in naira. For a new product you also choose the location and the quantity you currently have, which becomes its first stock record. Later stock changes are made from the Dashboard.' },
-    { ...section('Image'), modal: 'editor', title: 'Photo and description', ensure: [openAdd, waitFor('.product-editor')], text: 'Upload a photo from the computer so the product is easy to recognise on the Sales page, and add a description if you wish.' },
-    { selector: '.product-editor .editor-actions', modal: 'editor', title: 'Save or cancel', ensure: [openAdd, waitFor('.product-editor')], text: 'Save creates the product. Cancel closes the form without saving anything, which is what we will do now.' },
+    { selector: 'button', match: /Add Product/, title: 'Add Product', text: 'Press this to add a new tile. We will open the form now...' },
+    { selector: '.pe-dialog .pe-header', modal: 'editor', title: 'The Add Item form', ensure: [openAdd, waitFor('.pe-dialog')], text: 'Everything about a new tile is on this one form. Nothing is saved until you press Add item.' },
+    { selector: '.pe-dialog .pe-kind', modal: 'editor', title: 'Tile or other product', ensure: [openAdd, waitFor('.pe-dialog')], text: 'Tiles come first because they are what you sell most: this tab asks for the size, the pieces in a carton and the price per square metre. Choose Other product for anything else, such as adhesive, grout or tools. That tab is simpler: a name, how it is sold (piece, bag, box, kilogram...), a price and the stock.' },
+    { selector: '.pe-dialog .pe-top', modal: 'editor', title: 'Name and photo', ensure: [openAdd, waitFor('.pe-dialog'), type('.pe-dialog .pe-name input', 'Calacatta Gold Polished', { once: 'pn' })], text: 'Give the tile its name, as customers will know it. Press the Photo box to choose a picture from the computer, so the tile is easy to recognise when selling. We typed a sample name.' },
+    { ...section('Size and carton'), modal: 'editor', title: 'Size and carton', ensure: [openAdd, waitFor('.pe-dialog'), type(peField(1), '60', { once: 'l1' }), type(peField(2), '60', { once: 'l2' }), type(peField(3), '4', { once: 'l3' })], text: 'Enter the tile size in centimetres and how many pieces are in a carton. The system works out the square metres in one carton by itself: here 60 x 60 cm is 0.36 sqm a piece, so 4 pieces make 1.44 sqm. That is how it can sell the same tile by the sqm or by the carton. You can also type the carton\'s square metres from its label, and pick the finish.' },
+    { ...section('Price'), modal: 'editor', title: 'Price', ensure: [openAdd, waitFor('.pe-dialog'), type('.pe-dialog .pe-grid2:nth-of-type(1) input[placeholder="0.00"], .pe-dialog input[placeholder="0.00"]', '5250', { once: 'pr' })], text: 'Type the price of one square metre. The price of a whole carton is calculated for you from the carton size (here 5,250 x 1.44 = 7,560), so a customer can be charged by either.' },
+    { ...section('Stock you have now'), modal: 'editor', title: 'Starting stock', ensure: [openAdd, waitFor('.pe-dialog')], text: 'How much of this tile you have, counted in cartons or in square metres, and where it is kept. Cartons are turned into square metres for you. Later changes to stock are made from the Dashboard.' },
+    { selector: '.pe-dialog .pe-more', modal: 'editor', title: 'More options', ensure: [openAdd, waitFor('.pe-dialog')], text: 'Everything you do not need for a normal tile is tucked away here: an optional product type, a supplier code, notes and extra details such as Brand or Colour. Leave it closed unless you need it.' },
+    { ...section('Category'), modal: 'editor', title: 'Category', ensure: [openAdd, waitFor('.pe-dialog')], text: 'Tick the categories that fit, for example Marble or Porcelain, so you can filter and report on them. New categories can be added right here.' },
+    { selector: '.pe-dialog .pe-actions', modal: 'editor', title: 'Add item or cancel', ensure: [openAdd, waitFor('.pe-dialog')], text: 'Add item saves it. Cancel closes the form without saving anything, which is what we will do now.' },
     { selector: '.sale-product-card .edit-btn', title: 'Edit', text: 'Edit opens the same form with the product already filled in, so you can correct the name, price, photo or categories. We will open it...', placement: 'top' },
-    { selector: '.product-editor .editor-header', modal: 'editor', title: 'Editing a product', ensure: [openEdit, waitFor('.product-editor')], text: 'The form is filled with the current details. Change what you need and press Save. A price change applies to future sales only, so past receipts stay correct.' },
+    { selector: '.pe-dialog .pe-header', modal: 'editor', title: 'Editing a tile', ensure: [openEdit, waitFor('.pe-dialog')], text: 'The form is filled with the current details. Change what you need and press Save changes. A price change applies to future sales only, so past receipts stay correct. Stock is not changed here; use the Dashboard for that.' },
     { selector: '.sale-product-card button', match: /View/, title: 'View', text: 'View gives a quick read-only look at a product. We will open it...', placement: 'top' },
     { selector: '.quickview-modal', modal: 'quick', title: 'Quick view', ensure: [click('.sale-product-card button', { match: /View/, unless: '.quickview-modal' }), waitFor('.quickview-modal')], text: 'The photo, price, category, attributes and the stock held at every location, without any risk of changing anything.' },
     { selector: '.sale-product-card .delete-btn', title: 'Delete (archive)', text: 'Delete removes a product from selling and from the lists. It is archived rather than erased, so past sales keep its name and your history stays correct. We will open the confirmation...', placement: 'top' },
@@ -207,7 +211,7 @@ const SETTINGS = {
     { selector: '.settings-tabs', title: 'Sections', ensure: [tab('Overview')], text: 'Overview shows everything at a glance. Locations is for shops and warehouses. Users is for staff accounts. Admin Settings holds categories, product types and attributes.' },
     { selector: '.overview-card:nth-child(1)', title: 'Locations summary', text: 'How many shops and warehouses you have and how many hold stock.' },
     { selector: '.overview-card:nth-child(2)', title: 'Users summary', text: 'How many people can sign in and how many are active.' },
-    { selector: '.overview-card:nth-child(3)', title: 'System configuration', text: 'Product types, categories and global attributes used when you add products.' },
+    { selector: '.overview-card:nth-child(3)', title: 'System configuration', text: 'Product types, categories and global attributes used when you add items.' },
     { selector: '.pin-setup-section', title: 'Markup PIN', text: 'Set a 4-digit PIN here. Staff enter it at the till to unlock price changes on a sale. Anyone who does not know it can only sell at the listed price. Type it twice to confirm and press Set PIN.' },
     { selector: '.sync-card', title: 'Cloud Sync', text: 'Sync needs no setup and nothing to type. The first time this computer has internet it links itself to the shop\'s cloud, and from then on it shares products, stock, sales and users with the POS terminal automatically, and keeps working normally when the internet is down. This card shows how it is going. Sync now is only for when you are impatient, and if this computer and the cloud both already hold data, this is where the owner is asked which to keep.' },
     { selector: '.actions-grid', title: 'Quick actions', text: 'Shortcuts for the jobs you do most.' },
@@ -229,11 +233,11 @@ const SETTINGS = {
     { selector: '.user-editor-overlay .editor-header', modal: 'user', title: 'Editing a user', ensure: [tab('Users'), openEditUser, waitFor('.user-editor-overlay')], text: 'Change the name, username, role or location here. To reset a forgotten password, type a new one in the password box. If you leave it blank, the current password is kept.' },
     { selector: '.users-table tbody tr:first-child td:last-child', title: 'Other user actions', ensure: [tab('Users')], text: 'Beside the pencil there is a button to deactivate or reactivate an account, which stops someone signing in without losing their sales history, and a red bin that permanently deletes it after a confirmation. You cannot delete your own account.', placement: 'left' },
 
-    { selector: '.admin-sections', title: 'Admin Settings', ensure: [tab('Admin')], text: 'The building blocks used when products are created. Each block works the same way: type a name, press Add, and use the pencil and bin on an entry to rename or remove it.' },
-    { selector: '.admin-section:nth-child(1)', title: 'Product types', text: 'Groups of similar products, used in reports.' },
-    { selector: '.admin-section:nth-child(2)', title: 'Global categories', text: 'The categories offered when you add or filter products, for example marble, porcelain or granite.' },
-    { selector: '.admin-section:nth-child(3)', title: 'Global attributes', text: 'Extra details every product can carry, such as size or finish.' },
-    { title: 'That is Settings', text: `Locations, users, the price PIN and the product building blocks. ${NEXT_REMINDER}` },
+    { selector: '.admin-sections', title: 'Admin Settings', ensure: [tab('Admin')], text: 'The building blocks used when items are added. Each block works the same way: type a name, press Add, and use the pencil and bin on an entry to rename or remove it.' },
+    { selector: '.admin-section:nth-child(1)', title: 'Product types', text: 'Optional groups of similar items, used in reports. Tiles do not need one.' },
+    { selector: '.admin-section:nth-child(2)', title: 'Global categories', text: 'The categories offered when you add or filter items, for example Marble, Porcelain or Granite.' },
+    { selector: '.admin-section:nth-child(3)', title: 'Global attributes', text: 'Extra details an item can carry, such as Brand or Colour.' },
+    { title: 'That is Settings', text: `Locations, users, the price PIN and the item building blocks. ${NEXT_REMINDER}` },
   ],
   cleanup: [...SETTINGS_RESET, tab('Overview')],
 };
