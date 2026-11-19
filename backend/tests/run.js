@@ -20,7 +20,7 @@ function freePort() {
   const port = await freePort();
   const server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
     // SYNC_AUTOSTART=0: a test server must never link itself to the real cloud.
-    env: { ...process.env, DATA_DIR: dir, PORT: String(port), NODE_ENV: 'production', SYNC_AUTOSTART: '0' },
+    env: { ...process.env, DATA_DIR: dir, PORT: String(port), NODE_ENV: 'production', SYNC_AUTOSTART: '0', FT_DEFAULT_CONFIG: '1' },
     stdio: 'ignore',
   });
   const note = path.join(dir, 'FIRST-RUN-ADMIN.txt');

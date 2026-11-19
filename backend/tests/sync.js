@@ -22,7 +22,7 @@ async function startDevice(name, cloudPort, secret = APP_SECRET) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `ft-sync-${name}-`));
   const port = await freePort();
   const proc = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(port), NODE_ENV: 'production', SYNC_URL: `http://127.0.0.1:${cloudPort}`, SYNC_KEY: API_KEY, SYNC_SECRET: secret, SYNC_AUTOSTART: '0' },
+    env: { ...process.env, FT_DEFAULT_CONFIG: '1', DATA_DIR: dir, PORT: String(port), NODE_ENV: 'production', SYNC_URL: `http://127.0.0.1:${cloudPort}`, SYNC_KEY: API_KEY, SYNC_SECRET: secret, SYNC_AUTOSTART: '0' },
     stdio: 'ignore',
   });
   const note = path.join(dir, 'FIRST-RUN-ADMIN.txt');

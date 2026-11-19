@@ -12,6 +12,8 @@ const DEFAULTS = {
 };
 
 function loadLocal(name) {
+  // Tests set FT_DEFAULT_CONFIG=1 so they never depend on, or touch, a shop's real settings.
+  if (process.env.FT_DEFAULT_CONFIG === '1') return DEFAULTS[name];
   try {
     return require(path.join(__dirname, `${name}.json`));
   } catch (err) {
