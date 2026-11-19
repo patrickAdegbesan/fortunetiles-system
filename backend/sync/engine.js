@@ -12,10 +12,11 @@
 //  - No login: every request carries the shop's app key (config/sync.secret.json), which the cloud checks. A device links
 //    itself the first time it has internet, then keeps syncing on its own. Only when a device already holds data and the
 //    cloud does too is the owner asked which of the two to keep.
-const config = require('../config/sync.json');
+const { loadLocal } = require('../config/localConfig');
+const config = loadLocal('sync');
 let fileSecret = '';
 try { fileSecret = require('../config/sync.secret.json').appSecret || ''; } catch (_) { /* not present: a test cloud supplies its own */ }
-const defaults = require('../config/defaultAdmin.json');
+const defaults = loadLocal('defaultAdmin');
 
 const ID_RANGE = 10000000;
 const PAGE = 100;

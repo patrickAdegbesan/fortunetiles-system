@@ -5,8 +5,10 @@ const path = require('path');
 const readline = require('readline');
 const bcrypt = require('bcryptjs');
 
-const file = path.join(__dirname, '..', 'config', 'defaultAdmin.json');
-const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+const { loadLocal, localConfigPath } = require('../config/localConfig');
+const file = localConfigPath('defaultAdmin');
+// Start from the defaults when the local file doesn't exist yet; it is written below.
+const config = { ...loadLocal('defaultAdmin') };
 if (config.passwordHash) {
   console.log('Admin password is already set.');
   process.exit(0);

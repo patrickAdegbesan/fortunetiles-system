@@ -3,6 +3,7 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { soldText } from './units';
 import { PRINT_LOGO } from '../pos/printLogo';
+import { legacyBankAccounts } from './legacyBanks';
 
 const NexgoPrinter = registerPlugin('NexgoPrinter');
 
@@ -83,10 +84,7 @@ export async function buildReceiptItems(sale, { withLogo = true } = {}) {
 
   if (sale.paymentMethod === 'bank_transfer') {
     // Receipts made before accounts could be chosen keep the two they always showed.
-    const banks = Array.isArray(sale.bankDetails) && sale.bankDetails.length ? sale.bankDetails : [
-      { bankName: 'Access Bank', accountNumber: '0000000001', accountName: 'Fortune et Fever Nig LTD' },
-      { bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: 'Fortune et Fever Nig LTD' },
-    ];
+    const banks = Array.isArray(sale.bankDetails) && sale.bankDetails.length ? sale.bankDetails : legacyBankAccounts();
     items.push(rule);
     items.push({ type: 'text', text: 'BANK DETAILS', bold: true, size: 'small' });
     banks.forEach((b) => {

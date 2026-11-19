@@ -62,6 +62,20 @@ log in or press anything: a device links itself the first time it has internet a
   and for everything else the latest edit wins. The built-in `admin` account is not synced.
 - **Testing:** `npm --prefix backend run test:sync` runs several devices against a stand-in cloud, no network needed.
 
+
+## Shop settings (kept out of git)
+
+Shop-specific values live in local files that are not committed. Copy each example and fill it in:
+
+| File | Holds | Example |
+|---|---|---|
+| `backend/config/defaultAdmin.json` | Built-in owner account, optional password hash | `defaultAdmin.example.json` |
+| `backend/config/sync.json` | Cloud project URL and publishable key | `sync.example.json` |
+| `backend/config/bankAccounts.json` | The shop's bank accounts, created on first run | `bankAccounts.example.json` |
+| `frontend/.env.local` | Accounts printed on older transfer receipts | `.env.local.example` |
+
+Without them the app still runs, with placeholder bank accounts and cloud sync off.
+
 ## Development
 
 ```bash

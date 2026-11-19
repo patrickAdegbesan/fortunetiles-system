@@ -4,7 +4,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const { User } = require('./models');
 const { dataDir } = require('./config/database');
-const defaults = require('./config/defaultAdmin.json');
+const defaults = require('./config/localConfig').loadLocal('defaultAdmin');
 
 // Guarantees a built-in owner account exists so the app can always be unlocked
 // offline. If config/defaultAdmin.json holds a bcrypt hash (see

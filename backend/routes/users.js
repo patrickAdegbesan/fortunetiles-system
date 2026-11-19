@@ -7,7 +7,7 @@ const { activityLogger } = require('../middleware/activityLogger');
 const cache = require('../middleware/enhancedCache');
 const { Op } = require('sequelize');
 const { USERNAME_RULE } = require('../utils/usernames');
-const { email: SYSTEM_ADMIN_EMAIL } = require('../config/defaultAdmin.json');
+const { email: SYSTEM_ADMIN_EMAIL } = require('../config/localConfig').loadLocal('defaultAdmin');
 
 
 // Turn Sequelize validation/uniqueness errors into clear 4xx responses instead of a generic 500.

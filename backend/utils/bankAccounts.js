@@ -1,13 +1,16 @@
 // The accounts listed on the shop's notice. They are created once, with fixed ids and a fixed date, so every device
 // starts with the identical list and syncing them never creates duplicates. After that they are edited in Settings.
+// The real account numbers live in config/bankAccounts.json, which is not committed; these placeholders are used without it.
+const { loadLocal } = require('../config/localConfig');
 const COMPANY_NAME = 'Fortune et Fever Nig LTD';
-const DEFAULT_ACCOUNTS = [
+const PLACEHOLDER_ACCOUNTS = [
   { id: 1, bankName: 'Access Bank', accountNumber: '0000000001', accountName: COMPANY_NAME },
   { id: 2, bankName: 'Fidelity Bank', accountNumber: '0000000002', accountName: COMPANY_NAME },
   { id: 3, bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: COMPANY_NAME },
   { id: 4, bankName: 'FCMB', accountNumber: '0000000004', accountName: COMPANY_NAME },
   { id: 5, bankName: 'GTBank', accountNumber: '0000000005', accountName: '' }, // account name was cut off on the notice
 ];
+const DEFAULT_ACCOUNTS = loadLocal('bankAccounts') || PLACEHOLDER_ACCOUNTS;
 const SEEDED_AT = '2026-01-01 00:00:00.000 +00:00';
 
 async function ensureDefaultBankAccounts(sequelize) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { FaEnvelope, FaExchangeAlt, FaGlobe, FaMapMarkerAlt, FaPhone, FaPrint } from 'react-icons/fa';
 import '../styles/Receipt.css';
 import { soldText } from '../utils/units';
+import { legacyBankAccounts } from '../utils/legacyBanks';
 
 const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   // Handle both 'sale' and 'order' data formats
@@ -438,10 +439,7 @@ const Receipt = ({ sale, onPrint, onClose, onReturn }) => {
   const returns = receiptData.returns || [];
   // Bank details are shown only for transfers, and only the accounts the cashier chose. Receipts made before this
   // existed keep the two accounts they always showed.
-  const LEGACY_BANKS = [
-    { bankName: 'Access Bank', accountNumber: '0000000001', accountName: 'Fortune et Fever Nig LTD' },
-    { bankName: 'Zenith Bank', accountNumber: '0000000003', accountName: 'Fortune et Fever Nig LTD' },
-  ];
+  const LEGACY_BANKS = legacyBankAccounts();
   const bankDetails = paymentMethod === 'bank_transfer'
     ? (Array.isArray(receiptData.bankDetails) && receiptData.bankDetails.length ? receiptData.bankDetails : LEGACY_BANKS)
     : [];

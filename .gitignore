@@ -22,3 +22,10 @@ frontend/build-mobile/
 release/
 *.apk
 backend/config/sync.secret.json
+
+# Shop-specific settings: keep local, never commit (see the *.example.json files)
+backend/config/defaultAdmin.json
+backend/config/sync.json
+backend/config/bankAccounts.json
+frontend/.env.local
+frontend/.env.*.local
